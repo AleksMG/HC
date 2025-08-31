@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Multi-Round Homophonic Cipher</title>
+    <title>Enhanced Base64 Homophonic Cipher</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -213,31 +213,6 @@
         .status-processing { background: var(--warning); }
         .status-error { background: var(--danger); }
         
-        .sbox-visualization {
-            margin-top: 2rem;
-        }
-        
-        .sbox-grid {
-            display: grid;
-            grid-template-columns: repeat(18, 1fr);
-            gap: 2px;
-            margin-top: 1rem;
-            font-size: 0.7rem;
-        }
-        
-        .sbox-cell {
-            padding: 0.5rem;
-            text-align: center;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 0.25rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-        
-        .sbox-header {
-            background: var(--primary);
-            font-weight: 600;
-        }
-        
         .footer {
             text-align: center;
             margin-top: 2rem;
@@ -260,42 +235,6 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-
-        .output-options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .custom-charset {
-            margin-top: 1rem;
-        }
-        
-        .charset-grid {
-            display: grid;
-            grid-template-columns: repeat(16, 1fr);
-            gap: 2px;
-            margin-top: 0.5rem;
-        }
-        
-        .charset-cell {
-            padding: 0.25rem;
-            text-align: center;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border);
-            border-radius: 0.25rem;
-            font-family: monospace;
-            font-size: 0.8rem;
-        }
-
-        .output-preview {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border);
         }
 
         .test-result {
@@ -348,8 +287,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Enhanced Multi-Round Homophonic Cipher</h1>
-            <p class="subtitle">Military-grade encryption with multi-round transformation</p>
+            <h1>Enhanced Base64 Homophonic Cipher</h1>
+            <p class="subtitle">Multi-round encryption with 16 homophones per byte</p>
         </header>
 
         <div class="grid">
@@ -374,56 +313,10 @@
                         <option value="500000" selected>500,000 (Military)</option>
                     </select>
                 </div>
-                
-                <div class="form-group">
-                    <label for="diffusionMode">Diffusion Mode:</label>
-                    <select id="diffusionMode">
-                        <option value="cbc" selected>CBC Mode</option>
-                        <option value="cfb">CFB Mode</option>
-                        <option value="ofb">OFB Mode</option>
-                        <option value="none">No Diffusion (Testing)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="outputFormat">Output Format:</label>
-                    <select id="outputFormat">
-                        <option value="hex" selected>HEX (default)</option>
-                        <option value="base64">Base64</option>
-                        <option value="binary">Binary Data</option>
-                        <option value="custom">Custom Omophones</option>
-                    </select>
-                </div>
 
                 <div class="advanced-options">
-                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Advanced Options</h3>
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Encryption Settings</h3>
                     
-                    <div class="option-row">
-                        <div class="option-label">Enable MixColumns:</div>
-                        <div class="option-control">
-                            <input type="checkbox" id="enableMixColumns" checked>
-                        </div>
-                    </div>
-                    
-                    <div class="option-row">
-                        <div class="option-label">MixColumns Rounds:</div>
-                        <div class="option-control">
-                            <select id="mixColumnsRounds">
-                                <option value="1">1 Round (Standard)</option>
-                                <option value="3" selected>3 Rounds (Enhanced)</option>
-                                <option value="6">6 Rounds (Strong)</option>
-                                <option value="12">12 Rounds (Maximum)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="option-row">
-                        <div class="option-label">Enable Non-Linearity:</div>
-                        <div class="option-control">
-                            <input type="checkbox" id="enableNonLinearity" checked>
-                        </div>
-                    </div>
-
                     <div class="option-row">
                         <div class="option-label">Encryption Rounds:</div>
                         <div class="option-control">
@@ -435,21 +328,6 @@
                                 <option value="8">8 Rounds (Maximum)</option>
                             </select>
                         </div>
-                    </div>
-                </div>
-
-                <div id="customOptions" style="display: none;">
-                    <div class="form-group">
-                        <label for="customCharset">Custom Character Set (256 symbols):</label>
-                        <textarea id="customCharset" rows="3" placeholder="Enter exactly 256 unique symbols">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}|;:,.<>?/~`'"\абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯαβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ</textarea>
-                        <button type="button" id="generateCharset" class="btn-secondary" style="margin-top: 0.5rem; width: 100%;">
-                            Generate Random Charset
-                        </button>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Character Preview:</label>
-                        <div class="charset-grid" id="charsetPreview"></div>
                     </div>
                 </div>
             </div>
@@ -497,13 +375,6 @@
                 </div>
                 <div id="securityInfo" class="result-content"></div>
             </div>
-
-            <div class="output-preview">
-                <div class="result-header">
-                    <span class="result-title">Output Preview:</span>
-                </div>
-                <div id="outputPreview" class="result-content"></div>
-            </div>
         </div>
 
         <div class="card">
@@ -518,64 +389,27 @@
             </div>
         </div>
 
-        <div class="card sbox-visualization">
-            <h2 class="card-title">S-Box Visualization</h2>
-            <div class="sbox-grid" id="sboxGrid"></div>
-        </div>
-
         <div class="footer">
-            <p>Enhanced Multi-Round Homophonic Cipher v5.0 | Multi-Round Encryption Implementation</p>
+            <p>Enhanced Base64 Homophonic Cipher v2.0 | Multi-Round Encryption Implementation</p>
             <p>© 2024 Cryptographic Systems | All operations performed client-side</p>
         </div>
     </div>
 
     <script>
-        // Enhanced Galois Field implementation
-        class GaloisField {
-            static multiply(a, b) {
-                let p = 0;
-                for (let i = 0; i < 8; i++) {
-                    if (b & 1) p ^= a;
-                    const hiBitSet = a & 0x80;
-                    a = (a << 1) & 0xFF;
-                    if (hiBitSet) a ^= 0x1B;
-                    b >>= 1;
-                }
-                return p;
-            }
-        }
-
-        // Enhanced Homophonic Cipher with Multi-Round Encryption
-        class EnhancedHomophonicCipher {
+        // Enhanced Homophonic Cipher with Base64 encoding
+        class Base64HomophonicCipher {
             constructor() {
-                this.primarySbox = null;
-                this.secondarySbox = null;
-                this.primaryInverse = null;
-                this.secondaryInverse = null;
-                this.initializationVector = null;
-                this.hmacKey = null;
-                this.fixedSalt = new TextEncoder().encode("HomophonicCipherFixedSalt123!");
-                this.customCharset = null;
-                this.outputFormat = 'hex';
-                this.enableMixColumns = true;
-                this.mixColumnsRounds = 3;
-                this.enableNonLinearity = true;
-                this.encryptionRounds = 3;
+                this.sbox = null;
+                this.inverseSbox = null;
                 this.roundKeys = [];
-            }
-
-            setMixColumnsRounds(rounds) {
-                const validRounds = [1, 3, 6, 12];
-                this.mixColumnsRounds = validRounds.includes(rounds) ? rounds : 1;
-            }
-
-            setNonLinearity(enabled) {
-                this.enableNonLinearity = enabled;
+                this.base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+                this.fixedSalt = new TextEncoder().encode("HomophonicCipherFixedSalt123!");
+                this.encryptionRounds = 3;
             }
 
             setEncryptionRounds(rounds) {
                 const validRounds = [1, 2, 3, 5, 8];
-                this.encryptionRounds = validRounds.includes(rounds) ? rounds : 1;
+                this.encryptionRounds = validRounds.includes(rounds) ? rounds : 3;
             }
 
             async initializeWithKey(passphrase, iterations = 500000) {
@@ -604,13 +438,9 @@
 
                     const derivedBuffer = new Uint8Array(derivedBits);
                     const encryptionKey = derivedBuffer.slice(0, 32);
-                    this.hmacKey = derivedBuffer.slice(32, 64);
-
-                    // Generate round keys
-                    await this.generateRoundKeys(encryptionKey);
                     
-                    // Generate S-Boxes
-                    await this.generateSBoxes(encryptionKey);
+                    await this.generateRoundKeys(encryptionKey);
+                    await this.generateSBox(encryptionKey);
                     
                     return true;
                 } catch (error) {
@@ -633,75 +463,24 @@
                 }
             }
 
-            async generateSBoxes(encryptionKey) {
+            async generateSBox(encryptionKey) {
                 try {
-                    const hmacKey = await crypto.subtle.importKey(
-                        'raw',
-                        encryptionKey,
-                        {
-                            name: 'HMAC',
-                            hash: 'SHA-256'
-                        },
-                        false,
-                        ['sign']
-                    );
-
-                    // Primary S-Box: 256×256
-                    this.primarySbox = new Array(256);
-                    this.primaryInverse = new Array(65536);
+                    this.sbox = new Array(256);
+                    this.inverseSbox = new Array(4096);
                     
-                    // Secondary S-Box: 256×256  
-                    this.secondarySbox = new Array(256);
-                    this.secondaryInverse = new Array(256);
-
-                    // Generate all possible values
-                    const allHomophones = new Array(65536);
-                    for (let i = 0; i < 65536; i++) {
-                        allHomophones[i] = i;
-                    }
-
-                    // Shuffle for primary S-Box
-                    for (let i = 65535; i > 0; i--) {
-                        const hmac = await crypto.subtle.sign(
-                            'HMAC',
-                            hmacKey,
-                            new Uint8Array([i & 0xFF, (i >> 8) & 0xFF])
-                        );
-                        
-                        const hmacArray = new Uint8Array(hmac);
-                        const randomValue = (hmacArray[0] << 8) | hmacArray[1];
-                        const j = randomValue % (i + 1);
-                        
-                        [allHomophones[i], allHomophones[j]] = [allHomophones[j], allHomophones[i]];
-                    }
-
-                    // Fill primary S-Box
-                    for (let inputByte = 0; inputByte < 256; inputByte++) {
-                        this.primarySbox[inputByte] = new Array(256);
-                        for (let homophoneIndex = 0; homophoneIndex < 256; homophoneIndex++) {
-                            const homophone = allHomophones[inputByte * 256 + homophoneIndex];
-                            this.primarySbox[inputByte][homophoneIndex] = homophone;
-                            this.primaryInverse[homophone] = inputByte;
-                        }
-                    }
-
-                    // Generate secondary S-Box
-                    for (let group = 0; group < 256; group++) {
-                        this.secondarySbox[group] = new Array(256);
-                        this.secondaryInverse[group] = new Array(256);
-                        
-                        for (let randomIndex = 0; randomIndex < 256; randomIndex++) {
-                            const hmac = await crypto.subtle.sign(
-                                'HMAC',
-                                hmacKey,
-                                new Uint8Array([group, randomIndex, 0xFF, 0xAA])
-                            );
-                            
-                            const hmacArray = new Uint8Array(hmac);
-                            const outputByte = hmacArray[0];
-                            
-                            this.secondarySbox[group][randomIndex] = outputByte;
-                            this.secondaryInverse[group][outputByte] = randomIndex;
+                    // Create array with all possible values (0-4095)
+                    const allValues = Array.from({length: 4096}, (_, i) => i);
+                    
+                    // Shuffle the array deterministically based on the key
+                    await this.shuffleArrayDeterministically(allValues, encryptionKey);
+                    
+                    // Fill S-Box and inverse S-Box
+                    for (let byte = 0; byte < 256; byte++) {
+                        this.sbox[byte] = new Array(16);
+                        for (let homophoneIndex = 0; homophoneIndex < 16; homophoneIndex++) {
+                            const value = allValues[byte * 16 + homophoneIndex];
+                            this.sbox[byte][homophoneIndex] = value;
+                            this.inverseSbox[value] = byte;
                         }
                     }
 
@@ -711,114 +490,22 @@
                 }
             }
 
-            // Single round of MixColumns transformation
-            applySingleMixColumnsRound(data) {
-                const result = new Uint8Array(data.length);
-                
-                for (let i = 0; i < data.length; i += 4) {
-                    if (i + 3 >= data.length) break;
+            async shuffleArrayDeterministically(array, key) {
+                const keyBuffer = new Uint8Array(key);
+                for (let i = array.length - 1; i > 0; i--) {
+                    const randomBuffer = new Uint8Array(4);
+                    randomBuffer[0] = keyBuffer[i % 32];
+                    randomBuffer[1] = keyBuffer[(i + 1) % 32];
+                    randomBuffer[2] = keyBuffer[(i + 2) % 32];
+                    randomBuffer[3] = keyBuffer[(i + 3) % 32];
                     
-                    const a0 = data[i];
-                    const a1 = data[i + 1];
-                    const a2 = data[i + 2];
-                    const a3 = data[i + 3];
+                    const randomValue = new Uint32Array(randomBuffer.buffer)[0];
+                    const j = randomValue % (i + 1);
                     
-                    result[i] = GaloisField.multiply(0x02, a0) ^ GaloisField.multiply(0x03, a1) ^ a2 ^ a3;
-                    result[i + 1] = a0 ^ GaloisField.multiply(0x02, a1) ^ GaloisField.multiply(0x03, a2) ^ a3;
-                    result[i + 2] = a0 ^ a1 ^ GaloisField.multiply(0x02, a2) ^ GaloisField.multiply(0x03, a3);
-                    result[i + 3] = GaloisField.multiply(0x03, a0) ^ a1 ^ a2 ^ GaloisField.multiply(0x02, a3);
+                    [array[i], array[j]] = [array[j], array[i]];
                 }
-                
-                for (let i = Math.floor(data.length / 4) * 4; i < data.length; i++) {
-                    result[i] = data[i];
-                }
-                
-                return result;
             }
 
-            // Single round of Inverse MixColumns transformation
-            applySingleInvMixColumnsRound(data) {
-                const result = new Uint8Array(data.length);
-                
-                for (let i = 0; i < data.length; i += 4) {
-                    if (i + 3 >= data.length) break;
-                    
-                    const a0 = data[i];
-                    const a1 = data[i + 1];
-                    const a2 = data[i + 2];
-                    const a3 = data[i + 3];
-                    
-                    result[i] = GaloisField.multiply(0x0e, a0) ^ GaloisField.multiply(0x0b, a1) ^ 
-                                GaloisField.multiply(0x0d, a2) ^ GaloisField.multiply(0x09, a3);
-                    result[i + 1] = GaloisField.multiply(0x09, a0) ^ GaloisField.multiply(0x0e, a1) ^ 
-                                    GaloisField.multiply(0x0b, a2) ^ GaloisField.multiply(0x0d, a3);
-                    result[i + 2] = GaloisField.multiply(0x0d, a0) ^ GaloisField.multiply(0x09, a1) ^ 
-                                    GaloisField.multiply(0x0e, a2) ^ GaloisField.multiply(0x0b, a3);
-                    result[i + 3] = GaloisField.multiply(0x0b, a0) ^ GaloisField.multiply(0x0d, a1) ^ 
-                                    GaloisField.multiply(0x09, a2) ^ GaloisField.multiply(0x0e, a3);
-                }
-                
-                for (let i = Math.floor(data.length / 4) * 4; i < data.length; i++) {
-                    result[i] = data[i];
-                }
-                
-                return result;
-            }
-
-            // Generate round-specific non-linearity constants
-            generateRoundConstants(round) {
-                const constants = new Uint8Array(4);
-                for (let i = 0; i < 4; i++) {
-                    constants[i] = (round * 0x17 + i * 0x37) & 0xFF;
-                }
-                return constants;
-            }
-
-            // Enhanced multi-round MixColumns with non-linearity
-            mixColumns(data) {
-                if (!this.enableMixColumns) return data;
-
-                let processedData = new Uint8Array(data);
-                
-                for (let round = 0; round < this.mixColumnsRounds; round++) {
-                    // Apply linear transformation
-                    processedData = this.applySingleMixColumnsRound(processedData);
-                    
-                    // Apply non-linearity between rounds
-                    if (this.enableNonLinearity) {
-                        const roundConstants = this.generateRoundConstants(round);
-                        for (let i = 0; i < processedData.length; i++) {
-                            processedData[i] ^= roundConstants[i % 4];
-                        }
-                    }
-                }
-                
-                return processedData;
-            }
-
-            // Enhanced multi-round Inverse MixColumns
-            invMixColumns(data) {
-                if (!this.enableMixColumns) return data;
-
-                let processedData = new Uint8Array(data);
-                
-                for (let round = this.mixColumnsRounds - 1; round >= 0; round--) {
-                    // Reverse non-linearity first
-                    if (this.enableNonLinearity) {
-                        const roundConstants = this.generateRoundConstants(round);
-                        for (let i = 0; i < processedData.length; i++) {
-                            processedData[i] ^= roundConstants[i % 4];
-                        }
-                    }
-                    
-                    // Apply inverse linear transformation
-                    processedData = this.applySingleInvMixColumnsRound(processedData);
-                }
-                
-                return processedData;
-            }
-
-            // Get deterministic random index based on position and round key
             getDeterministicRandom(roundKey, position, seed) {
                 const data = new Uint8Array(6);
                 data[0] = position & 0xFF;
@@ -831,160 +518,49 @@
                     hash = ((hash << 5) - hash) + data[i];
                     hash |= 0;
                 }
-                return Math.abs(hash) % 256;
+                return Math.abs(hash) % 16;
             }
 
-            // Single encryption round
-            async encryptRound(data, roundKey, diffusionMode, previousBlock) {
-                let result = new Uint8Array(data.length);
-                let newPreviousBlock = new Uint8Array(previousBlock);
+            encryptByte(inputByte, randomIndex) {
+                const value = this.sbox[inputByte][randomIndex];
+                const char1 = this.base64Alphabet[(value >> 6) & 0x3F];
+                const char2 = this.base64Alphabet[value & 0x3F];
+                return char1 + char2;
+            }
+
+            decryptBase64(twoChars) {
+                const char1 = this.base64Alphabet.indexOf(twoChars[0]);
+                const char2 = this.base64Alphabet.indexOf(twoChars[1]);
                 
-                for (let i = 0; i < data.length; i++) {
-                    let byteToEncrypt = data[i];
-                    
-                    // Apply diffusion if enabled
-                    if (diffusionMode !== 'none') {
-                        byteToEncrypt ^= previousBlock[i % 16];
-                    }
-                    
-                    // Primary S-Box: byte → homophone
-                    const randomIndex1 = this.getDeterministicRandom(roundKey, i, 0);
-                    const homophone = this.primarySbox[byteToEncrypt][randomIndex1];
-                    
-                    // Group homophone for secondary S-Box
-                    const group = (homophone >> 8) & 0xFF;
-                    
-                    // Secondary S-Box: homophone group → byte
-                    const randomIndex2 = this.getDeterministicRandom(roundKey, i, 1);
-                    const finalByte = this.secondarySbox[group][randomIndex2];
-                    
-                    result[i] = finalByte;
-                    
-                    // Update diffusion block for CBC mode
-                    if (diffusionMode === 'cbc') {
-                        newPreviousBlock = this.updateDiffusionBlock(newPreviousBlock, homophone);
-                    }
+                if (char1 === -1 || char2 === -1) {
+                    throw new Error('Invalid Base64 characters');
                 }
                 
-                return { result, newPreviousBlock };
+                const value = (char1 << 6) | char2;
+                return this.inverseSbox[value];
             }
 
-            // Single decryption round
-            async decryptRound(data, roundKey, diffusionMode, previousBlock) {
-                let result = new Uint8Array(data.length);
-                let newPreviousBlock = new Uint8Array(previousBlock);
-                
-                for (let i = 0; i < data.length; i++) {
-                    const finalByte = data[i];
-                    
-                    // Find which homophone group could produce this byte
-                    let foundHomophone = null;
-                    for (let group = 0; group < 256; group++) {
-                        for (let randomIndex2 = 0; randomIndex2 < 256; randomIndex2++) {
-                            if (this.secondarySbox[group][randomIndex2] === finalByte) {
-                                // Reconstruct homophone
-                                foundHomophone = (group << 8) | randomIndex2;
-                                break;
-                            }
-                        }
-                        if (foundHomophone !== null) break;
-                    }
-                    
-                    if (foundHomophone === null) {
-                        throw new Error('Decryption failed: invalid data');
-                    }
-                    
-                    // Get original byte from primary inverse S-Box
-                    let decryptedByte = this.primaryInverse[foundHomophone];
-                    
-                    // Apply reverse diffusion if enabled
-                    if (diffusionMode !== 'none') {
-                        decryptedByte ^= previousBlock[i % 16];
-                    }
-                    
-                    result[i] = decryptedByte;
-                    
-                    // Update diffusion block for CBC mode
-                    if (diffusionMode === 'cbc') {
-                        newPreviousBlock = this.updateDiffusionBlock(newPreviousBlock, foundHomophone);
-                    }
-                }
-                
-                return { result, newPreviousBlock };
-            }
-
-            arrayToHex(array) {
-                return Array.from(array)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join('');
-            }
-
-            arrayToBase64(array) {
-                return btoa(String.fromCharCode(...array));
-            }
-
-            hexToArray(hexString) {
-                const result = new Uint8Array(hexString.length / 2);
-                for (let i = 0; i < hexString.length; i += 2) {
-                    result[i / 2] = parseInt(hexString.substr(i, 2), 16);
-                }
-                return result;
-            }
-
-            base64ToArray(base64) {
-                const binary = atob(base64);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
-                }
-                return bytes;
-            }
-
-            async encryptData(plaintext, diffusionMode = 'cbc') {
+            async encryptData(plaintext) {
                 try {
                     const encoder = new TextEncoder();
                     const plaintextBuffer = encoder.encode(plaintext);
-                    
-                    this.initializationVector = crypto.getRandomValues(new Uint8Array(16));
-                    let previousBlock = this.initializationVector;
                     let currentData = plaintextBuffer;
                     
                     // Apply multiple encryption rounds
                     for (let round = 0; round < this.encryptionRounds; round++) {
                         const roundKey = this.roundKeys[round];
-                        const roundResult = await this.encryptRound(
-                            currentData, roundKey, diffusionMode, previousBlock
-                        );
+                        let roundResult = '';
                         
-                        currentData = roundResult.result;
-                        previousBlock = roundResult.newPreviousBlock;
+                        for (let i = 0; i < currentData.length; i++) {
+                            const randomIndex = this.getDeterministicRandom(roundKey, i, round);
+                            roundResult += this.encryptByte(currentData[i], randomIndex);
+                        }
+                        
+                        // For next round, use the encoded text as input
+                        currentData = encoder.encode(roundResult);
                     }
                     
-                    let outputBuffer;
-                    if (this.enableMixColumns) {
-                        const mixedData = this.mixColumns(currentData);
-                        
-                        outputBuffer = new Uint8Array(16 + mixedData.length);
-                        outputBuffer.set(this.initializationVector, 0);
-                        outputBuffer.set(mixedData, 16);
-                    } else {
-                        outputBuffer = new Uint8Array(16 + currentData.length);
-                        outputBuffer.set(this.initializationVector, 0);
-                        outputBuffer.set(currentData, 16);
-                    }
-
-                    switch (this.outputFormat) {
-                        case 'hex':
-                            return this.arrayToHex(outputBuffer);
-                        case 'base64':
-                            return this.arrayToBase64(outputBuffer);
-                        case 'binary':
-                            return outputBuffer;
-                        case 'custom':
-                            return await this.convertToCustomFormat(outputBuffer);
-                        default:
-                            return this.arrayToHex(outputBuffer);
-                    }
+                    return this.encodeToBase64(currentData);
                     
                 } catch (error) {
                     console.error('Encryption failed:', error);
@@ -992,53 +568,26 @@
                 }
             }
 
-            async decryptData(encryptedData, diffusionMode = 'cbc') {
+            async decryptData(encryptedData) {
                 try {
-                    let inputBuffer;
-                    
-                    if (typeof encryptedData === 'string') {
-                        if (this.outputFormat === 'hex') {
-                            inputBuffer = this.hexToArray(encryptedData);
-                        } else if (this.outputFormat === 'base64') {
-                            inputBuffer = this.base64ToArray(encryptedData);
-                        } else if (this.outputFormat === 'custom') {
-                            inputBuffer = await this.convertFromCustomFormat(encryptedData);
-                        } else {
-                            throw new Error('Unknown input format');
-                        }
-                    } else if (encryptedData instanceof Uint8Array) {
-                        inputBuffer = encryptedData;
-                    } else {
-                        throw new Error('Unsupported input type');
-                    }
-
-                    if (inputBuffer.length < 16) {
-                        throw new Error('Invalid encrypted data format');
-                    }
-                    
-                    const iv = inputBuffer.slice(0, 16);
-                    let ciphertextBytes = inputBuffer.slice(16);
-                    
-                    if (this.enableMixColumns) {
-                        ciphertextBytes = this.invMixColumns(ciphertextBytes);
-                    }
-                    
-                    let currentData = ciphertextBytes;
-                    let previousBlock = iv;
+                    let currentData = this.decodeFromBase64(encryptedData);
+                    const encoder = new TextEncoder();
                     
                     // Apply multiple decryption rounds in reverse order
                     for (let round = this.encryptionRounds - 1; round >= 0; round--) {
                         const roundKey = this.roundKeys[round];
-                        const roundResult = await this.decryptRound(
-                            currentData, roundKey, diffusionMode, previousBlock
-                        );
+                        const decodedText = new TextDecoder().decode(currentData);
+                        let roundResult = new Uint8Array(decodedText.length / 2);
                         
-                        currentData = roundResult.result;
-                        previousBlock = roundResult.newPreviousBlock;
+                        for (let i = 0; i < decodedText.length; i += 2) {
+                            const twoChars = decodedText.substr(i, 2);
+                            roundResult[i / 2] = this.decryptBase64(twoChars);
+                        }
+                        
+                        currentData = roundResult;
                     }
                     
-                    const decoder = new TextDecoder();
-                    return decoder.decode(currentData);
+                    return new TextDecoder().decode(currentData);
                     
                 } catch (error) {
                     console.error('Decryption failed:', error);
@@ -1046,127 +595,36 @@
                 }
             }
 
-            updateDiffusionBlock(block, homophone) {
-                const newBlock = new Uint8Array(16);
-                const homophoneBytes = new Uint8Array([
-                    (homophone >> 8) & 0xFF,
-                    homophone & 0xFF
-                ]);
-                
-                for (let i = 0; i < 16; i++) {
-                    newBlock[i] = block[i] ^ homophoneBytes[i % 2];
+            encodeToBase64(data) {
+                if (typeof data === 'string') {
+                    return btoa(data);
+                } else if (data instanceof Uint8Array) {
+                    return btoa(String.fromCharCode(...data));
                 }
-                
-                return newBlock;
+                throw new Error('Unsupported data type for Base64 encoding');
             }
 
-            setOutputFormat(format) {
-                this.outputFormat = format;
-            }
-
-            setCustomCharset(charset) {
-                if (charset.length !== 256) {
-                    throw new Error('Charset must contain exactly 256 characters');
+            decodeFromBase64(base64) {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
                 }
-                const uniqueChars = new Set(charset);
-                if (uniqueChars.size !== 256) {
-                    throw new Error('Charset must contain 256 unique characters');
-                }
-                this.customCharset = charset;
-            }
-
-            setMixColumns(enabled) {
-                this.enableMixColumns = enabled;
-            }
-
-            async convertToCustomFormat(binaryData) {
-                if (!this.customCharset) {
-                    throw new Error('Custom charset not set');
-                }
-
-                let result = '';
-                for (let i = 0; i < binaryData.length; i += 2) {
-                    if (i + 1 >= binaryData.length) break;
-                    
-                    const byte1 = binaryData[i];
-                    const byte2 = binaryData[i + 1];
-                    const value = (byte1 << 8) | byte2;
-                    
-                    const index1 = value % 256;
-                    const index2 = Math.floor(value / 256) % 256;
-                    
-                    result += this.customCharset[index1] + this.customCharset[index2];
-                }
-                return result;
-            }
-
-            async convertFromCustomFormat(customData) {
-                if (!this.customCharset) {
-                    throw new Error('Custom charset not set');
-                }
-
-                const charToIndex = {};
-                for (let i = 0; i < this.customCharset.length; i++) {
-                    charToIndex[this.customCharset[i]] = i;
-                }
-
-                const result = new Uint8Array(customData.length);
-                let outputIndex = 0;
-
-                for (let i = 0; i < customData.length; i += 2) {
-                    if (i + 1 >= customData.length) break;
-                    
-                    const char1 = customData[i];
-                    const char2 = customData[i + 1];
-                    
-                    const index1 = charToIndex[char1];
-                    const index2 = charToIndex[char2];
-                    
-                    const value = index1 + (index2 * 256);
-                    
-                    result[outputIndex++] = (value >> 8) & 0xFF;
-                    result[outputIndex++] = value & 0xFF;
-                }
-
-                return result.slice(0, outputIndex);
-            }
-
-            getSBoxPreview() {
-                if (!this.primarySbox) return null;
-                
-                const preview = [];
-                for (let i = 0; i < 16; i++) {
-                    const row = [];
-                    for (let j = 0; j < 16; j++) {
-                        const byteValue = i * 16 + j;
-                        row.push(this.primarySbox[byteValue].slice(0, 2).map(v => v.toString(16).padStart(4, '0')).join(', '));
-                    }
-                    preview.push(row);
-                }
-                return preview;
+                return bytes;
             }
         }
 
         // Cryptographic Test Suite
         class CipherTestSuite {
-            static hexToBytes(hexString) {
-                const bytes = new Uint8Array(hexString.length / 2);
-                for (let i = 0; i < hexString.length; i += 2) {
-                    bytes[i/2] = parseInt(hexString.substr(i, 2), 16);
-                }
-                return bytes;
-            }
-
-            static calculateEntropy(hexString) {
-                const bytes = this.hexToBytes(hexString);
+            static calculateEntropy(data) {
                 const freq = new Array(256).fill(0);
+                const total = data.length;
                 
-                for (const byte of bytes) {
-                    freq[byte]++;
+                for (let i = 0; i < data.length; i++) {
+                    freq[data[i]]++;
                 }
                 
                 let entropy = 0;
-                const total = bytes.length;
                 for (let i = 0; i < 256; i++) {
                     if (freq[i] > 0) {
                         const p = freq[i] / total;
@@ -1176,130 +634,49 @@
                 return entropy;
             }
 
-            static frequencyAnalysis(hexString) {
-                const bytes = this.hexToBytes(hexString);
-                const freq = new Array(256).fill(0);
-                
-                for (const byte of bytes) {
-                    freq[byte]++;
-                }
-                
-                let report = `Byte value analysis (0-255):\n`;
-                report += `Total bytes: ${bytes.length}\n\n`;
-                
-                const ranges = [
-                    { name: '0-31 (Control chars)', count: 0, ideal: 12.5 },
-                    { name: '32-126 (Printable ASCII)', count: 0, ideal: 37.1 },
-                    { name: '127-255 (Extended)', count: 0, ideal: 50.4 }
-                ];
-                
-                for (let i = 0; i < 256; i++) {
-                    if (i <= 31) ranges[0].count += freq[i];
-                    else if (i <= 126) ranges[1].count += freq[i];
-                    else ranges[2].count += freq[i];
-                }
-                
-                for (const range of ranges) {
-                    const percentage = (range.count / bytes.length * 100).toFixed(2);
-                    const deviation = Math.abs(percentage - range.ideal).toFixed(2);
-                    report += `${range.name}: ${range.count} (${percentage}% | Δ${deviation}%)\n`;
-                }
-                
-                return report;
-            }
-
-            static testRandomness(hexString) {
-                const bytes = this.hexToBytes(hexString);
-                if (bytes.length < 100) return "Need more data for analysis";
+            static testRandomness(data) {
+                if (data.length < 100) return "Need more data for analysis";
                 
                 let sum = 0;
-                for (const byte of bytes) {
+                for (const byte of data) {
                     sum += byte;
                 }
-                const mean = sum / bytes.length;
+                const mean = sum / data.length;
                 
                 let variance = 0;
-                for (const byte of bytes) {
+                for (const byte of data) {
                     variance += Math.pow(byte - mean, 2);
                 }
-                variance /= bytes.length;
-                
-                let inCircle = 0;
-                for (let i = 0; i < bytes.length - 1; i += 2) {
-                    const x = bytes[i] / 255;
-                    const y = bytes[i + 1] / 255;
-                    if (x * x + y * y <= 1) inCircle++;
-                }
-                const piEstimate = (4 * inCircle) / (bytes.length / 2);
+                variance /= data.length;
                 
                 return {
                     mean: mean.toFixed(3),
                     variance: variance.toFixed(3),
-                    piEstimate: piEstimate.toFixed(6),
                     idealMean: 127.5,
-                    idealVariance: 5461.25,
-                    idealPi: 3.141593
+                    idealVariance: 5461.25
                 };
             }
 
-            static analyzeHexCharacters(hexString) {
-                const freq = {};
-                for (const char of hexString) {
-                    freq[char] = (freq[char] || 0) + 1;
-                }
-                
-                const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-                let report = `HEX character analysis:\n`;
-                report += `Total HEX chars: ${hexString.length}\n`;
-                report += `Unique HEX chars: ${sorted.length}/16\n\n`;
-                
-                report += `HEX character frequency:\n`;
-                for (const [char, count] of sorted) {
-                    const percentage = (count / hexString.length * 100).toFixed(2);
-                    report += `'${char}': ${count} (${percentage}%)\n`;
-                }
-                
-                return report;
-            }
-
-            static runAllTests(hexString) {
+            static runAllTests(data) {
                 const results = [];
-                const bytes = this.hexToBytes(hexString);
                 
-                const entropy = this.calculateEntropy(hexString);
+                const entropy = this.calculateEntropy(data);
                 results.push({
                     name: "Byte Entropy Test",
                     status: entropy > 7.9 ? "PASS" : "WARNING",
                     message: `Entropy: ${entropy.toFixed(6)}/8.000000`,
-                    details: `Ideal: >7.9 (perfect randomness)\nBased on ${bytes.length} bytes`
+                    details: `Based on ${data.length} bytes`
                 });
                 
-                const hexAnalysis = this.analyzeHexCharacters(hexString);
-                results.push({
-                    name: "HEX Character Distribution",
-                    status: "INFO",
-                    message: "Analysis of HEX characters (0-9, a-f)",
-                    details: hexAnalysis
-                });
-                
-                const freqReport = this.frequencyAnalysis(hexString);
-                results.push({
-                    name: "Byte Range Analysis",
-                    status: "INFO",
-                    message: "Analysis of actual byte values (0-255)",
-                    details: freqReport
-                });
-                
-                const randomness = this.testRandomness(hexString);
+                const randomness = this.testRandomness(data);
                 if (typeof randomness !== 'string') {
                     const meanDiff = Math.abs(randomness.mean - randomness.idealMean).toFixed(2);
-                    const piDiff = Math.abs(randomness.piEstimate - randomness.idealPi).toFixed(4);
                     
                     results.push({
                         name: "Statistical Randomness",
-                        status: meanDiff < 5 && piDiff < 0.1 ? "PASS" : "WARNING",
-                        message: `Mean: ${randomness.mean} | π≈${randomness.piEstimate}`,
-                        details: `Mean Δ: ${meanDiff} | π Δ: ${piDiff}\nIdeal mean: 127.5, variance: 5461.25`
+                        status: meanDiff < 5 ? "PASS" : "WARNING",
+                        message: `Mean: ${randomness.mean} | Variance: ${randomness.variance}`,
+                        details: `Mean Δ: ${meanDiff} | Ideal mean: 127.5, variance: 5461.25`
                     });
                 }
                 
@@ -1307,14 +684,11 @@
             }
         }
 
-        // Enhanced UI Controller
-        class EnhancedCipherUIController {
+        // UI Controller
+        class CipherUIController {
             constructor() {
-                this.cipher = new EnhancedHomophonicCipher();
-                this.lastBinaryResult = null;
+                this.cipher = new Base64HomophonicCipher();
                 this.initializeEventListeners();
-                this.updateCharsetPreview();
-                this.loadSettings();
             }
 
             initializeEventListeners() {
@@ -1322,162 +696,15 @@
                 const decryptBtn = document.getElementById('decryptBtn');
                 const clearBtn = document.getElementById('clearBtn');
                 const analyzeBtn = document.getElementById('analyzeBtn');
-                const outputFormat = document.getElementById('outputFormat');
-                const customCharset = document.getElementById('customCharset');
-                const generateBtn = document.getElementById('generateCharset');
-                const enableMixColumns = document.getElementById('enableMixColumns');
-                const mixColumnsRounds = document.getElementById('mixColumnsRounds');
-                const enableNonLinearity = document.getElementById('enableNonLinearity');
                 const encryptionRounds = document.getElementById('encryptionRounds');
 
                 encryptBtn.addEventListener('click', () => this.handleEncrypt());
                 decryptBtn.addEventListener('click', () => this.handleDecrypt());
                 clearBtn.addEventListener('click', () => this.handleClear());
                 analyzeBtn.addEventListener('click', () => this.handleAnalyze());
-                
-                outputFormat.addEventListener('change', () => {
-                    this.handleOutputFormatChange();
-                    this.saveSettings();
-                });
-                customCharset.addEventListener('input', () => {
-                    this.updateCharsetPreview();
-                    this.saveSettings();
-                });
-                generateBtn.addEventListener('click', () => this.handleGenerateCharset());
-                enableMixColumns.addEventListener('change', () => {
-                    this.cipher.setMixColumns(enableMixColumns.checked);
-                    this.saveSettings();
-                });
-                mixColumnsRounds.addEventListener('change', () => {
-                    this.cipher.setMixColumnsRounds(parseInt(mixColumnsRounds.value));
-                    this.saveSettings();
-                });
-                enableNonLinearity.addEventListener('change', () => {
-                    this.cipher.setNonLinearity(enableNonLinearity.checked);
-                    this.saveSettings();
-                });
                 encryptionRounds.addEventListener('change', () => {
                     this.cipher.setEncryptionRounds(parseInt(encryptionRounds.value));
-                    this.saveSettings();
                 });
-            }
-
-            handleOutputFormatChange() {
-                const format = document.getElementById('outputFormat').value;
-                const customOptions = document.getElementById('customOptions');
-                customOptions.style.display = format === 'custom' ? 'block' : 'none';
-                this.cipher.setOutputFormat(format);
-            }
-
-            updateCharsetPreview() {
-                const charset = document.getElementById('customCharset').value;
-                const preview = document.getElementById('charsetPreview');
-                preview.innerHTML = '';
-
-                if (charset.length === 0) return;
-
-                for (let i = 0; i < Math.min(256, 32); i++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'charset-cell';
-                    cell.textContent = charset[i] || '?';
-                    cell.title = `Index: ${i}, Char: ${charset[i] || 'missing'}`;
-                    preview.appendChild(cell);
-                }
-
-                if (charset.length !== 256) {
-                    const warning = document.createElement('div');
-                    warning.style.gridColumn = '1 / -1';
-                    warning.style.color = 'var(--warning)';
-                    warning.textContent = `Warning: ${charset.length}/256 characters`;
-                    preview.appendChild(warning);
-                }
-            }
-
-            generateRandomCharset() {
-                const chars = [];
-                const usedChars = new Set();
-                
-                const safeRanges = [
-                    [0x0020, 0x007F], [0x00A0, 0x00FF], [0x0100, 0x017F],
-                    [0x0180, 0x024F], [0x0370, 0x03FF], [0x0400, 0x04FF],
-                    [0x2000, 0x206F], [0x2100, 0x214F], [0x2150, 0x218F],
-                    [0x2190, 0x21FF], [0x2200, 0x22FF], [0x2300, 0x23FF],
-                    [0x2500, 0x257F], [0x2580, 0x259F], [0x25A0, 0x25FF],
-                    [0x2600, 0x26FF], [0x2700, 0x27BF]
-                ];
-
-                const basicChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}|;:,.<>?/~`'\"\\";
-                for (const char of basicChars) {
-                    if (chars.length >= 256) break;
-                    if (!usedChars.has(char)) {
-                        chars.push(char);
-                        usedChars.add(char);
-                    }
-                }
-
-                while (chars.length < 256) {
-                    const range = safeRanges[Math.floor(Math.random() * safeRanges.length)];
-                    const codePoint = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
-                    
-                    if (codePoint === 0xFEFF || codePoint === 0xFFFE || codePoint === 0xFFFF) continue;
-
-                    try {
-                        const char = String.fromCodePoint(codePoint);
-                        if (char.length === 1 && !usedChars.has(char) && /[\S]/.test(char)) {
-                            chars.push(char);
-                            usedChars.add(char);
-                        }
-                    } catch (e) {
-                        continue;
-                    }
-                    
-                    if (chars.length > 300) break;
-                }
-
-                return chars.join('');
-            }
-
-            handleGenerateCharset() {
-                const randomCharset = this.generateRandomCharset();
-                document.getElementById('customCharset').value = randomCharset;
-                this.updateCharsetPreview();
-                this.saveSettings();
-            }
-
-            saveSettings() {
-                const settings = {
-                    iterations: document.getElementById('iterations').value,
-                    diffusionMode: document.getElementById('diffusionMode').value,
-                    outputFormat: document.getElementById('outputFormat').value,
-                    customCharset: document.getElementById('customCharset').value,
-                    enableMixColumns: document.getElementById('enableMixColumns').checked,
-                    mixColumnsRounds: document.getElementById('mixColumnsRounds').value,
-                    enableNonLinearity: document.getElementById('enableNonLinearity').checked,
-                    encryptionRounds: document.getElementById('encryptionRounds').value
-                };
-                localStorage.setItem('cipherSettings', JSON.stringify(settings));
-            }
-
-            loadSettings() {
-                const saved = localStorage.getItem('cipherSettings');
-                if (saved) {
-                    const settings = JSON.parse(saved);
-                    document.getElementById('iterations').value = settings.iterations;
-                    document.getElementById('diffusionMode').value = settings.diffusionMode;
-                    document.getElementById('outputFormat').value = settings.outputFormat;
-                    document.getElementById('customCharset').value = settings.customCharset;
-                    document.getElementById('enableMixColumns').checked = settings.enableMixColumns;
-                    document.getElementById('mixColumnsRounds').value = settings.mixColumnsRounds;
-                    document.getElementById('enableNonLinearity').checked = settings.enableNonLinearity;
-                    document.getElementById('encryptionRounds').value = settings.encryptionRounds || '3';
-                    
-                    this.cipher.setMixColumns(settings.enableMixColumns);
-                    this.cipher.setMixColumnsRounds(parseInt(settings.mixColumnsRounds));
-                    this.cipher.setNonLinearity(settings.enableNonLinearity);
-                    this.cipher.setEncryptionRounds(parseInt(settings.encryptionRounds || '3'));
-                    this.handleOutputFormatChange();
-                    this.updateCharsetPreview();
-                }
             }
 
             async handleEncrypt() {
@@ -1497,49 +724,19 @@
                     }
 
                     const iterations = parseInt(document.getElementById('iterations').value);
-                    const diffusionMode = document.getElementById('diffusionMode').value;
                     const inputData = document.getElementById('inputData').value;
-                    const outputFormat = document.getElementById('outputFormat').value;
-
-                    this.cipher.setOutputFormat(outputFormat);
-
-                    if (outputFormat === 'custom') {
-                        const charset = document.getElementById('customCharset').value;
-                        if (charset.length !== 256) {
-                            throw new Error('Custom charset must contain exactly 256 characters');
-                        }
-                        const uniqueChars = new Set(charset);
-                        if (uniqueChars.size !== 256) {
-                            throw new Error('Charset must contain 256 unique characters, found duplicates');
-                        }
-                        this.cipher.setCustomCharset(charset);
-                    }
 
                     await this.cipher.initializeWithKey(passphrase, iterations);
-                    const result = await this.cipher.encryptData(inputData, diffusionMode);
+                    const result = await this.cipher.encryptData(inputData);
 
-                    if (typeof result === 'string') {
-                        document.getElementById('outputData').textContent = result;
-                    } else {
-                        this.lastBinaryResult = result;
-                        document.getElementById('outputData').textContent = 
-                            `Binary data (${result.length} bytes): [${Array.from(result).join(', ')}]`;
-                    }
-                    
-                    document.getElementById('outputPreview').textContent = 
-                        this.getOutputPreview(result, outputFormat);
-                    
-                    this.updateSecurityInfo('encrypt', typeof result === 'string' ? result.length : result.length);
-                    this.updateSBoxDisplay();
-                    this.saveSettings();
-
-                    if (typeof result === 'string' && outputFormat === 'hex') {
-                        this.runAutomaticTests(result);
-                    } else {
-                        this.setTestStatus('ready', 'Tests available only for HEX output');
-                    }
-
+                    document.getElementById('outputData').textContent = result;
+                    this.updateSecurityInfo('encrypt', result.length);
                     this.setStatus('ready', 'Encryption successful');
+
+                    // Run tests on the binary data
+                    const binaryData = this.cipher.decodeFromBase64(result);
+                    this.runAutomaticTests(binaryData);
+
                 } catch (error) {
                     this.setStatus('error', 'Encryption failed: ' + error.message);
                     console.error('Encryption error:', error);
@@ -1548,12 +745,12 @@
                 }
             }
 
-            async runAutomaticTests(hexString) {
+            async runAutomaticTests(binaryData) {
                 this.setTestStatus('processing', 'Running cryptographic tests...');
                 
                 setTimeout(() => {
                     try {
-                        const testResults = CipherTestSuite.runAllTests(hexString);
+                        const testResults = CipherTestSuite.runAllTests(binaryData);
                         this.displayTestResults(testResults);
                         this.setTestStatus('ready', 'Tests completed');
                     } catch (error) {
@@ -1569,7 +766,6 @@
                 results.forEach(test => {
                     const testDiv = document.createElement('div');
                     testDiv.className = `test-result ${test.status === 'PASS' ? 'test-pass' : 
-                                       test.status === 'FAIL' ? 'test-fail' : 
                                        test.status === 'WARNING' ? 'test-warning' : 'test-info'}`;
                     
                     testDiv.innerHTML = `
@@ -1588,17 +784,6 @@
                 indicator.textContent = message;
             }
 
-            getOutputPreview(result, format) {
-                if (format === 'binary' && result instanceof Uint8Array) {
-                    return `Binary: ${result.length} bytes\nFirst 32 bytes: [${Array.from(result.slice(0, 32)).join(', ')}]...`;
-                } else if (format === 'custom' && typeof result === 'string') {
-                    return `Custom: ${result.length} characters\nPreview: ${result.substring(0, 100)}...`;
-                } else {
-                    return String(result).substring(0, 200) + 
-                           (String(result).length > 200 ? '...' : '');
-                }
-            }
-
             async handleDecrypt() {
                 this.setStatus('processing', 'Decrypting...');
                 this.showLoading('decrypt');
@@ -1606,40 +791,15 @@
                 try {
                     const passphrase = document.getElementById('keyInput').value;
                     const iterations = parseInt(document.getElementById('iterations').value);
-                    const diffusionMode = document.getElementById('diffusionMode').value;
-                    const outputFormat = document.getElementById('outputFormat').value;
-
-                    this.cipher.setOutputFormat(outputFormat);
-
-                    if (outputFormat === 'custom') {
-                        const charset = document.getElementById('customCharset').value;
-                        if (charset.length !== 256) {
-                            throw new Error('Custom charset must contain exactly 256 characters');
-                        }
-                        const uniqueChars = new Set(charset);
-                        if (uniqueChars.size !== 256) {
-                            throw new Error('Charset must contain 256 unique characters, found duplicates');
-                        }
-                        this.cipher.setCustomCharset(charset);
-                    }
-
-                    let inputData;
-                    if (outputFormat === 'binary') {
-                        inputData = this.lastBinaryResult;
-                    } else {
-                        inputData = document.getElementById('inputData').value;
-                    }
+                    const inputData = document.getElementById('inputData').value;
 
                     await this.cipher.initializeWithKey(passphrase, iterations);
-                    const result = await this.cipher.decryptData(inputData, diffusionMode);
+                    const result = await this.cipher.decryptData(inputData);
 
                     document.getElementById('outputData').textContent = result;
-                    document.getElementById('outputPreview').textContent = 
-                        `Decrypted: ${result.substring(0, 100)}...`;
-                    
                     this.updateSecurityInfo('decrypt', result.length);
-                    
                     this.setStatus('ready', 'Decryption successful');
+
                 } catch (error) {
                     this.setStatus('error', 'Decryption failed: ' + error.message);
                     console.error('Decryption error:', error);
@@ -1652,9 +812,7 @@
                 document.getElementById('inputData').value = '';
                 document.getElementById('outputData').textContent = '';
                 document.getElementById('securityInfo').textContent = '';
-                document.getElementById('outputPreview').textContent = '';
                 document.getElementById('testResults').textContent = '';
-                document.getElementById('sboxGrid').innerHTML = '';
                 this.setStatus('ready', 'Ready');
                 this.setTestStatus('ready', 'Ready to test');
             }
@@ -1664,19 +822,16 @@
                 
                 setTimeout(() => {
                     this.setStatus('ready', 'Security analysis complete');
+                    const rounds = document.getElementById('encryptionRounds').value;
+                    
                     document.getElementById('securityInfo').textContent = 
                         'Security Analysis:\n' +
-                        '• Multi-round encryption (' + document.getElementById('encryptionRounds').value + ' rounds)\n' +
-                        '• Dual-layer S-Box architecture\n' +
-                        '• Deterministic S-Box generation\n' +
-                        '• Fixed salt for consistent key derivation\n' +
-                        '• 512-bit key material via PBKDF2-HMAC-SHA512\n' +
-                        '• 65536-element homophonic S-Box\n' +
-                        '• Non-deterministic encryption (semantic security)\n' +
-                        '• Multiple output formats support\n' +
-                        '• Multi-round MixColumns transformation\n' +
-                        '• Inter-round non-linearity enhancement\n' +
-                        '• Multiple diffusion modes (CBC, CFB, OFB)';
+                        `• Multi-round encryption (${rounds} rounds)\n` +
+                        '• 16 homophones per byte\n' +
+                        '• 4096-value S-Box with deterministic generation\n' +
+                        '• PBKDF2-HMAC-SHA512 key derivation\n' +
+                        '• Base64 output encoding\n' +
+                        '• Non-deterministic encryption (semantic security)';
                 }, 1000);
             }
 
@@ -1697,68 +852,25 @@
             }
 
             updateSecurityInfo(operation, length) {
-                const format = document.getElementById('outputFormat').value;
-                const diffusionMode = document.getElementById('diffusionMode').value;
-                const mixColumns = document.getElementById('enableMixColumns').checked;
-                const rounds = document.getElementById('mixColumnsRounds').value;
-                const nonLinearity = document.getElementById('enableNonLinearity').checked;
-                const encryptionRounds = document.getElementById('encryptionRounds').value;
+                const rounds = document.getElementById('encryptionRounds').value;
+                const iterations = document.getElementById('iterations').value;
                 
                 let info = `Operation: ${operation.toUpperCase()}\n`;
-                info += `Encryption rounds: ${encryptionRounds}\n`;
-                info += `Output format: ${format}\n`;
-                info += `Diffusion mode: ${diffusionMode}\n`;
-                info += `MixColumns: ${mixColumns ? 'Enabled' : 'Disabled'}\n`;
-                if (mixColumns) {
-                    info += `MixColumns rounds: ${rounds}\n`;
-                    info += `Non-linearity: ${nonLinearity ? 'Enabled' : 'Disabled'}\n`;
-                }
-                info += `Data length: ${length} ${format === 'binary' ? 'bytes' : 'characters'}\n`;
-                info += `S-Box: Dual-layer deterministic generation\n`;
-                info += `Key: PBKDF2-HMAC-SHA512 with fixed salt`;
+                info += `Encryption rounds: ${rounds}\n`;
+                info += `PBKDF2 iterations: ${iterations}\n`;
+                info += `Output length: ${length} characters\n`;
+                info += `Homophones per byte: 16\n`;
+                info += `S-Box size: 4096 values\n`;
+                info += `Key derivation: PBKDF2-HMAC-SHA512`;
                 
                 document.getElementById('securityInfo').textContent = info;
-            }
-
-            updateSBoxDisplay() {
-                const preview = this.cipher.getSBoxPreview();
-                if (!preview) return;
-
-                const grid = document.getElementById('sboxGrid');
-                grid.innerHTML = '';
-
-                const emptyHeader = document.createElement('div');
-                emptyHeader.className = 'sbox-cell sbox-header';
-                grid.appendChild(emptyHeader);
-
-                for (let j = 0; j < 16; j++) {
-                    const header = document.createElement('div');
-                    header.className = 'sbox-cell sbox-header';
-                    header.textContent = j.toString(16).toUpperCase();
-                    grid.appendChild(header);
-                }
-
-                for (let i = 0; i < 16; i++) {
-                    const rowHeader = document.createElement('div');
-                    rowHeader.className = 'sbox-cell sbox-header';
-                    rowHeader.textContent = i.toString(16).toUpperCase();
-                    grid.appendChild(rowHeader);
-
-                    for (let j = 0; j < 16; j++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'sbox-cell';
-                        cell.textContent = preview[i][j];
-                        cell.title = `S-Box[${i.toString(16).toUpperCase()}${j.toString(16).toUpperCase()}]`;
-                        grid.appendChild(cell);
-                    }
-                }
             }
         }
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            new EnhancedCipherUIController();
+            new CipherUIController();
         });
     </script>
 </body>
-  </html>
+</html>
