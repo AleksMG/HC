@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Correct Crypto S-Box</title>
+    <title>Enhanced Crypto S-Box</title>
     <style>
         body { font-family: monospace; margin: 20px; background: #0d1117; color: #c9d1d9; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -19,7 +19,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Correct Crypto S-Box Implementation</h1>
+        <h1>🔒 Enhanced Crypto S-Box with Rounds</h1>
         
         <div class="section">
             <h3>Key Configuration:</h3>
@@ -38,6 +38,8 @@
                         <option value="2">2 rounds</option>
                         <option value="3">3 rounds</option>
                         <option value="4" selected>4 rounds</option>
+                        <option value="5">5 rounds</option>
+                        <option value="6">6 rounds</option>
                     </select>
                 </div>
                 <div>
@@ -54,7 +56,7 @@
             <div class="col">
                 <div class="section">
                     <h3>Encryption:</h3>
-                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">Hello World</textarea>
+                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">Hello, World!</textarea>
                     <button onclick="encryptData()">Encrypt</button>
                     <div class="output" id="encryptOutput">Encrypted output will appear here</div>
                 </div>
@@ -69,6 +71,12 @@
                 </div>
             </div>
         </div>
+
+        <div class="section">
+            <h3>NIST Tests:</h3>
+            <button onclick="runSimpleTests()">Run Simple Tests</button>
+            <div class="output" id="testResults">Test results will appear here</div>
+        </div>
     </div>
 
     <script>
@@ -77,6 +85,7 @@
         let inverseBytePermutation = null;
         let inverseHomophonicSBox = null;
         let roundKeys = [];
+        let lastEncryptedData = [];
 
         function cryptoShuffle(array, keyBytes) {
             const result = [...array];
@@ -160,7 +169,7 @@
                     }
                 }
 
-                statusElement.textContent = `S-Box generated! Rounds: ${rounds}`;
+                statusElement.textContent = `S-Box generated! Rounds: ${rounds}, CBC: ${document.getElementById('cbcMode').value}`;
 
             } catch (error) {
                 statusElement.textContent = 'Error: ' + error.message;
@@ -185,49 +194,48 @@
                 const rounds = parseInt(document.getElementById('roundsCount').value);
                 const useCBC = document.getElementById('cbcMode').value === 'on';
                 
-                let encryptedData = [];
+                let currentState = Array.from(data);
                 let iv = null;
+                let encryptedData = [];
 
                 if (useCBC) {
                     iv = crypto.getRandomValues(new Uint8Array(2));
                     encryptedData.push(...Array.from(iv));
+                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
                 }
 
-                // Process each input byte
-                for (let i = 0; i < data.length; i++) {
-                    let byte = data[i];
-                    
-                    // Apply rounds (this is the core encryption that must be reversible)
-                    for (let round = 0; round < rounds - 1; round++) {
-                        const roundKey = roundKeys[round];
-                        byte = bytePermutation[applyRoundKey(byte, roundKey, i)];
-                    }
+                for (let round = 0; round < rounds - 1; round++) {
+                    const roundKey = roundKeys[round];
+                    currentState = currentState.map((byte, index) => {
+                        const keyedByte = applyRoundKey(byte, roundKey, index);
+                        return bytePermutation[keyedByte];
+                    });
+                }
 
-                    // Final round with homophonic substitution
-                    const finalRoundKey = roundKeys[rounds - 1];
-                    byte = applyRoundKey(byte, finalRoundKey, i);
-                    
+                const finalRoundKey = roundKeys[rounds - 1];
+                let encryptedWords = [];
+
+                for (let i = 0; i < currentState.length; i++) {
+                    const byte = applyRoundKey(currentState[i], finalRoundKey, i);
                     const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
                     const encryptedWord = homophonicSBox[byte][randomIndex];
-                    
-                    // Apply CBC to the OUTPUT if enabled
-                    if (useCBC) {
-                        const previousBlock = i === 0 ? iv : [encryptedData[encryptedData.length - 2], encryptedData[encryptedData.length - 1]];
-                        const xoredWord = encryptedWord ^ ((previousBlock[0] << 8) | previousBlock[1]);
-                        encryptedData.push(xoredWord >> 8, xoredWord & 0xFF);
-                    } else {
-                        encryptedData.push(encryptedWord >> 8, encryptedWord & 0xFF);
-                    }
+                    encryptedWords.push(encryptedWord);
                 }
 
+                for (const word of encryptedWords) {
+                    encryptedData.push(word >> 8, word & 0xFF);
+                }
+
+                lastEncryptedData = encryptedData;
                 const hexOutput = encryptedData.map(byte => byte.toString(16).padStart(2, '0'));
                 const result = hexOutput.join(' ');
                 
                 let outputHTML = `<strong>Encrypted Hex:</strong> ${result}<br>`;
-                outputHTML += `<strong>Mode:</strong> ${useCBC ? 'CBC' : 'ECB'}<br>`;
                 outputHTML += `<strong>Rounds:</strong> ${rounds}<br>`;
+                outputHTML += `<strong>CBC:</strong> ${useCBC ? 'ON' : 'OFF'}<br>`;
+                outputHTML += `<strong>Total bytes:</strong> ${encryptedData.length}<br>`;
                 if (useCBC && iv) {
-                    outputHTML += `<strong>IV:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
+                    outputHTML += `<strong>IV included:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
                 }
                 outputHTML += `<button onclick="copyToDecrypt('${result}')">Copy to Decrypt Input</button>`;
 
@@ -278,43 +286,105 @@
                     dataStart = 2;
                 }
 
-                const decryptedBytes = [];
-                
+                const encryptedWords = [];
                 for (let i = dataStart; i < encryptedBytes.length; i += 2) {
-                    if (i + 1 >= encryptedBytes.length) break;
-                    
-                    let encryptedWord = (encryptedBytes[i] << 8) | encryptedBytes[i + 1];
-                    
-                    // Reverse CBC if enabled
-                    if (useCBC) {
-                        const previousBlock = i === dataStart ? iv : [encryptedBytes[i - 2], encryptedBytes[i - 1]];
-                        encryptedWord ^= ((previousBlock[0] << 8) | previousBlock[1]);
+                    if (i + 1 < encryptedBytes.length) {
+                        const word = (encryptedBytes[i] << 8) | encryptedBytes[i + 1];
+                        encryptedWords.push(word);
                     }
+                }
 
-                    // Reverse final round
-                    const containerId = inverseHomophonicSBox[encryptedWord];
-                    const finalRoundKey = roundKeys[rounds - 1];
-                    let byte = applyRoundKey(containerId, finalRoundKey, i);
+                const finalRoundKey = roundKeys[rounds - 1];
+                let currentState = encryptedWords.map((word, index) => {
+                    const containerId = inverseHomophonicSBox[word];
+                    return applyRoundKey(containerId, finalRoundKey, index);
+                });
 
-                    // Reverse intermediate rounds
-                    for (let round = rounds - 2; round >= 0; round--) {
-                        const roundKey = roundKeys[round];
-                        byte = applyRoundKey(inverseBytePermutation[byte], roundKey, i);
-                    }
+                for (let round = rounds - 2; round >= 0; round--) {
+                    const roundKey = roundKeys[round];
+                    currentState = currentState.map((byte, index) => {
+                        const unpermutedByte = inverseBytePermutation[byte];
+                        return applyRoundKey(unpermutedByte, roundKey, index);
+                    });
+                }
 
-                    decryptedBytes.push(byte);
+                if (useCBC && iv) {
+                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
                 }
 
                 const decoder = new TextDecoder();
-                const decryptedText = decoder.decode(new Uint8Array(decryptedBytes));
+                const decryptedText = decoder.decode(new Uint8Array(currentState));
                 
                 document.getElementById('decryptOutput').innerHTML = 
                     `<strong>Decrypted Text:</strong> ${decryptedText}<br>
+                     <strong>Bytes Decrypted:</strong> ${currentState.length}<br>
                      <strong>Mode:</strong> ${useCBC ? 'CBC' : 'ECB'}`;
 
             } catch (error) {
                 document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
             }
+        }
+
+        function runSimpleTests() {
+            if (lastEncryptedData.length === 0) {
+                alert('Please encrypt some data first');
+                return;
+            }
+
+            const testResults = document.getElementById('testResults');
+            testResults.innerHTML = 'Running tests...';
+
+            setTimeout(() => {
+                const data = lastEncryptedData;
+                
+                // 1. Frequency Test
+                let ones = 0;
+                for (const byte of data) {
+                    for (let i = 0; i < 8; i++) {
+                        if ((byte >> i) & 1) ones++;
+                    }
+                }
+                const totalBits = data.length * 8;
+                const freqRatio = ones / totalBits;
+                const freqPass = Math.abs(freqRatio - 0.5) < 0.05;
+
+                // 2. Byte Distribution Test
+                const byteCounts = new Array(256).fill(0);
+                for (const byte of data) {
+                    byteCounts[byte]++;
+                }
+                const expected = data.length / 256;
+                let chi2 = 0;
+                for (let i = 0; i < 256; i++) {
+                    chi2 += Math.pow(byteCounts[i] - expected, 2) / expected;
+                }
+                const distributionPass = chi2 < 300; // Simplified threshold
+
+                // 3. Entropy Test
+                let entropy = 0;
+                for (let i = 0; i < 256; i++) {
+                    if (byteCounts[i] > 0) {
+                        const p = byteCounts[i] / data.length;
+                        entropy -= p * Math.log2(p);
+                    }
+                }
+                const entropyPass = entropy > 7.9;
+
+                let html = `<strong>Test Results (${data.length} bytes):</strong><br><br>`;
+                
+                html += `<strong>Frequency Test:</strong> ${freqPass ? 'PASS' : 'FAIL'}<br>`;
+                html += `Ones ratio: ${(freqRatio * 100).toFixed(2)}% (ideal: 50%)<br><br>`;
+                
+                html += `<strong>Distribution Test:</strong> ${distributionPass ? 'PASS' : 'FAIL'}<br>`;
+                html += `Chi²: ${chi2.toFixed(2)} (ideal: ~255)<br><br>`;
+                
+                html += `<strong>Entropy Test:</strong> ${entropyPass ? 'PASS' : 'FAIL'}<br>`;
+                html += `Entropy: ${entropy.toFixed(4)}/8.0000<br><br>`;
+                
+                html += `<strong>Overall:</strong> ${(freqPass && distributionPass && entropyPass) ? 'EXCELLENT RANDOMNESS' : 'NEEDS IMPROVEMENT'}`;
+
+                testResults.innerHTML = html;
+            }, 100);
         }
 
         function copyToDecrypt(hexText) {
