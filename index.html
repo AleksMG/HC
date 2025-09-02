@@ -217,31 +217,6 @@
         .status-processing { background: var(--warning); }
         .status-error { background: var(--danger); }
         
-        .sbox-visualization {
-            margin-top: 2rem;
-        }
-        
-        .sbox-grid {
-            display: grid;
-            grid-template-columns: repeat(18, 1fr);
-            gap: 2px;
-            margin-top: 1rem;
-            font-size: 0.7rem;
-        }
-        
-        .sbox-cell {
-            padding: 0.5rem;
-            text-align: center;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 0.25rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-        
-        .sbox-header {
-            background: var(--primary);
-            font-weight: 600;
-        }
-        
         .footer {
             text-align: center;
             margin-top: 2rem;
@@ -288,60 +263,13 @@
         .test-info {
             border-left: 4px solid var(--primary);
         }
-        
-        .advanced-options {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border);
-        }
-        
-        .option-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .option-label {
-            flex: 1;
-            font-size: 0.9rem;
-        }
-        
-        .option-control {
-            flex: 2;
-        }
-
-        .performance-stats {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-        
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.25rem;
-        }
-        
-        .stat-label {
-            color: #94a3b8;
-        }
-        
-        .stat-value {
-            font-weight: 600;
-            color: var(--secondary);
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Enhanced Homophonic Cipher</h1>
-            <p class="subtitle">4096-value S-Box with 16 homophones per byte | Post-Quantum Resistant</p>
+            <p class="subtitle">4096-value S-Box with 16 homophones per byte | Deterministic Generation</p>
         </header>
 
         <div class="grid">
@@ -361,9 +289,9 @@
                 <div class="form-group">
                     <label for="iterations">PBKDF2 Iterations:</label>
                     <select id="iterations">
-                        <option value="100000">100,000 (Standard)</option>
-                        <option value="250000">250,000 (Enhanced)</option>
-                        <option value="500000" selected>500,000 (Military)</option>
+                        <option value="1000">1,000 (Test)</option>
+                        <option value="10000">10,000 (Fast)</option>
+                        <option value="100000" selected>100,000 (Standard)</option>
                     </select>
                 </div>
 
@@ -373,30 +301,8 @@
                         <option value="cbc" selected>CBC Mode</option>
                         <option value="cfb">CFB Mode</option>
                         <option value="ofb">OFB Mode</option>
-                        <option value="none">No Diffusion (Testing)</option>
+                        <option value="none">No Diffusion</option>
                     </select>
-                </div>
-
-                <div class="advanced-options">
-                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Advanced Settings</h3>
-                    
-                    <div class="option-row">
-                        <div class="option-label">Enable S-Box Validation:</div>
-                        <div class="option-control">
-                            <input type="checkbox" id="enableValidation" checked>
-                        </div>
-                    </div>
-                    
-                    <div class="option-row">
-                        <div class="option-label">Performance Mode:</div>
-                        <div class="option-control">
-                            <select id="performanceMode">
-                                <option value="balanced" selected>Balanced</option>
-                                <option value="fast">Fast (less validation)</option>
-                                <option value="secure">Secure (full validation)</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -421,23 +327,7 @@
                 
                 <div class="btn-group">
                     <button id="clearBtn" class="btn-danger">Clear All</button>
-                    <button id="analyzeBtn" class="btn-warning">Security Analysis</button>
-                    <button id="testBtn" class="btn-warning">Run Tests</button>
-                </div>
-
-                <div class="performance-stats">
-                    <div class="stat-row">
-                        <span class="stat-label">S-Box Size:</span>
-                        <span class="stat-value">256×16 (4096 values)</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Output Alphabet:</span>
-                        <span class="stat-value">64 characters</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Expansion Factor:</span>
-                        <span class="stat-value">2.0× (bytes → chars)</span>
-                    </div>
+                    <button id="testBtn" class="btn-warning">Test Consistency</button>
                 </div>
             </div>
         </div>
@@ -459,17 +349,10 @@
                 </div>
                 <div id="securityInfo" class="result-content"></div>
             </div>
-
-            <div class="result-container" style="margin-top: 1rem;">
-                <div class="result-header">
-                    <span class="result-title">Performance Metrics:</span>
-                </div>
-                <div id="performanceInfo" class="result-content"></div>
-            </div>
         </div>
 
         <div class="card">
-            <h2 class="card-title">🔬 Automatic Cryptographic Tests</h2>
+            <h2 class="card-title">🔬 Consistency Tests</h2>
             
             <div class="result-container">
                 <div class="result-header">
@@ -480,13 +363,8 @@
             </div>
         </div>
 
-        <div class="card sbox-visualization">
-            <h2 class="card-title">S-Box Visualization (First 16 bytes)</h2>
-            <div class="sbox-grid" id="sboxGrid"></div>
-        </div>
-
         <div class="footer">
-            <p>Enhanced Homophonic Cipher v4.0 | Post-Quantum Resistant Implementation</p>
+            <p>Enhanced Homophonic Cipher v4.1 | Fully Deterministic S-Box Generation</p>
             <p>© 2024 Cryptographic Systems | All operations performed client-side</p>
         </div>
     </div>
@@ -498,29 +376,14 @@
                 this.inverseSbox = null;
                 this.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
                 this.initializationVector = null;
-                this.performanceMode = 'balanced';
-                this.enableValidation = true;
-                this.performanceMetrics = {
-                    sboxGeneration: 0,
-                    encryptionTime: 0,
-                    decryptionTime: 0,
-                    memoryUsage: 0
-                };
             }
 
-            setPerformanceMode(mode) {
-                this.performanceMode = mode;
-                this.enableValidation = mode !== 'fast';
-            }
-
-            async initializeWithKey(passphrase, iterations = 500000) {
-                const startTime = performance.now();
-                
+            async initializeWithKey(passphrase, iterations = 100000) {
                 try {
                     const encoder = new TextEncoder();
                     const passphraseBuffer = encoder.encode(passphrase);
                     
-                    // Generate salt from passphrase
+                    // Детерминистическая соль на основе пароля
                     const salt = await crypto.subtle.digest('SHA-256', passphraseBuffer);
                     
                     const importedKey = await crypto.subtle.importKey(
@@ -535,7 +398,6 @@
                     const encryptionKey = new Uint8Array(derivedBits).slice(0, 32);
                     await this.generateSBox(encryptionKey);
                     
-                    this.performanceMetrics.sboxGeneration = performance.now() - startTime;
                     return true;
                     
                 } catch (error) {
@@ -545,8 +407,6 @@
             }
 
             async generateSBox(encryptionKey) {
-                const startTime = performance.now();
-                
                 try {
                     this.sbox = new Array(256);
                     this.inverseSbox = new Map();
@@ -557,20 +417,19 @@
                         false, ['sign']
                     );
                     
-                    // Generate all 4096 values
-                    const allValues = Array.from({length: 4096}, (_, i) => i);
-                    await this.deterministicShuffle(allValues, hmacKey);
+                    // Детерминистическая генерация последовательности
+                    const sequence = await this.generateDeterministicSequence(hmacKey, 4096);
                     
-                    // Fill S-Box with validation
-                    let valueIndex = 0;
+                    // Заполняем S-Box
+                    let index = 0;
                     const usedValues = new Set();
                     
                     for (let byte = 0; byte < 256; byte++) {
                         this.sbox[byte] = new Array(16);
                         for (let homophoneIndex = 0; homophoneIndex < 16; homophoneIndex++) {
-                            const value = allValues[valueIndex++];
+                            const value = sequence[index++];
                             
-                            if (this.enableValidation && usedValues.has(value)) {
+                            if (usedValues.has(value)) {
                                 throw new Error(`Duplicate value ${value} in S-Box`);
                             }
                             usedValues.add(value);
@@ -580,23 +439,10 @@
                         }
                     }
                     
-                    // Final validation
-                    if (this.enableValidation) {
-                        if (usedValues.size !== 4096 || this.inverseSbox.size !== 4096) {
-                            throw new Error('S-Box generation failed: incomplete coverage');
-                        }
-                        
-                        // Verify all values are mapped correctly
-                        for (let value = 0; value < 4096; value++) {
-                            if (!this.inverseSbox.has(value)) {
-                                throw new Error(`Value ${value} not found in inverse S-Box`);
-                            }
-                        }
+                    // Финальная проверка
+                    if (usedValues.size !== 4096) {
+                        throw new Error('S-Box generation failed: not all values used');
                     }
-                    
-                    this.performanceMetrics.memoryUsage = Math.round(
-                        (this.sbox.length * 16 * 4) / 1024 // KB
-                    );
                     
                 } catch (error) {
                     console.error('S-Box generation failed:', error);
@@ -604,15 +450,24 @@
                 }
             }
 
-            async deterministicShuffle(array, hmacKey) {
-                for (let i = array.length - 1; i > 0; i--) {
+            async generateDeterministicSequence(hmacKey, length) {
+                const sequence = Array.from({length}, (_, i) => i);
+                
+                // Детерминистическое перемешивание Fisher-Yates
+                for (let i = sequence.length - 1; i > 0; i--) {
                     const counter = new Uint8Array([i & 0xFF, (i >> 8) & 0xFF]);
                     const hmac = await crypto.subtle.sign('HMAC', hmacKey, counter);
                     const hmacArray = new Uint8Array(hmac);
-                    const j = (hmacArray[0] << 8 | hmacArray[1]) % (i + 1);
                     
-                    [array[i], array[j]] = [array[j], array[i]];
+                    // Детерминистический random index
+                    const randomValue = (hmacArray[0] << 24) | (hmacArray[1] << 16) | 
+                                       (hmacArray[2] << 8) | hmacArray[3];
+                    const j = Math.abs(randomValue) % (i + 1);
+                    
+                    [sequence[i], sequence[j]] = [sequence[j], sequence[i]];
                 }
+                
+                return sequence;
             }
 
             getRandomHomophoneIndex() {
@@ -651,8 +506,6 @@
             }
 
             async encryptData(plaintext, diffusionMode = 'cbc') {
-                const startTime = performance.now();
-                
                 try {
                     const encoder = new TextEncoder();
                     const plaintextBuffer = encoder.encode(plaintext);
@@ -682,7 +535,6 @@
                         }
                     }
                     
-                    this.performanceMetrics.encryptionTime = performance.now() - startTime;
                     return ciphertext;
                     
                 } catch (error) {
@@ -692,8 +544,6 @@
             }
 
             async decryptData(encryptedData, diffusionMode = 'cbc') {
-                const startTime = performance.now();
-                
                 try {
                     if (encryptedData.length % 2 !== 0) {
                         throw new Error('Invalid encrypted data length');
@@ -708,7 +558,7 @@
                         const homophone = this.base64ToValue(base64Pair);
                         
                         if (!this.inverseSbox.has(homophone)) {
-                            throw new Error(`Invalid homophone value: ${homophone}`);
+                            throw new Error(`Invalid homophone value: ${homophone} at position ${i}`);
                         }
                         
                         let decryptedByte = this.inverseSbox.get(homophone);
@@ -726,126 +576,12 @@
                         }
                     }
                     
-                    this.performanceMetrics.decryptionTime = performance.now() - startTime;
                     return new TextDecoder().decode(plaintextBuffer);
                     
                 } catch (error) {
                     console.error('Decryption failed:', error);
                     throw new Error('Decryption failed: ' + error.message);
                 }
-            }
-
-            getSBoxPreview() {
-                if (!this.sbox) return null;
-                
-                const preview = [];
-                for (let i = 0; i < 16; i++) {
-                    const row = [];
-                    for (let j = 0; j < 16; j++) {
-                        const homophone = this.sbox[i][j];
-                        row.push(this.valueToBase64(homophone));
-                    }
-                    preview.push(row);
-                }
-                return preview;
-            }
-
-            getPerformanceMetrics() {
-                return {
-                    sboxGeneration: this.performanceMetrics.sboxGeneration.toFixed(2) + 'ms',
-                    encryptionTime: this.performanceMetrics.encryptionTime.toFixed(2) + 'ms',
-                    decryptionTime: this.performanceMetrics.decryptionTime.toFixed(2) + 'ms',
-                    memoryUsage: this.performanceMetrics.memoryUsage + 'KB',
-                    sboxSize: '256×16 (' + (this.sbox ? this.sbox.length * 16 : 0) + ' values)',
-                    inverseSboxSize: this.inverseSbox ? this.inverseSbox.size + ' entries' : 'N/A'
-                };
-            }
-        }
-
-        class CipherTestSuite {
-            static calculateEntropy(data) {
-                const freq = new Array(64).fill(0);
-                const total = data.length;
-                
-                for (let i = 0; i < data.length; i++) {
-                    const charIndex = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(data[i]);
-                    if (charIndex >= 0) {
-                        freq[charIndex]++;
-                    }
-                }
-                
-                let entropy = 0;
-                for (let i = 0; i < 64; i++) {
-                    if (freq[i] > 0) {
-                        const p = freq[i] / total;
-                        entropy -= p * Math.log2(p);
-                    }
-                }
-                return entropy;
-            }
-
-            static testRandomness(data) {
-                if (data.length < 100) return "Need more data for analysis";
-                
-                const codes = [];
-                for (let i = 0; i < data.length; i++) {
-                    codes.push(data.charCodeAt(i));
-                }
-                
-                let sum = 0;
-                for (const code of codes) {
-                    sum += code;
-                }
-                const mean = sum / codes.length;
-                
-                let variance = 0;
-                for (const code of codes) {
-                    variance += Math.pow(code - mean, 2);
-                }
-                variance /= codes.length;
-                
-                return {
-                    mean: mean.toFixed(3),
-                    variance: variance.toFixed(3),
-                    idealMean: 82.5,
-                    idealVariance: 536.25
-                };
-            }
-
-            static runAllTests(data) {
-                const results = [];
-                
-                const entropy = this.calculateEntropy(data);
-                results.push({
-                    name: "Character Entropy Test",
-                    status: entropy > 5.9 ? "PASS" : "WARNING",
-                    message: `Entropy: ${entropy.toFixed(6)}/6.000000`,
-                    details: `Based on ${data.length} characters\nIdeal: >5.9 (perfect randomness for 64 symbols)`
-                });
-                
-                const randomness = this.testRandomness(data);
-                if (typeof randomness !== 'string') {
-                    const meanDiff = Math.abs(randomness.mean - randomness.idealMean).toFixed(2);
-                    
-                    results.push({
-                        name: "Statistical Randomness Test",
-                        status: meanDiff < 5 ? "PASS" : "WARNING",
-                        message: `Mean: ${randomness.mean} | Variance: ${randomness.variance}`,
-                        details: `Mean Δ: ${meanDiff} | Ideal mean: ${randomness.idealMean}, variance: ${randomness.idealVariance}`
-                    });
-                }
-                
-                // Additional tests
-                results.push({
-                    name: "Length Validation Test",
-                    status: data.length % 2 === 0 ? "PASS" : "FAIL",
-                    message: `Output length: ${data.length} characters`,
-                    details: data.length % 2 === 0 ? 
-                        "Valid even length (pairs of characters)" : 
-                        "Invalid odd length - should be pairs of characters"
-                });
-                
-                return results;
             }
         }
 
@@ -859,20 +595,7 @@
                 document.getElementById('encryptBtn').addEventListener('click', () => this.handleEncrypt());
                 document.getElementById('decryptBtn').addEventListener('click', () => this.handleDecrypt());
                 document.getElementById('clearBtn').addEventListener('click', () => this.handleClear());
-                document.getElementById('analyzeBtn').addEventListener('click', () => this.handleAnalyze());
                 document.getElementById('testBtn').addEventListener('click', () => this.handleTest());
-                
-                document.getElementById('performanceMode').addEventListener('change', (e) => {
-                    this.cipher.setPerformanceMode(e.target.value);
-                });
-                
-                document.getElementById('enableValidation').addEventListener('change', (e) => {
-                    this.cipher.enableValidation = e.target.checked;
-                });
-                
-                document.getElementById('diffusionMode').addEventListener('change', (e) => {
-                    this.cipher.setDiffusionMode(e.target.value);
-                });
             }
 
             async handleEncrypt() {
@@ -896,8 +619,6 @@
 
                     document.getElementById('outputData').textContent = result;
                     this.updateSecurityInfo('encrypt', result.length, inputData.length);
-                    this.updatePerformanceInfo();
-                    this.updateSBoxDisplay();
                     this.setStatus('ready', 'Encryption successful');
 
                 } catch (error) {
@@ -922,7 +643,6 @@
 
                     document.getElementById('outputData').textContent = result;
                     this.updateSecurityInfo('decrypt', result.length, inputData.length);
-                    this.updatePerformanceInfo();
                     this.setStatus('ready', 'Decryption successful');
 
                 } catch (error) {
@@ -933,30 +653,56 @@
             }
 
             async handleTest() {
-                this.setTestStatus('processing', 'Running comprehensive tests...');
+                this.setTestStatus('processing', 'Testing consistency...');
                 
                 try {
-                    const passphrase = "testpassword";
+                    const passphrase = document.getElementById('keyInput').value;
                     const testData = "hello";
+                    const iterations = parseInt(document.getElementById('iterations').value);
                     
-                    await this.cipher.initializeWithKey(passphrase, 100000);
-                    const encrypted = await this.cipher.encryptData(testData, 'cbc');
-                    const decrypted = await this.cipher.decryptData(encrypted, 'cbc');
+                    // Test 1: Multiple encryptions with same key
+                    await this.cipher.initializeWithKey(passphrase, iterations);
+                    const encrypted1 = await this.cipher.encryptData(testData, 'cbc');
+                    const encrypted2 = await this.cipher.encryptData(testData, 'cbc');
                     
-                    const testResults = CipherTestSuite.runAllTests(encrypted);
+                    // Test 2: Decryption consistency
+                    const decrypted1 = await this.cipher.decryptData(encrypted1, 'cbc');
+                    const decrypted2 = await this.cipher.decryptData(encrypted2, 'cbc');
                     
-                    // Add consistency test
-                    testResults.push({
-                        name: "Consistency Test",
-                        status: decrypted === testData ? "PASS" : "FAIL",
-                        message: `Decrypted: "${decrypted}"`,
-                        details: decrypted === testData ? 
-                            "Encryption/decryption consistency verified" : 
-                            "Inconsistency detected - decryption failed"
-                    });
+                    // Test 3: Page reload simulation
+                    const newCipher = new EnhancedHomophonicCipher();
+                    await newCipher.initializeWithKey(passphrase, iterations);
+                    const decryptedNew = await newCipher.decryptData(encrypted1, 'cbc');
                     
-                    this.displayTestResults(testResults);
-                    this.setTestStatus('ready', 'Tests completed');
+                    const results = [
+                        {
+                            name: "Encryption Consistency",
+                            status: encrypted1 !== encrypted2 ? "PASS" : "FAIL",
+                            message: `Different outputs: ${encrypted1 !== encrypted2}`,
+                            details: "Same input → Different outputs (non-deterministic encryption)"
+                        },
+                        {
+                            name: "Decryption Consistency 1",
+                            status: decrypted1 === testData ? "PASS" : "FAIL",
+                            message: `Decrypted: "${decrypted1}"`,
+                            details: "First encryption correctly decrypted"
+                        },
+                        {
+                            name: "Decryption Consistency 2", 
+                            status: decrypted2 === testData ? "PASS" : "FAIL",
+                            message: `Decrypted: "${decrypted2}"`,
+                            details: "Second encryption correctly decrypted"
+                        },
+                        {
+                            name: "Page Reload Simulation",
+                            status: decryptedNew === testData ? "PASS" : "FAIL",
+                            message: `Decrypted: "${decryptedNew}"`,
+                            details: "New cipher instance with same key correctly decrypts"
+                        }
+                    ];
+                    
+                    this.displayTestResults(results);
+                    this.setTestStatus('ready', 'Consistency tests completed');
                     
                 } catch (error) {
                     this.setTestStatus('error', 'Tests failed: ' + error.message);
@@ -973,64 +719,15 @@
                 
                 if (operation === 'encrypt') {
                     info += `Input: ${inputLength} bytes → Output: ${outputLength} chars\n`;
-                    info += `Expansion: ${(outputLength / (inputLength * 2)).toFixed(1)}x\n`;
+                    info += `Expansion: 2.0× (Base64 encoding)\n`;
                 } else {
                     info += `Output: ${outputLength} chars\n`;
                 }
                 
                 info += `S-Box: 256×16 homophones (4096 values)\n`;
-                info += `Alphabet: 64-character custom Base64\n`;
-                info += `Post-Quantum: Resistant to Grover's algorithm`;
+                info += `Deterministic generation: ✅ Guaranteed consistency`;
                 
                 document.getElementById('securityInfo').textContent = info;
-            }
-
-            updatePerformanceInfo() {
-                const metrics = this.cipher.getPerformanceMetrics();
-                let info = `S-Box Generation: ${metrics.sboxGeneration}\n`;
-                info += `Encryption Time: ${metrics.encryptionTime}\n`;
-                info += `Decryption Time: ${metrics.decryptionTime}\n`;
-                info += `Memory Usage: ${metrics.memoryUsage}\n`;
-                info += `S-Box Entries: ${metrics.sboxSize}\n`;
-                info += `Inverse S-Box: ${metrics.inverseSboxSize}`;
-                
-                document.getElementById('performanceInfo').textContent = info;
-            }
-
-            updateSBoxDisplay() {
-                const preview = this.cipher.getSBoxPreview();
-                if (!preview) return;
-
-                const grid = document.getElementById('sboxGrid');
-                grid.innerHTML = '';
-
-                // Header row
-                const emptyHeader = document.createElement('div');
-                emptyHeader.className = 'sbox-cell sbox-header';
-                grid.appendChild(emptyHeader);
-
-                for (let j = 0; j < 16; j++) {
-                    const header = document.createElement('div');
-                    header.className = 'sbox-cell sbox-header';
-                    header.textContent = j.toString(16).toUpperCase();
-                    grid.appendChild(header);
-                }
-
-                // Data rows
-                for (let i = 0; i < 16; i++) {
-                    const rowHeader = document.createElement('div');
-                    rowHeader.className = 'sbox-cell sbox-header';
-                    rowHeader.textContent = i.toString(16).toUpperCase();
-                    grid.appendChild(rowHeader);
-
-                    for (let j = 0; j < 16; j++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'sbox-cell';
-                        cell.textContent = preview[i][j];
-                        cell.title = `S-Box[${i.toString(16).toUpperCase()}][${j.toString(16).toUpperCase()}] = ${preview[i][j]}`;
-                        grid.appendChild(cell);
-                    }
-                }
             }
 
             displayTestResults(results) {
@@ -1039,9 +736,7 @@
                 
                 results.forEach(test => {
                     const testDiv = document.createElement('div');
-                    testDiv.className = `test-result ${test.status === 'PASS' ? 'test-pass' : 
-                                       test.status === 'FAIL' ? 'test-fail' : 
-                                       test.status === 'WARNING' ? 'test-warning' : 'test-info'}`;
+                    testDiv.className = `test-result ${test.status === 'PASS' ? 'test-pass' : 'test-fail'}`;
                     
                     testDiv.innerHTML = `
                         <strong>${test.name}</strong>: ${test.status}
@@ -1079,32 +774,9 @@
                 document.getElementById('inputData').value = '';
                 document.getElementById('outputData').textContent = '';
                 document.getElementById('securityInfo').textContent = '';
-                document.getElementById('performanceInfo').textContent = '';
                 document.getElementById('testResults').textContent = '';
-                document.getElementById('sboxGrid').innerHTML = '';
                 this.setStatus('ready', 'Ready');
                 this.setTestStatus('ready', 'Ready to test');
-            }
-
-            handleAnalyze() {
-                this.setStatus('processing', 'Analyzing security...');
-                
-                setTimeout(() => {
-                    this.setStatus('ready', 'Security analysis complete');
-                    const analysis = `
-Security Analysis Report:
-• 4096-value S-Box with 16 homophones per byte
-• HMAC-SHA512 based deterministic generation
-• PBKDF2 key derivation with passphrase-based salt
-• CBC mode diffusion with proper IV handling
-• Post-quantum resistance through homophonic properties
-• Non-deterministic encryption (semantic security)
-• Perfect secrecy properties for equal-length messages
-• Resistance to frequency analysis attacks
-• Grover's algorithm resistance: O(√(256^n)) complexity
-`;
-                    document.getElementById('securityInfo').textContent = analysis;
-                }, 1000);
             }
         }
 
