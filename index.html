@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Crypto S-Box</title>
+    <title>Correct Crypto S-Box</title>
     <style>
         body { font-family: monospace; margin: 20px; background: #0d1117; color: #c9d1d9; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -15,13 +15,11 @@
         .col { flex: 1; }
         .section { border: 1px solid #30363d; padding: 15px; border-radius: 5px; margin: 10px 0; }
         .config { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .test-pass { color: #3fb950; }
-        .test-fail { color: #f85149; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Enhanced Crypto S-Box with Proper CBC</h1>
+        <h1>🔒 Correct Crypto S-Box Implementation</h1>
         
         <div class="section">
             <h3>Key Configuration:</h3>
@@ -56,7 +54,7 @@
             <div class="col">
                 <div class="section">
                     <h3>Encryption:</h3>
-                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">Hello World Hello World Hello World</textarea>
+                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">Hello World</textarea>
                     <button onclick="encryptData()">Encrypt</button>
                     <div class="output" id="encryptOutput">Encrypted output will appear here</div>
                 </div>
@@ -71,12 +69,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="section">
-            <h3>Test Results:</h3>
-            <button onclick="runTests()">Run Tests (CBC vs ECB)</button>
-            <div class="output" id="testResults">Test results will appear here</div>
-        </div>
     </div>
 
     <script>
@@ -85,8 +77,6 @@
         let inverseBytePermutation = null;
         let inverseHomophonicSBox = null;
         let roundKeys = [];
-        let lastEncryptedData = [];
-        let lastEncryptionMode = '';
 
         function cryptoShuffle(array, keyBytes) {
             const result = [...array];
@@ -203,50 +193,38 @@
                     encryptedData.push(...Array.from(iv));
                 }
 
-                let previousCipherBlock = iv ? new Uint8Array([iv[0], iv[1]]) : null;
-
-                // Process each input byte and create 2-byte output blocks
+                // Process each input byte
                 for (let i = 0; i < data.length; i++) {
-                    let byteToEncrypt = data[i];
+                    let byte = data[i];
                     
-                    // CBC: XOR with previous cipher block (use appropriate byte)
-                    if (useCBC && previousCipherBlock) {
-                        byteToEncrypt ^= previousCipherBlock[i % 2];
-                    }
-
-                    // Multiple rounds of byte-to-byte substitution
-                    let processedByte = byteToEncrypt;
+                    // Apply rounds (this is the core encryption that must be reversible)
                     for (let round = 0; round < rounds - 1; round++) {
                         const roundKey = roundKeys[round];
-                        processedByte = bytePermutation[applyRoundKey(processedByte, roundKey, i)];
+                        byte = bytePermutation[applyRoundKey(byte, roundKey, i)];
                     }
 
-                    // Final round: byte-to-word homophonic substitution
+                    // Final round with homophonic substitution
                     const finalRoundKey = roundKeys[rounds - 1];
-                    processedByte = applyRoundKey(processedByte, finalRoundKey, i);
+                    byte = applyRoundKey(byte, finalRoundKey, i);
                     
                     const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                    const encryptedWord = homophonicSBox[processedByte][randomIndex];
+                    const encryptedWord = homophonicSBox[byte][randomIndex];
                     
-                    // Store the encrypted word as two bytes
-                    const highByte = encryptedWord >> 8;
-                    const lowByte = encryptedWord & 0xFF;
-                    encryptedData.push(highByte, lowByte);
-                    
-                    // Update previous cipher block for CBC (use the output bytes)
+                    // Apply CBC to the OUTPUT if enabled
                     if (useCBC) {
-                        previousCipherBlock = new Uint8Array([highByte, lowByte]);
+                        const previousBlock = i === 0 ? iv : [encryptedData[encryptedData.length - 2], encryptedData[encryptedData.length - 1]];
+                        const xoredWord = encryptedWord ^ ((previousBlock[0] << 8) | previousBlock[1]);
+                        encryptedData.push(xoredWord >> 8, xoredWord & 0xFF);
+                    } else {
+                        encryptedData.push(encryptedWord >> 8, encryptedWord & 0xFF);
                     }
                 }
 
-                lastEncryptedData = encryptedData;
-                lastEncryptionMode = useCBC ? 'CBC' : 'ECB';
-                
                 const hexOutput = encryptedData.map(byte => byte.toString(16).padStart(2, '0'));
                 const result = hexOutput.join(' ');
                 
-                let outputHTML = `<strong>Encrypted Hex (${encryptedData.length} bytes):</strong><br>${result}<br>`;
-                outputHTML += `<strong>Mode:</strong> ${lastEncryptionMode}<br>`;
+                let outputHTML = `<strong>Encrypted Hex:</strong> ${result}<br>`;
+                outputHTML += `<strong>Mode:</strong> ${useCBC ? 'CBC' : 'ECB'}<br>`;
                 outputHTML += `<strong>Rounds:</strong> ${rounds}<br>`;
                 if (useCBC && iv) {
                     outputHTML += `<strong>IV:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
@@ -301,38 +279,30 @@
                 }
 
                 const decryptedBytes = [];
-                let previousCipherBlock = iv ? new Uint8Array([iv[0], iv[1]]) : null;
                 
-                // Process each 2-byte output block back to 1 input byte
                 for (let i = dataStart; i < encryptedBytes.length; i += 2) {
                     if (i + 1 >= encryptedBytes.length) break;
                     
-                    const highByte = encryptedBytes[i];
-                    const lowByte = encryptedBytes[i + 1];
-                    const encryptedWord = (highByte << 8) | lowByte;
+                    let encryptedWord = (encryptedBytes[i] << 8) | encryptedBytes[i + 1];
                     
-                    // Reverse final round: word-to-byte
+                    // Reverse CBC if enabled
+                    if (useCBC) {
+                        const previousBlock = i === dataStart ? iv : [encryptedBytes[i - 2], encryptedBytes[i - 1]];
+                        encryptedWord ^= ((previousBlock[0] << 8) | previousBlock[1]);
+                    }
+
+                    // Reverse final round
                     const containerId = inverseHomophonicSBox[encryptedWord];
                     const finalRoundKey = roundKeys[rounds - 1];
-                    let processedByte = applyRoundKey(containerId, finalRoundKey, i);
+                    let byte = applyRoundKey(containerId, finalRoundKey, i);
 
                     // Reverse intermediate rounds
                     for (let round = rounds - 2; round >= 0; round--) {
                         const roundKey = roundKeys[round];
-                        processedByte = applyRoundKey(inverseBytePermutation[processedByte], roundKey, i);
+                        byte = applyRoundKey(inverseBytePermutation[byte], roundKey, i);
                     }
 
-                    // CBC: XOR with previous cipher block
-                    if (useCBC && previousCipherBlock) {
-                        processedByte ^= previousCipherBlock[((i - dataStart) / 2) % 2];
-                    }
-
-                    decryptedBytes.push(processedByte);
-                    
-                    // Update previous cipher block for next iteration
-                    if (useCBC) {
-                        previousCipherBlock = new Uint8Array([highByte, lowByte]);
-                    }
+                    decryptedBytes.push(byte);
                 }
 
                 const decoder = new TextDecoder();
@@ -340,112 +310,11 @@
                 
                 document.getElementById('decryptOutput').innerHTML = 
                     `<strong>Decrypted Text:</strong> ${decryptedText}<br>
-                     <strong>Bytes:</strong> ${decryptedBytes.length}<br>
                      <strong>Mode:</strong> ${useCBC ? 'CBC' : 'ECB'}`;
 
             } catch (error) {
                 document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
             }
-        }
-
-        function runTests() {
-            if (lastEncryptedData.length === 0) {
-                alert('Please encrypt some data first');
-                return;
-            }
-
-            const testResults = document.getElementById('testResults');
-            testResults.innerHTML = 'Running tests...';
-
-            // Test with the same input in both modes
-            const testInput = "Hello World Hello World Hello World";
-            
-            // Store current settings
-            const currentMode = document.getElementById('cbcMode').value;
-            const currentRounds = document.getElementById('roundsCount').value;
-            
-            // Test ECB
-            document.getElementById('cbcMode').value = 'off';
-            document.getElementById('encryptInput').value = testInput;
-            
-            setTimeout(() => {
-                encryptData();
-                setTimeout(() => {
-                    const ecbResult = [...lastEncryptedData];
-                    const ecbMode = lastEncryptionMode;
-                    
-                    // Test CBC
-                    document.getElementById('cbcMode').value = 'on';
-                    setTimeout(() => {
-                        encryptData();
-                        setTimeout(() => {
-                            const cbcResult = [...lastEncryptedData];
-                            
-                            // Compare results (remove IV from CBC for comparison)
-                            const ecbData = ecbResult;
-                            const cbcData = cbcResult.slice(2); // Remove IV
-                            
-                            let html = `<strong>Comparison Test:</strong><br>`;
-                            html += `<strong>Input:</strong> "${testInput}"<br>`;
-                            html += `<strong>ECB output:</strong> ${ecbData.length} bytes<br>`;
-                            html += `<strong>CBC output:</strong> ${cbcData.length} bytes<br>`;
-                            html += `<strong>Identical outputs:</strong> ${arraysEqual(ecbData, cbcData) ? 'YES' : 'NO'}<br><br>`;
-                            
-                            html += `<strong>CBC is working:</strong> `;
-                            html += arraysEqual(ecbData, cbcData) ? 
-                                '<span class="test-fail">NO (CBC not functioning)</span>' : 
-                                '<span class="test-pass">YES (CBC working properly)</span>';
-                            
-                            // Run entropy tests
-                            html += `<br><br><strong>Entropy Analysis:</strong><br>`;
-                            html += analyzeEntropy(ecbData, "ECB");
-                            html += analyzeEntropy(cbcData, "CBC");
-                            
-                            testResults.innerHTML = html;
-                            
-                            // Restore original settings
-                            document.getElementById('cbcMode').value = currentMode;
-                            document.getElementById('roundsCount').value = currentRounds;
-                            
-                        }, 100);
-                    }, 100);
-                }, 100);
-            }, 100);
-        }
-
-        function analyzeEntropy(data, mode) {
-            if (data.length === 0) return `${mode}: No data<br>`;
-            
-            // Byte frequency analysis
-            const byteCounts = new Array(256).fill(0);
-            for (const byte of data) {
-                byteCounts[byte]++;
-            }
-            
-            // Entropy calculation
-            let entropy = 0;
-            for (let i = 0; i < 256; i++) {
-                if (byteCounts[i] > 0) {
-                    const p = byteCounts[i] / data.length;
-                    entropy -= p * Math.log2(p);
-                }
-            }
-            
-            // Repeated bytes count
-            let repeats = 0;
-            for (let i = 1; i < data.length; i++) {
-                if (data[i] === data[i - 1]) repeats++;
-            }
-            
-            return `${mode}: Entropy = ${entropy.toFixed(4)}/8.000, Repeats = ${(repeats/data.length*100).toFixed(2)}%<br>`;
-        }
-
-        function arraysEqual(a, b) {
-            if (a.length !== b.length) return false;
-            for (let i = 0; i < a.length; i++) {
-                if (a[i] !== b[i]) return false;
-            }
-            return true;
         }
 
         function copyToDecrypt(hexText) {
