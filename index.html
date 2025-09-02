@@ -3,59 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto-Strong Homophonic S-Box with Permutation</title>
+    <title>Crypto-Strong Homophonic S-Box</title>
     <style>
         body { font-family: monospace; margin: 20px; background: #0d1117; color: #c9d1d9; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        textarea, input { width: 100%; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        textarea, input { width: 100%; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; margin: 5px 0; }
         button { background: #238636; color: white; border: none; padding: 10px 15px; cursor: pointer; margin: 5px; }
         button:hover { background: #2ea043; }
         .output { background: #161b22; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .row { display: flex; margin: 10px 0; }
-        .col { flex: 1; padding: 10px; }
+        .row { display: flex; margin: 10px 0; gap: 20px; }
+        .col { flex: 1; }
+        .section { border: 1px solid #30363d; padding: 15px; border-radius: 5px; margin: 10px 0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Homophonic Cipher with AES-like SubBytes</h1>
+        <h1>🔒 Homophonic Cipher S-Box Implementation</h1>
         
-        <div class="row">
-            <div class="col">
-                <h3>Key Input:</h3>
-                <input type="password" id="keyInput" placeholder="Enter encryption key" value="my-secret-key">
-                <button onclick="generateSBox()">Generate S-Box from Key</button>
-                <button onclick="encryptData()">Encrypt</button>
-                <button onclick="decryptData()">Decrypt</button>
-            </div>
+        <div class="section">
+            <h3>Key Configuration:</h3>
+            <input type="password" id="keyInput" placeholder="Enter encryption key" value="my-secret-key">
+            <button onclick="generateSBox()">Generate S-Box from Key</button>
+            <div class="output" id="status">S-Box not generated yet</div>
         </div>
 
         <div class="row">
             <div class="col">
-                <h3>Input Text:</h3>
-                <textarea id="inputText" rows="4" placeholder="Enter text to encrypt">Hello, World!</textarea>
+                <div class="section">
+                    <h3>Encryption:</h3>
+                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">Hello, World!</textarea>
+                    <button onclick="encryptData()">Encrypt</button>
+                    <div class="output" id="encryptOutput">Encrypted output will appear here</div>
+                </div>
             </div>
+            
             <div class="col">
-                <h3>Output:</h3>
-                <div class="output" id="output"></div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <h3>S-Box Status:</h3>
-                <div class="output" id="status">S-Box not generated yet</div>
+                <div class="section">
+                    <h3>Decryption:</h3>
+                    <textarea id="decryptInput" rows="4" placeholder="Paste encrypted hex here"></textarea>
+                    <button onclick="decryptData()">Decrypt</button>
+                    <div class="output" id="decryptOutput">Decrypted output will appear here</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let bytePermutation = null;    // SubBytes перестановка: 256 байт → 256 байт
-        let homophonicSBox = null;     // Омофонический S-Box: 256 контейнеров → 256 омофонов
-        let inverseBytePermutation = null; // Обратная перестановка байтов
-        let inverseHomophonicSBox = null;  // Обратный S-Box для дешифрования
+        let bytePermutation = null;
+        let homophonicSBox = null;
+        let inverseBytePermutation = null;
+        let inverseHomophonicSBox = null;
 
-        // Crypto-safe Fisher-Yates shuffle
         function cryptoShuffle(array, keyBytes) {
             const result = [...array];
             for (let i = result.length - 1; i > 0; i--) {
@@ -66,7 +64,6 @@
             return result;
         }
 
-        // Generate both permutations from key
         async function generateSBox() {
             const key = document.getElementById('keyInput').value;
             if (!key) {
@@ -81,37 +78,29 @@
                 const encoder = new TextEncoder();
                 const keyData = encoder.encode(key);
                 
-                // Import key for HMAC
                 const cryptoKey = await crypto.subtle.importKey(
-                    'raw',
-                    keyData,
-                    { name: 'HMAC', hash: 'SHA-512' },
-                    false,
-                    ['sign']
+                    'raw', keyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
                 );
 
-                // Generate seeds for both permutations
                 const seed1 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('byte-permutation'));
                 const seed2 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('homophonic-sbox'));
                 
                 const seedBytes1 = new Uint8Array(seed1);
                 const seedBytes2 = new Uint8Array(seed2);
 
-                // 1. Create and shuffle byte permutation (SubBytes)
+                // Byte permutation
                 const byteArray = Array.from({length: 256}, (_, i) => i);
                 bytePermutation = cryptoShuffle(byteArray, Array.from(seedBytes1));
                 
-                // Create inverse permutation for decryption
                 inverseBytePermutation = Array(256);
                 for (let i = 0; i < 256; i++) {
                     inverseBytePermutation[bytePermutation[i]] = i;
                 }
 
-                // 2. Create and shuffle homophonic S-Box
+                // Homophonic S-Box
                 const wordArray = Array.from({length: 65536}, (_, i) => i);
                 const shuffledWords = cryptoShuffle(wordArray, Array.from(seedBytes2));
 
-                // Build homophonic S-Box structure
                 homophonicSBox = {};
                 inverseHomophonicSBox = {};
 
@@ -122,27 +111,25 @@
                         if (wordIndex < shuffledWords.length) {
                             const word = shuffledWords[wordIndex++];
                             homophonicSBox[containerId].push(word);
-                            inverseHomophonicSBox[word] = containerId; // Reverse mapping
+                            inverseHomophonicSBox[word] = containerId;
                         }
                     }
                 }
 
-                statusElement.textContent = 'S-Box generated! Byte permutation: 256→256, Homophonic: 256×256→65536';
+                statusElement.textContent = 'S-Box generated successfully! Ready for encryption/decryption.';
 
             } catch (error) {
                 statusElement.textContent = 'Error: ' + error.message;
-                console.error(error);
             }
         }
 
-        // Encrypt with proper AES-like substitution
         async function encryptData() {
             if (!bytePermutation || !homophonicSBox) {
                 alert('Please generate S-Box first');
                 return;
             }
 
-            const inputText = document.getElementById('inputText').value;
+            const inputText = document.getElementById('encryptInput').value;
             if (!inputText) {
                 alert('Please enter text to encrypt');
                 return;
@@ -152,80 +139,81 @@
                 const encoder = new TextEncoder();
                 const data = encoder.encode(inputText);
                 
-                let output = [];
+                let encryptedWords = [];
                 let hexOutput = [];
 
                 for (let i = 0; i < data.length; i++) {
                     const originalByte = data[i];
-                    
-                    // 1. AES-like SubBytes: нелинейная замена байта
                     const permutedByte = bytePermutation[originalByte];
                     
-                    // 2. Homophonic substitution: выбираем случайный омофон
-                    if (homophonicSBox[permutedByte]) {
-                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                        const encryptedWord = homophonicSBox[permutedByte][randomIndex];
-                        
-                        output.push(encryptedWord);
-                        hexOutput.push(encryptedWord.toString(16).padStart(4, '0'));
-                    }
+                    const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
+                    const encryptedWord = homophonicSBox[permutedByte][randomIndex];
+                    
+                    encryptedWords.push(encryptedWord);
+                    hexOutput.push(encryptedWord.toString(16).padStart(4, '0'));
                 }
 
-                document.getElementById('output').innerHTML = 
-                    `<strong>Encrypted (hex):</strong> ${hexOutput.join(' ')}<br><br>
-                     <strong>Words:</strong> ${output.join(', ')}`;
+                const result = hexOutput.join(' ');
+                document.getElementById('encryptOutput').innerHTML = 
+                    `<strong>Encrypted Hex:</strong> ${result}<br>
+                     <strong>Word Count:</strong> ${encryptedWords.length}<br>
+                     <button onclick="copyToDecrypt('${result}')">Copy to Decrypt Input</button>`;
 
             } catch (error) {
-                document.getElementById('output').textContent = 'Encryption error: ' + error.message;
+                document.getElementById('encryptOutput').textContent = 'Encryption error: ' + error.message;
             }
         }
 
-        // Decrypt with inverse operations
+        function copyToDecrypt(hexText) {
+            document.getElementById('decryptInput').value = hexText;
+        }
+
         async function decryptData() {
             if (!inverseBytePermutation || !inverseHomophonicSBox) {
                 alert('Please generate S-Box first');
                 return;
             }
 
-            const outputText = document.getElementById('output').textContent;
-            const hexMatch = outputText.match(/Encrypted \(hex\): ([0-9a-f ]+)/);
-            
-            if (!hexMatch) {
-                alert('No encrypted data found');
+            const hexText = document.getElementById('decryptInput').value.trim();
+            if (!hexText) {
+                alert('Please enter encrypted hex data');
                 return;
             }
 
             try {
-                const hexValues = hexMatch[1].split(' ').filter(x => x);
-                const decoder = new TextDecoder();
+                const hexValues = hexText.split(/\s+/).filter(x => x);
                 let decryptedBytes = [];
+                let invalidWords = 0;
 
                 for (const hexValue of hexValues) {
                     const encryptedWord = parseInt(hexValue, 16);
                     
-                    // 1. Reverse homophonic substitution: находим контейнер
+                    if (isNaN(encryptedWord) || encryptedWord < 0 || encryptedWord > 65535) {
+                        invalidWords++;
+                        continue;
+                    }
+
                     if (inverseHomophonicSBox[encryptedWord] !== undefined) {
                         const permutedByte = inverseHomophonicSBox[encryptedWord];
-                        
-                        // 2. Reverse SubBytes: обратная перестановка
                         const originalByte = inverseBytePermutation[permutedByte];
                         decryptedBytes.push(originalByte);
+                    } else {
+                        invalidWords++;
                     }
                 }
 
+                const decoder = new TextDecoder();
                 const decryptedText = decoder.decode(new Uint8Array(decryptedBytes));
-                document.getElementById('output').innerHTML += 
-                    `<br><br><strong>Decrypted:</strong> ${decryptedText}`;
+                
+                document.getElementById('decryptOutput').innerHTML = 
+                    `<strong>Decrypted Text:</strong> ${decryptedText}<br>
+                     <strong>Bytes Decrypted:</strong> ${decryptedBytes.length}<br>
+                     <strong>Invalid Words:</strong> ${invalidWords}`;
 
             } catch (error) {
-                document.getElementById('output').textContent += '\nDecryption error: ' + error.message;
+                document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
             }
         }
-
-        // Initialize
-        document.getElementById('inputText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') encryptData();
-        });
     </script>
 </body>
 </html>
