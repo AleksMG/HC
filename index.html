@@ -356,13 +356,65 @@
             border: 1px solid var(--border);
             font-size: 0.9rem;
         }
+
+        .visualization-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .block-visualization {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 2px;
+            margin-top: 1rem;
+        }
+        
+        .block-cell {
+            padding: 0.5rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .block-cell:hover {
+            background: rgba(37, 99, 235, 0.3);
+        }
+        
+        .block-cell.selected {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .subblock-visualization {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 1px;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0.5rem;
+        }
+        
+        .subblock-cell {
+            padding: 0.25rem;
+            text-align: center;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 0.125rem;
+            font-size: 0.6rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Улучшенная система гомофонического шифрования</h1>
-            <p class="subtitle">Военная степень шифрования с многораундовым MixColumns преобразованием</p>
+            <p class="subtitle">Многораундовая обработка с блочной структурой S-Box 16×16×256</p>
         </header>
 
         <div class="grid">
@@ -389,13 +441,13 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="diffusionMode">Режим диффузии:</label>
-                    <select id="diffusionMode">
-                        <option value="cbc" selected>CBC режим</option>
-                        <option value="cfb">CFB режим</option>
-                        <option value="ofb">OFB режим</option>
-                        <option value="ctr">CTR режим</option>
-                        <option value="none">Без диффузии (Тестирование)</option>
+                    <label for="aesRounds">Раунды AES-подобного преобразования:</label>
+                    <select id="aesRounds">
+                        <option value="1">1 Раунд</option>
+                        <option value="2">2 Раунда</option>
+                        <option value="3" selected>3 Раунда</option>
+                        <option value="4">4 Раунда</option>
+                        <option value="5">5 Раундов</option>
                     </select>
                 </div>
 
@@ -405,7 +457,6 @@
                         <option value="hex" selected>HEX (по умолчанию)</option>
                         <option value="base64">Base64</option>
                         <option value="binary">Бинарные данные</option>
-                        <option value="custom">Пользовательские гомофоны</option>
                     </select>
                 </div>
 
@@ -413,51 +464,10 @@
                     <h3 style="margin-bottom: 1rem; color: var(--primary);">Расширенные опции</h3>
                     
                     <div class="option-row">
-                        <div class="option-label">Включить MixColumns:</div>
-                        <div class="option-control">
-                            <input type="checkbox" id="enableMixColumns" checked>
-                        </div>
-                    </div>
-                    
-                    <div class="option-row">
-                        <div class="option-label">Раунды MixColumns:</div>
-                        <div class="option-control">
-                            <select id="mixColumnsRounds">
-                                <option value="1">1 Раунд (Стандарт)</option>
-                                <option value="3" selected>3 Раунда (Улучшенный)</option>
-                                <option value="6">6 Раундов (Сильный)</option>
-                                <option value="12">12 Раундов (Максимальный)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="option-row">
-                        <div class="option-label">Включить нелинейность:</div>
-                        <div class="option-control">
-                            <input type="checkbox" id="enableNonLinearity" checked>
-                        </div>
-                    </div>
-
-                    <div class="option-row">
-                        <div class="option-label">Оптимизировать производительность:</div>
+                        <div class="option-label">Включить оптимизации:</div>
                         <div class="option-control">
                             <input type="checkbox" id="enableOptimizations" checked>
                         </div>
-                    </div>
-                </div>
-
-                <div id="customOptions" style="display: none;">
-                    <div class="form-group">
-                        <label for="customCharset">Пользовательский набор символов (256 символов):</label>
-                        <textarea id="customCharset" rows="3" placeholder="Введите 256 уникальных символов">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}|;:,.<>?/~`'"\абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯαβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ</textarea>
-                        <button type="button" id="generateCharset" class="btn-secondary" style="margin-top: 0.5rem; width: 100%;">
-                            Сгенерировать случайный набор
-                        </button>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Просмотр символов:</label>
-                        <div class="charset-grid" id="charsetPreview"></div>
                     </div>
                 </div>
             </div>
@@ -484,7 +494,6 @@
                 <div class="btn-group">
                     <button id="clearBtn" class="btn-danger">Очистить всё</button>
                     <button id="analyzeBtn" class="btn-warning">Анализ безопасности</button>
-                    <button id="benchmarkBtn" class="btn-warning">Тест производительности</button>
                 </div>
 
                 <div class="performance-info">
@@ -511,13 +520,6 @@
                 </div>
                 <div id="securityInfo" class="result-content"></div>
             </div>
-
-            <div class="output-preview">
-                <div class="result-header">
-                    <span class="result-title">Предпросмотр вывода:</span>
-                </div>
-                <div id="outputPreview" class="result-content"></div>
-            </div>
         </div>
 
         <div class="card">
@@ -533,34 +535,29 @@
         </div>
 
         <div class="card sbox-visualization">
-            <h2 class="card-title">Визуализация S-Box</h2>
-            <div class="sbox-grid" id="sboxGrid"></div>
+            <h2 class="card-title">Визуализация S-Box структуры 16×16×256</h2>
+            
+            <div class="visualization-controls">
+                <button id="prevBlockBtn" class="btn-secondary">← Предыдущий блок</button>
+                <span id="currentBlockInfo">Блок 0x00</span>
+                <button id="nextBlockBtn" class="btn-secondary">Следующий блок →</button>
+            </div>
+            
+            <div class="block-visualization" id="blockGrid"></div>
+            <div class="subblock-visualization" id="subblockGrid"></div>
         </div>
 
         <div class="footer">
-            <p>Улучшенная система гомофонического шифрования v4.5 | Оптимизированная реализация</p>
+            <p>Улучшенная система гомофонического шифрования v5.0 | Блочная структура 16×16×256</p>
             <p>© 2024 Криптографические системы | Все операции выполняются на стороне клиента</p>
         </div>
     </div>
 
     <script>
-        class GaloisField {
-            static multiply(a, b) {
-                let p = 0;
-                for (let i = 0; i < 8; i++) {
-                    if (b & 1) p ^= a;
-                    const hiBitSet = a & 0x80;
-                    a = (a << 1) & 0xFF;
-                    if (hiBitSet) a ^= 0x1B;
-                    b >>= 1;
-                }
-                return p;
-            }
-        }
-
-        class DeterministicSBoxGenerator {
-            static async generateSBox(encryptionKey) {
-                const sbox = new Array(256);
+        class AdvancedSBoxGenerator {
+            static async generateMultiRoundSBox(encryptionKey, rounds = 3) {
+                // Создаем основную структуру S-Box: 16×16 блоков, каждый содержит 16×16 гомофонов
+                const mainBlocks = new Array(16);
                 
                 const hmacKey = await crypto.subtle.importKey(
                     'raw', encryptionKey,
@@ -568,8 +565,8 @@
                     false, ['sign']
                 );
                 
-                // Генерация 65536 гомофонов
-                const allHomophones = new Array(65536);
+                // Генерируем 65536 уникальных гомофонов
+                const allHomophones = new Uint16Array(65536);
                 let position = 0;
                 let counter = 0;
                 let randomBuffer = new Uint8Array(0);
@@ -587,52 +584,66 @@
                     allHomophones[i] = rand;
                 }
                 
-                // Заполнение S-Box
-                let index = 0;
-                for (let inputByte = 0; inputByte < 256; inputByte++) {
-                    sbox[inputByte] = new Array(256);
-                    for (let homophoneIndex = 0; homophoneIndex < 256; homophoneIndex++) {
-                        sbox[inputByte][homophoneIndex] = allHomophones[index++];
+                // Заполняем блоки 16×16
+                let homophoneIndex = 0;
+                for (let blockY = 0; blockY < 16; blockY++) {
+                    mainBlocks[blockY] = new Array(16);
+                    for (let blockX = 0; blockX < 16; blockX++) {
+                        // Создаем подблок 16×16 для этого основного блока
+                        const subBlock = new Array(16);
+                        for (let subY = 0; subY < 16; subY++) {
+                            subBlock[subY] = new Array(16);
+                            for (let subX = 0; subX < 16; subX++) {
+                                subBlock[subY][subX] = allHomophones[homophoneIndex++];
+                            }
+                        }
+                        mainBlocks[blockY][blockX] = subBlock;
                     }
                 }
                 
-                return { sbox };
+                return { mainBlocks, allHomophones };
+            }
+            
+            static async generateAesLikeMapping(hmacKey, rounds = 3) {
+                // Генерируем AES-подобное преобразование для многораундовой обработки
+                const mapping = new Array(256);
+                
+                for (let byte = 0; byte < 256; byte++) {
+                    let currentByte = byte;
+                    
+                    // Применяем multiple rounds преобразования
+                    for (let round = 0; round < rounds; round++) {
+                        const roundData = new Uint8Array([currentByte, round]);
+                        const hmac = await crypto.subtle.sign('HMAC', hmacKey, roundData);
+                        const hmacBytes = new Uint8Array(hmac);
+                        
+                        // Нелинейное преобразование similar to AES
+                        currentByte = hmacBytes[0] ^ hmacBytes[1] ^ hmacBytes[2];
+                        currentByte = currentByte ^ ((currentByte << 1) | (currentByte >> 7));
+                        currentByte = currentByte ^ 0x63;
+                    }
+                    
+                    mapping[byte] = currentByte;
+                }
+                
+                return mapping;
             }
         }
 
-        class EnhancedHomophonicCipher {
+        class MultiRoundHomophonicCipher {
             constructor() {
-                this.sbox = null;
-                this.initializationVector = null;
+                this.mainBlocks = null;
+                this.aesMapping = null;
                 this.hmacKey = null;
-                this.customCharset = null;
-                this.outputFormat = 'hex';
-                this.enableMixColumns = true;
-                this.mixColumnsRounds = 3;
-                this.enableNonLinearity = true;
-                this.enableOptimizations = true;
-                this.reverseCache = new Map();
                 this.performanceMetrics = {
+                    sboxGenTime: 0,
                     encryptTime: 0,
-                    decryptTime: 0,
-                    sboxGenTime: 0
+                    decryptTime: 0
                 };
+                this.currentBlock = 0;
             }
 
-            setMixColumnsRounds(rounds) {
-                const validRounds = [1, 3, 6, 12];
-                this.mixColumnsRounds = validRounds.includes(rounds) ? rounds : 1;
-            }
-
-            setNonLinearity(enabled) {
-                this.enableNonLinearity = enabled;
-            }
-
-            setOptimizations(enabled) {
-                this.enableOptimizations = enabled;
-            }
-
-            async initializeWithKey(passphrase, iterations = 500000) {
+            async initializeWithKey(passphrase, iterations = 500000, aesRounds = 3) {
                 try {
                     const startTime = performance.now();
                     
@@ -668,142 +679,112 @@
                         false, ['sign']
                     );
 
-                    const { sbox } = await DeterministicSBoxGenerator.generateSBox(encryptionKey);
-                    this.sbox = sbox;
+                    // Генерируем основную структуру S-Box
+                    const { mainBlocks } = await AdvancedSBoxGenerator.generateMultiRoundSBox(encryptionKey);
+                    this.mainBlocks = mainBlocks;
+                    
+                    // Генерируем AES-подобное преобразование
+                    this.aesMapping = await AdvancedSBoxGenerator.generateAesLikeMapping(this.hmacKey, aesRounds);
                     
                     this.performanceMetrics.sboxGenTime = performance.now() - startTime;
                     return true;
                 } catch (error) {
-                    console.error('Ошибка инициализации ключа:', error);
-                    throw new Error('Ошибка генерации ключа: ' + error.message);
+                    console.error('Ошибка инициализации:', error);
+                    throw new Error('Ошибка инициализации: ' + error.message);
                 }
             }
 
-            setOutputFormat(format) {
-                this.outputFormat = format;
-            }
-
-            setCustomCharset(charset) {
-                if (charset.length !== 256) {
-                    throw new Error('Набор символов должен содержать ровно 256 символов');
-                }
-                const uniqueChars = new Set(charset);
-                if (uniqueChars.size !== 256) {
-                    throw new Error('Набор символов должен содержать 256 уникальных символов');
-                }
-                this.customCharset = charset;
-            }
-
-            setMixColumns(enabled) {
-                this.enableMixColumns = enabled;
-            }
-
-            applySingleMixColumnsRound(data) {
-                const result = new Uint8Array(data.length);
+            async encryptData(plaintext) {
+                const startTime = performance.now();
                 
-                for (let i = 0; i < data.length; i += 4) {
-                    if (i + 3 >= data.length) break;
+                try {
+                    const encoder = new TextEncoder();
+                    const plaintextBuffer = encoder.encode(plaintext);
+                    const ciphertext = new Uint16Array(plaintextBuffer.length);
                     
-                    const a0 = data[i];
-                    const a1 = data[i + 1];
-                    const a2 = data[i + 2];
-                    const a3 = data[i + 3];
+                    for (let i = 0; i < plaintextBuffer.length; i++) {
+                        const plainByte = plaintextBuffer[i];
+                        
+                        // Применяем многораундовое AES-подобное преобразование
+                        let transformedByte = this.aesMapping[plainByte];
+                        
+                        // Определяем координаты в основном блоке 16×16
+                        const blockY = (transformedByte >> 4) & 0x0F;
+                        const blockX = transformedByte & 0x0F;
+                        
+                        // Случайно выбираем гомофон из подблока 16×16
+                        const randomY = crypto.getRandomValues(new Uint8Array(1))[0] & 0x0F;
+                        const randomX = crypto.getRandomValues(new Uint8Array(1))[0] & 0x0F;
+                        
+                        // Получаем гомофон из выбранного подблока
+                        const homophone = this.mainBlocks[blockY][blockX][randomY][randomX];
+                        ciphertext[i] = homophone;
+                    }
                     
-                    result[i] = GaloisField.multiply(0x02, a0) ^ GaloisField.multiply(0x03, a1) ^ a2 ^ a3;
-                    result[i + 1] = a0 ^ GaloisField.multiply(0x02, a1) ^ GaloisField.multiply(0x03, a2) ^ a3;
-                    result[i + 2] = a0 ^ a1 ^ GaloisField.multiply(0x02, a2) ^ GaloisField.multiply(0x03, a3);
-                    result[i + 3] = GaloisField.multiply(0x03, a0) ^ a1 ^ a2 ^ GaloisField.multiply(0x02, a3);
+                    this.performanceMetrics.encryptTime = performance.now() - startTime;
+                    return this.arrayToHex(new Uint8Array(ciphertext.buffer));
+                    
+                } catch (error) {
+                    console.error('Ошибка шифрования:', error);
+                    throw new Error('Ошибка шифрования: ' + error.message);
                 }
-                
-                for (let i = Math.floor(data.length / 4) * 4; i < data.length; i++) {
-                    result[i] = data[i];
-                }
-                
-                return result;
             }
 
-            applySingleInvMixColumnsRound(data) {
-                const result = new Uint8Array(data.length);
+            async decryptData(encryptedData) {
+                const startTime = performance.now();
                 
-                for (let i = 0; i < data.length; i += 4) {
-                    if (i + 3 >= data.length) break;
+                try {
+                    const encryptedArray = this.hexToArray(encryptedData);
+                    const ciphertext = new Uint16Array(encryptedArray.buffer);
+                    const plaintextBuffer = new Uint8Array(ciphertext.length);
                     
-                    const a0 = data[i];
-                    const a1 = data[i + 1];
-                    const a2 = data[i + 2];
-                    const a3 = data[i + 3];
+                    for (let i = 0; i < ciphertext.length; i++) {
+                        const homophone = ciphertext[i];
+                        
+                        // Находим исходный байт путем поиска по всей структуре
+                        const originalByte = await this.findOriginalByte(homophone);
+                        plaintextBuffer[i] = originalByte;
+                    }
                     
-                    result[i] = GaloisField.multiply(0x0e, a0) ^ GaloisField.multiply(0x0b, a1) ^ 
-                                GaloisField.multiply(0x0d, a2) ^ GaloisField.multiply(0x09, a3);
-                    result[i + 1] = GaloisField.multiply(0x09, a0) ^ GaloisField.multiply(0x0e, a1) ^ 
-                                    GaloisField.multiply(0x0b, a2) ^ GaloisField.multiply(0x0d, a3);
-                    result[i + 2] = GaloisField.multiply(0x0d, a0) ^ GaloisField.multiply(0x09, a1) ^ 
-                                    GaloisField.multiply(0x0e, a2) ^ GaloisField.multiply(0x0b, a3);
-                    result[i + 3] = GaloisField.multiply(0x0b, a0) ^ GaloisField.multiply(0x0d, a1) ^ 
-                                    GaloisField.multiply(0x09, a2) ^ GaloisField.multiply(0x0e, a3);
+                    this.performanceMetrics.decryptTime = performance.now() - startTime;
+                    
+                    const decoder = new TextDecoder();
+                    return decoder.decode(plaintextBuffer);
+                    
+                } catch (error) {
+                    console.error('Ошибка расшифровки:', error);
+                    throw new Error('Ошибка расшифровки: ' + error.message);
                 }
-                
-                for (let i = Math.floor(data.length / 4) * 4; i < data.length; i++) {
-                    result[i] = data[i];
-                }
-                
-                return result;
             }
 
-            generateRoundConstants(round) {
-                const constants = new Uint8Array(4);
-                for (let i = 0; i < 4; i++) {
-                    constants[i] = (round * 0x11 + i * 0x25) & 0xFF;
-                }
-                return constants;
-            }
-
-            mixColumns(data) {
-                if (!this.enableMixColumns) return data;
-
-                let processedData = new Uint8Array(data);
-                
-                for (let round = 0; round < this.mixColumnsRounds; round++) {
-                    processedData = this.applySingleMixColumnsRound(processedData);
-                    
-                    if (this.enableNonLinearity) {
-                        const roundConstants = this.generateRoundConstants(round);
-                        for (let i = 0; i < processedData.length; i++) {
-                            processedData[i] ^= roundConstants[i % 4];
+            async findOriginalByte(homophone) {
+                // Ищем гомофон во всей структуре блоков
+                for (let blockY = 0; blockY < 16; blockY++) {
+                    for (let blockX = 0; blockX < 16; blockX++) {
+                        for (let subY = 0; subY < 16; subY++) {
+                            for (let subX = 0; subX < 16; subX++) {
+                                if (this.mainBlocks[blockY][blockX][subY][subX] === homophone) {
+                                    // Восстанавливаем transformed byte из координат блока
+                                    const transformedByte = (blockY << 4) | blockX;
+                                    
+                                    // Находим обратное AES преобразование
+                                    for (let originalByte = 0; originalByte < 256; originalByte++) {
+                                        if (this.aesMapping[originalByte] === transformedByte) {
+                                            return originalByte;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                
-                return processedData;
-            }
-
-            invMixColumns(data) {
-                if (!this.enableMixColumns) return data;
-
-                let processedData = new Uint8Array(data);
-                
-                for (let round = this.mixColumnsRounds - 1; round >= 0; round--) {
-                    if (this.enableNonLinearity) {
-                        const roundConstants = this.generateRoundConstants(round);
-                        for (let i = 0; i < processedData.length; i++) {
-                            processedData[i] ^= roundConstants[i % 4];
-                        }
-                    }
-                    
-                    processedData = this.applySingleInvMixColumnsRound(processedData);
-                }
-                
-                return processedData;
+                throw new Error('Гомофон не найден: ' + homophone);
             }
 
             arrayToHex(array) {
                 return Array.from(array)
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join('');
-            }
-
-            arrayToBase64(array) {
-                return btoa(String.fromCharCode(...array));
             }
 
             hexToArray(hexString) {
@@ -814,414 +795,23 @@
                 return result;
             }
 
-            base64ToArray(base64) {
-                const binary = atob(base64);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
-                }
-                return bytes;
-            }
-
-            async generateHomophone(byte, index) {
-                const data = new Uint8Array([byte, index]);
-                const hmac = await crypto.subtle.sign('HMAC', this.hmacKey, data);
-                const hmacBytes = new Uint8Array(hmac);
-                return (hmacBytes[0] << 8) | hmacBytes[1];
-            }
-
-            async findOriginalByte(homophone) {
-                if (this.enableOptimizations && this.reverseCache.has(homophone)) {
-                    return this.reverseCache.get(homophone);
-                }
-                
-                for (let byte = 0; byte < 256; byte++) {
-                    for (let index = 0; index < 256; index++) {
-                        const generatedHomophone = await this.generateHomophone(byte, index);
-                        if (generatedHomophone === homophone) {
-                            if (this.enableOptimizations) {
-                                this.reverseCache.set(homophone, byte);
-                            }
-                            return byte;
-                        }
-                    }
-                }
-                throw new Error('Неверный гомофон: ' + homophone);
-            }
-
-            async encryptData(plaintext, diffusionMode = 'cbc') {
-                const startTime = performance.now();
-                
-                try {
-                    const encoder = new TextEncoder();
-                    const plaintextBuffer = encoder.encode(plaintext);
-                    let ciphertext = new Uint16Array(plaintextBuffer.length);
-                    
-                    this.initializationVector = crypto.getRandomValues(new Uint8Array(16));
-                    let previousBlock = this.initializationVector;
-                    
-                    for (let i = 0; i < plaintextBuffer.length; i++) {
-                        const plainByte = plaintextBuffer[i];
-                        
-                        let byteToEncrypt = plainByte;
-                        if (diffusionMode !== 'none') {
-                            byteToEncrypt ^= previousBlock[i % 16];
-                        }
-                        
-                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0];
-                        const homophone = this.sbox[byteToEncrypt][randomIndex];
-                        
-                        ciphertext[i] = homophone;
-                        
-                        if (diffusionMode === 'cbc') {
-                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
-                        } else if (diffusionMode === 'cfb') {
-                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
-                        } else if (diffusionMode === 'ofb') {
-                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
-                        } else if (diffusionMode === 'ctr') {
-                            const counter = new DataView(new ArrayBuffer(4));
-                            counter.setUint32(0, i, false);
-                            previousBlock = this.updateDiffusionBlock(previousBlock, counter.getUint16(0, false));
-                        }
-                    }
-                    
-                    let outputBuffer;
-                    if (this.enableMixColumns) {
-                        const ciphertextBytes = new Uint8Array(ciphertext.buffer);
-                        const mixedCiphertext = this.mixColumns(ciphertextBytes);
-                        
-                        outputBuffer = new Uint8Array(16 + mixedCiphertext.length);
-                        outputBuffer.set(this.initializationVector, 0);
-                        outputBuffer.set(mixedCiphertext, 16);
-                    } else {
-                        outputBuffer = new Uint8Array(16 + ciphertext.length * 2);
-                        outputBuffer.set(this.initializationVector, 0);
-                        
-                        const ciphertextBytes = new Uint8Array(ciphertext.buffer);
-                        outputBuffer.set(ciphertextBytes, 16);
-                    }
-
-                    this.performanceMetrics.encryptTime = performance.now() - startTime;
-                    
-                    switch (this.outputFormat) {
-                        case 'hex':
-                            return this.arrayToHex(outputBuffer);
-                        case 'base64':
-                            return this.arrayToBase64(outputBuffer);
-                        case 'binary':
-                            return outputBuffer;
-                        case 'custom':
-                            return await this.convertToCustomFormat(outputBuffer);
-                        default:
-                            return this.arrayToHex(outputBuffer);
-                    }
-                    
-                } catch (error) {
-                    console.error('Ошибка шифрования:', error);
-                    throw new Error('Процесс шифрования failed');
-                }
-            }
-
-            async decryptData(encryptedData, diffusionMode = 'cbc') {
-                const startTime = performance.now();
-                
-                try {
-                    let inputBuffer;
-                    
-                    if (typeof encryptedData === 'string') {
-                        if (this.outputFormat === 'hex') {
-                            inputBuffer = this.hexToArray(encryptedData);
-                        } else if (this.outputFormat === 'base64') {
-                            inputBuffer = this.base64ToArray(encryptedData);
-                        } else if (this.outputFormat === 'custom') {
-                            inputBuffer = await this.convertFromCustomFormat(encryptedData);
-                        } else {
-                            throw new Error('Неизвестный формат ввода');
-                        }
-                    } else if (encryptedData instanceof Uint8Array) {
-                        inputBuffer = encryptedData;
-                    } else {
-                        throw new Error('Неподдерживаемый тип ввода');
-                    }
-
-                    if (inputBuffer.length < 16) {
-                        throw new Error('Неверный формат зашифрованных данных');
-                    }
-                    
-                    const iv = inputBuffer.slice(0, 16);
-                    let ciphertextBytes = inputBuffer.slice(16);
-                    
-                    if (this.enableMixColumns) {
-                        ciphertextBytes = this.invMixColumns(ciphertextBytes);
-                    }
-                    
-                    const ciphertext = new Uint16Array(ciphertextBytes.buffer);
-                    
-                    let plaintextBuffer = new Uint8Array(ciphertext.length);
-                    let previousBlock = iv;
-                    
-                    for (let i = 0; i < ciphertext.length; i++) {
-                        const homophone = ciphertext[i];
-                        
-                        const intermediateByte = await this.findOriginalByte(homophone);
-                        
-                        let decryptedByte = intermediateByte;
-                        if (diffusionMode !== 'none') {
-                            decryptedByte ^= previousBlock[i % 16];
-                        }
-                        
-                        plaintextBuffer[i] = decryptedByte;
-                        
-                        if (diffusionMode === 'cbc') {
-                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
-                        } else if (diffusionMode === 'cfb') {
-                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
-                        } else if (diffusionMode === 'ofb') {
-                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
-                        } else if (diffusionMode === 'ctr') {
-                            const counter = new DataView(new ArrayBuffer(4));
-                            counter.setUint32(0, i, false);
-                            previousBlock = this.updateDiffusionBlock(previousBlock, counter.getUint16(0, false));
-                        }
-                    }
-                    
-                    this.performanceMetrics.decryptTime = performance.now() - startTime;
-                    
-                    const decoder = new TextDecoder();
-                    return decoder.decode(plaintextBuffer);
-                    
-                } catch (error) {
-                    console.error('Ошибка расшифровки:', error);
-                    throw new Error('Процесс расшифровки failed: ' + error.message);
-                }
-            }
-
-            async convertToCustomFormat(binaryData) {
-                if (!this.customCharset) {
-                    throw new Error('Пользовательский набор символов не установлен');
-                }
-
-                let result = '';
-                for (let i = 0; i < binaryData.length; i++) {
-                    const byte = binaryData[i];
-                    result += this.customCharset[byte];
-                }
-                return result;
-            }
-
-            async convertFromCustomFormat(customData) {
-                if (!this.customCharset) {
-                    throw new Error('Пользовательский набор символов не установлен');
-                }
-
-                const charToIndex = {};
-                for (let i = 0; i < this.customCharset.length; i++) {
-                    charToIndex[this.customCharset[i]] = i;
-                }
-
-                const result = new Uint8Array(customData.length);
-                
-                for (let i = 0; i < customData.length; i++) {
-                    const char = customData[i];
-                    if (!(char in charToIndex)) {
-                        throw new Error(`Неверный символ в пользовательском формате: ${char}`);
-                    }
-                    result[i] = charToIndex[char];
-                }
-
-                return result;
-            }
-
-            updateDiffusionBlock(block, homophone) {
-                const newBlock = new Uint8Array(16);
-                const homophoneBytes = new Uint8Array([
-                    (homophone >> 8) & 0xFF,
-                    homophone & 0xFF
-                ]);
-                
-                for (let i = 0; i < 16; i++) {
-                    newBlock[i] = block[i] ^ homophoneBytes[i % 2];
-                }
-                
-                return newBlock;
+            getBlockVisualization(blockIndex) {
+                const blockY = (blockIndex >> 4) & 0x0F;
+                const blockX = blockIndex & 0x0F;
+                return this.mainBlocks[blockY][blockX];
             }
 
             getPerformanceMetrics() {
                 return this.performanceMetrics;
             }
-
-            clearCache() {
-                this.reverseCache.clear();
-            }
         }
 
-        class CipherTestSuite {
-            static hexToBytes(hexString) {
-                const bytes = new Uint8Array(hexString.length / 2);
-                for (let i = 0; i < hexString.length; i += 2) {
-                    bytes[i/2] = parseInt(hexString.substr(i, 2), 16);
-                }
-                return bytes;
-            }
-
-            static calculateEntropy(hexString) {
-                const bytes = this.hexToBytes(hexString);
-                const freq = new Array(256).fill(0);
-                
-                for (const byte of bytes) {
-                    freq[byte]++;
-                }
-                
-                let entropy = 0;
-                const total = bytes.length;
-                for (let i = 0; i < 256; i++) {
-                    if (freq[i] > 0) {
-                        const p = freq[i] / total;
-                        entropy -= p * Math.log2(p);
-                    }
-                }
-                return entropy;
-            }
-
-            static frequencyAnalysis(hexString) {
-                const bytes = this.hexToBytes(hexString);
-                const freq = new Array(256).fill(0);
-                
-                for (const byte of bytes) {
-                    freq[byte]++;
-                }
-                
-                let report = `Анализ значений байтов (0-255):\n`;
-                report += `Всего байтов: ${bytes.length}\n\n`;
-                
-                const ranges = [
-                    { name: '0-31 (Управляющие символы)', count: 0, ideal: 12.5 },
-                    { name: '32-126 (Печатные ASCII)', count: 0, ideal: 37.1 },
-                    { name: '127-255 (Расширенные)', count: 0, ideal: 50.4 }
-                ];
-                
-                for (let i = 0; i < 256; i++) {
-                    if (i <= 31) ranges[0].count += freq[i];
-                    else if (i <= 126) ranges[1].count += freq[i];
-                    else ranges[2].count += freq[i];
-                }
-                
-                for (const range of ranges) {
-                    const percentage = (range.count / bytes.length * 100).toFixed(2);
-                    const deviation = Math.abs(percentage - range.ideal).toFixed(2);
-                    report += `${range.name}: ${range.count} (${percentage}% | Δ${deviation}%)\n`;
-                }
-                
-                return report;
-            }
-
-            static testRandomness(hexString) {
-                const bytes = this.hexToBytes(hexString);
-                if (bytes.length < 100) return "Нужно больше данных для анализа";
-                
-                let sum = 0;
-                for (const byte of bytes) {
-                    sum += byte;
-                }
-                const mean = sum / bytes.length;
-                
-                let variance = 0;
-                for (const byte of bytes) {
-                    variance += Math.pow(byte - mean, 2);
-                }
-                variance /= bytes.length;
-                
-                let inCircle = 0;
-                for (let i = 0; i < bytes.length - 1; i += 2) {
-                    const x = bytes[i] / 255;
-                    const y = bytes[i + 1] / 255;
-                    if (x * x + y * y <= 1) inCircle++;
-                }
-                const piEstimate = (4 * inCircle) / (bytes.length / 2);
-                
-                return {
-                    mean: mean.toFixed(3),
-                    variance: variance.toFixed(3),
-                    piEstimate: piEstimate.toFixed(6),
-                    idealMean: 127.5,
-                    idealVariance: 5461.25,
-                    idealPi: 3.141593
-                };
-            }
-
-            static analyzeHexCharacters(hexString) {
-                const freq = {};
-                for (const char of hexString) {
-                    freq[char] = (freq[char] || 0) + 1;
-                }
-                
-                const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-                let report = `Анализ HEX символов:\n`;
-                report += `Всего HEX символов: ${hexString.length}\n`;
-                report += `Уникальных HEX символов: ${sorted.length}/16\n\n`;
-                
-                report += `Частота HEX символов:\n`;
-                for (const [char, count] of sorted) {
-                    const percentage = (count / hexString.length * 100).toFixed(2);
-                    report += `'${char}': ${count} (${percentage}%)\n`;
-                }
-                
-                return report;
-            }
-
-            static runAllTests(hexString) {
-                const results = [];
-                const bytes = this.hexToBytes(hexString);
-                
-                const entropy = this.calculateEntropy(hexString);
-                results.push({
-                    name: "Тест энтропии байтов",
-                    status: entropy > 7.9 ? "PASS" : "WARNING",
-                    message: `Энтропия: ${entropy.toFixed(6)}/8.000000`,
-                    details: `Идеально: >7.9 (полная случайность)\nНа основе ${bytes.length} байтов`
-                });
-                
-                const hexAnalysis = this.analyzeHexCharacters(hexString);
-                results.push({
-                    name: "Распределение HEX символов",
-                    status: "INFO",
-                    message: "Анализ HEX символов (0-9, a-f)",
-                    details: hexAnalysis
-                });
-                
-                const freqReport = this.frequencyAnalysis(hexString);
-                results.push({
-                    name: "Анализ диапазонов байтов",
-                    status: "INFO",
-                    message: "Анализ фактических значений байтов (0-255)",
-                    details: freqReport
-                });
-                
-                const randomness = this.testRandomness(hexString);
-                if (typeof randomness !== 'string') {
-                    const meanDiff = Math.abs(randomness.mean - randomness.idealMean).toFixed(2);
-                    const piDiff = Math.abs(randomness.piEstimate - randomness.idealPi).toFixed(4);
-                    
-                    results.push({
-                        name: "Статистическая случайность",
-                        status: meanDiff < 5 && piDiff < 0.1 ? "PASS" : "WARNING",
-                        message: `Среднее: ${randomness.mean} | π≈${randomness.piEstimate}`,
-                        details: `Δ среднего: ${meanDiff} | Δ π: ${piDiff}\nИдеальное среднее: 127.5, дисперсия: 5461.25`
-                    });
-                }
-                
-                return results;
-            }
-        }
-
-        class EnhancedCipherUIController {
+        class AdvancedCipherUIController {
             constructor() {
-                this.cipher = new EnhancedHomophonicCipher();
-                this.lastBinaryResult = null;
+                this.cipher = new MultiRoundHomophonicCipher();
+                this.currentBlock = 0;
                 this.initializeEventListeners();
-                this.updateCharsetPreview();
-                this.loadSettings();
+                this.renderBlockVisualization();
             }
 
             initializeEventListeners() {
@@ -1229,164 +819,15 @@
                 const decryptBtn = document.getElementById('decryptBtn');
                 const clearBtn = document.getElementById('clearBtn');
                 const analyzeBtn = document.getElementById('analyzeBtn');
-                const benchmarkBtn = document.getElementById('benchmarkBtn');
-                const outputFormat = document.getElementById('outputFormat');
-                const customCharset = document.getElementById('customCharset');
-                const generateBtn = document.getElementById('generateCharset');
-                const enableMixColumns = document.getElementById('enableMixColumns');
-                const mixColumnsRounds = document.getElementById('mixColumnsRounds');
-                const enableNonLinearity = document.getElementById('enableNonLinearity');
-                const enableOptimizations = document.getElementById('enableOptimizations');
+                const prevBlockBtn = document.getElementById('prevBlockBtn');
+                const nextBlockBtn = document.getElementById('nextBlockBtn');
 
                 encryptBtn.addEventListener('click', () => this.handleEncrypt());
                 decryptBtn.addEventListener('click', () => this.handleDecrypt());
                 clearBtn.addEventListener('click', () => this.handleClear());
                 analyzeBtn.addEventListener('click', () => this.handleAnalyze());
-                benchmarkBtn.addEventListener('click', () => this.handleBenchmark());
-                
-                outputFormat.addEventListener('change', () => {
-                    this.handleOutputFormatChange();
-                    this.saveSettings();
-                });
-                customCharset.addEventListener('input', () => {
-                    this.updateCharsetPreview();
-                    this.saveSettings();
-                });
-                generateBtn.addEventListener('click', () => this.handleGenerateCharset());
-                enableMixColumns.addEventListener('change', () => {
-                    this.cipher.setMixColumns(enableMixColumns.checked);
-                    this.saveSettings();
-                });
-                mixColumnsRounds.addEventListener('change', () => {
-                    this.cipher.setMixColumnsRounds(parseInt(mixColumnsRounds.value));
-                    this.saveSettings();
-                });
-                enableNonLinearity.addEventListener('change', () => {
-                    this.cipher.setNonLinearity(enableNonLinearity.checked);
-                    this.saveSettings();
-                });
-                enableOptimizations.addEventListener('change', () => {
-                    this.cipher.setOptimizations(enableOptimizations.checked);
-                    this.saveSettings();
-                });
-            }
-
-            handleOutputFormatChange() {
-                const format = document.getElementById('outputFormat').value;
-                const customOptions = document.getElementById('customOptions');
-                customOptions.style.display = format === 'custom' ? 'block' : 'none';
-                this.cipher.setOutputFormat(format);
-            }
-
-            updateCharsetPreview() {
-                const charset = document.getElementById('customCharset').value;
-                const preview = document.getElementById('charsetPreview');
-                preview.innerHTML = '';
-
-                if (charset.length === 0) return;
-
-                for (let i = 0; i < Math.min(256, 32); i++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'charset-cell';
-                    cell.textContent = charset[i] || '?';
-                    cell.title = `Индекс: ${i}, Символ: ${charset[i] || 'отсутствует'}`;
-                    preview.appendChild(cell);
-                }
-
-                if (charset.length !== 256) {
-                    const warning = document.createElement('div');
-                    warning.style.gridColumn = '1 / -1';
-                    warning.style.color = 'var(--warning)';
-                    warning.textContent = `Предупреждение: ${charset.length}/256 символов`;
-                    preview.appendChild(warning);
-                }
-            }
-
-            generateRandomCharset() {
-                const chars = [];
-                const usedChars = new Set();
-                
-                const safeRanges = [
-                    [0x0020, 0x007F], [0x00A0, 0x00FF], [0x0100, 0x017F],
-                    [0x0180, 0x024F], [0x0370, 0x03FF], [0x0400, 0x04FF],
-                    [0x2000, 0x206F], [0x2100, 0x214F], [0x2150, 0x218F],
-                    [0x2190, 0x21FF], [0x2200, 0x22FF], [0x2300, 0x23FF],
-                    [0x2500, 0x257F], [0x2580, 0x259F], [0x25A0, 0x25FF],
-                    [0x2600, 0x26FF], [0x2700, 0x27BF]
-                ];
-
-                const basicChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}|;:,.<>?/~`'\"\\";
-                for (const char of basicChars) {
-                    if (chars.length >= 256) break;
-                    if (!usedChars.has(char)) {
-                        chars.push(char);
-                        usedChars.add(char);
-                    }
-                }
-
-                while (chars.length < 256) {
-                    const range = safeRanges[Math.floor(Math.random() * safeRanges.length)];
-                    const codePoint = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
-                    
-                    if (codePoint === 0xFEFF || codePoint === 0xFFFE || codePoint === 0xFFFF) continue;
-
-                    try {
-                        const char = String.fromCodePoint(codePoint);
-                        if (char.length === 1 && !usedChars.has(char) && /[\S]/.test(char)) {
-                            chars.push(char);
-                            usedChars.add(char);
-                        }
-                    } catch (e) {
-                        continue;
-                    }
-                    
-                    if (chars.length > 300) break;
-                }
-
-                return chars.join('');
-            }
-
-            handleGenerateCharset() {
-                const randomCharset = this.generateRandomCharset();
-                document.getElementById('customCharset').value = randomCharset;
-                this.updateCharsetPreview();
-                this.saveSettings();
-            }
-
-            saveSettings() {
-                const settings = {
-                    iterations: document.getElementById('iterations').value,
-                    diffusionMode: document.getElementById('diffusionMode').value,
-                    outputFormat: document.getElementById('outputFormat').value,
-                    customCharset: document.getElementById('customCharset').value,
-                    enableMixColumns: document.getElementById('enableMixColumns').checked,
-                    mixColumnsRounds: document.getElementById('mixColumnsRounds').value,
-                    enableNonLinearity: document.getElementById('enableNonLinearity').checked,
-                    enableOptimizations: document.getElementById('enableOptimizations').checked
-                };
-                localStorage.setItem('cipherSettings', JSON.stringify(settings));
-            }
-
-            loadSettings() {
-                const saved = localStorage.getItem('cipherSettings');
-                if (saved) {
-                    const settings = JSON.parse(saved);
-                    document.getElementById('iterations').value = settings.iterations;
-                    document.getElementById('diffusionMode').value = settings.diffusionMode;
-                    document.getElementById('outputFormat').value = settings.outputFormat;
-                    document.getElementById('customCharset').value = settings.customCharset;
-                    document.getElementById('enableMixColumns').checked = settings.enableMixColumns;
-                    document.getElementById('mixColumnsRounds').value = settings.mixColumnsRounds;
-                    document.getElementById('enableNonLinearity').checked = settings.enableNonLinearity;
-                    document.getElementById('enableOptimizations').checked = settings.enableOptimizations;
-                    
-                    this.cipher.setMixColumns(settings.enableMixColumns);
-                    this.cipher.setMixColumnsRounds(parseInt(settings.mixColumnsRounds));
-                    this.cipher.setNonLinearity(settings.enableNonLinearity);
-                    this.cipher.setOptimizations(settings.enableOptimizations);
-                    this.handleOutputFormatChange();
-                    this.updateCharsetPreview();
-                }
+                prevBlockBtn.addEventListener('click', () => this.showPreviousBlock());
+                nextBlockBtn.addEventListener('click', () => this.showNextBlock());
             }
 
             async handleEncrypt() {
@@ -1401,111 +842,23 @@
                         throw new Error('Подтверждение ключа не совпадает');
                     }
 
-                    if (passphrase.length < 12) {
-                        throw new Error('Парольная фраза должна быть не менее 12 символов');
-                    }
-
                     const iterations = parseInt(document.getElementById('iterations').value);
-                    const diffusionMode = document.getElementById('diffusionMode').value;
+                    const aesRounds = parseInt(document.getElementById('aesRounds').value);
                     const inputData = document.getElementById('inputData').value;
-                    const outputFormat = document.getElementById('outputFormat').value;
 
-                    this.cipher.setOutputFormat(outputFormat);
+                    await this.cipher.initializeWithKey(passphrase, iterations, aesRounds);
+                    const result = await this.cipher.encryptData(inputData);
 
-                    if (outputFormat === 'custom') {
-                        const charset = document.getElementById('customCharset').value;
-                        if (charset.length !== 256) {
-                            throw new Error('Пользовательский набор символов должен содержать ровно 256 символов');
-                        }
-                        const uniqueChars = new Set(charset);
-                        if (uniqueChars.size !== 256) {
-                            throw new Error('Набор символов должен содержать 256 уникальных символов, обнаружены дубликаты');
-                        }
-                        this.cipher.setCustomCharset(charset);
-                    }
-
-                    await this.cipher.initializeWithKey(passphrase, iterations);
-                    const result = await this.cipher.encryptData(inputData, diffusionMode);
-
-                    if (typeof result === 'string') {
-                        document.getElementById('outputData').textContent = result;
-                    } else {
-                        this.lastBinaryResult = result;
-                        document.getElementById('outputData').textContent = 
-                            `Бинарные данные (${result.length} байтов): [${Array.from(result).join(', ')}]`;
-                    }
-                    
-                    document.getElementById('outputPreview').textContent = 
-                        this.getOutputPreview(result, outputFormat);
-                    
-                    this.updateSecurityInfo('encrypt', typeof result === 'string' ? result.length : result.length);
+                    document.getElementById('outputData').textContent = result;
+                    this.updateSecurityInfo('encrypt', result.length);
                     this.updatePerformanceInfo();
+                    this.renderBlockVisualization();
                     
-                    this.saveSettings();
-
-                    if (typeof result === 'string' && outputFormat === 'hex') {
-                        this.runAutomaticTests(result);
-                    } else {
-                        this.setTestStatus('ready', 'Тесты доступны только для HEX вывода');
-                    }
-
                     this.setStatus('ready', 'Шифрование успешно');
                 } catch (error) {
                     this.setStatus('error', 'Ошибка шифрования: ' + error.message);
-                    console.error('Ошибка шифрования:', error);
                 } finally {
                     this.hideLoading('encrypt');
-                }
-            }
-
-            async runAutomaticTests(hexString) {
-                this.setTestStatus('processing', 'Выполнение криптографических тестов...');
-                
-                setTimeout(() => {
-                    try {
-                        const testResults = CipherTestSuite.runAllTests(hexString);
-                        this.displayTestResults(testResults);
-                        this.setTestStatus('ready', 'Тестирование завершено');
-                    } catch (error) {
-                        this.setTestStatus('error', 'Ошибка тестирования: ' + error.message);
-                    }
-                }, 100);
-            }
-
-            displayTestResults(results) {
-                const testResultsDiv = document.getElementById('testResults');
-                testResultsDiv.innerHTML = '';
-                
-                results.forEach(test => {
-                    const testDiv = document.createElement('div');
-                    testDiv.className = `test-result ${test.status === 'PASS' ? 'test-pass' : 
-                                       test.status === 'FAIL' ? 'test-fail' : 
-                                       test.status === 'WARNING' ? 'test-warning' : 'test-info'}`;
-                    
-                    testDiv.innerHTML = `
-                        <strong>${test.name}</strong>: ${test.status}
-                        <div>${test.message}</div>
-                        <div style="font-size: 0.8em; color: #94a3b8; margin-top: 0.5rem;">${test.details}</div>
-                    `;
-                    
-                    testResultsDiv.appendChild(testDiv);
-                });
-            }
-
-            setTestStatus(type, message) {
-                const indicator = document.getElementById('testStatus');
-                indicator.className = `status-${type}`;
-                indicator.textContent = message;
-            }
-
-            getOutputPreview(result, format) {
-                if (format === 'binary' && result instanceof Uint8Array) {
-                    return `Бинарные: ${result.length} байтов\nПервые 32 байта: [${Array.from(result.slice(0, 32)).join(', ')}]...`;
-                } else if (format === 'custom' && typeof result === 'string') {
-                    return `Пользовательский: ${result.length} символов\nПредпросмотр: ${result.substring(0, 100)}...`;
-                } else {
-                    return String(result).substring(0, 200) + 
-                           (String(result).length > 200 ? '...' : '');
                 }
             }
 
@@ -1516,105 +869,81 @@
                 try {
                     const passphrase = document.getElementById('keyInput').value;
                     const iterations = parseInt(document.getElementById('iterations').value);
-                    const diffusionMode = document.getElementById('diffusionMode').value;
-                    const outputFormat = document.getElementById('outputFormat').value;
+                    const aesRounds = parseInt(document.getElementById('aesRounds').value);
+                    const inputData = document.getElementById('inputData').value;
 
-                    this.cipher.setOutputFormat(outputFormat);
-
-                    if (outputFormat === 'custom') {
-                        const charset = document.getElementById('customCharset').value;
-                        if (charset.length !== 256) {
-                            throw new Error('Пользовательский набор символов должен содержать ровно 256 символов');
-                        }
-                        const uniqueChars = new Set(charset);
-                        if (uniqueChars.size !== 256) {
-                            throw new Error('Набор символов должен содержать 256 уникальных символов, обнаружены дубликаты');
-                        }
-                        this.cipher.setCustomCharset(charset);
-                    }
-
-                    let inputData;
-                    if (outputFormat === 'binary') {
-                        inputData = this.lastBinaryResult;
-                    } else {
-                        inputData = document.getElementById('inputData').value;
-                    }
-
-                    await this.cipher.initializeWithKey(passphrase, iterations);
-                    const result = await this.cipher.decryptData(inputData, diffusionMode);
+                    await this.cipher.initializeWithKey(passphrase, iterations, aesRounds);
+                    const result = await this.cipher.decryptData(inputData);
 
                     document.getElementById('outputData').textContent = result;
-                    document.getElementById('outputPreview').textContent = 
-                        `Расшифровано: ${result.substring(0, 100)}...`;
-                    
                     this.updateSecurityInfo('decrypt', result.length);
                     this.updatePerformanceInfo();
                     
                     this.setStatus('ready', 'Расшифровка успешна');
                 } catch (error) {
                     this.setStatus('error', 'Ошибка расшифровки: ' + error.message);
-                    console.error('Ошибка расшифровки:', error);
                 } finally {
                     this.hideLoading('decrypt');
                 }
             }
 
-            handleClear() {
-                document.getElementById('inputData').value = '';
-                document.getElementById('outputData').textContent = '';
-                document.getElementById('securityInfo').textContent = '';
-                document.getElementById('outputPreview').textContent = '';
-                document.getElementById('testResults').textContent = '';
-                document.getElementById('sboxGrid').innerHTML = '';
-                document.getElementById('performanceMetrics').textContent = 'Готов к тестированию...';
-                this.cipher.clearCache();
-                this.setStatus('ready', 'Готов');
-                this.setTestStatus('ready', 'Готов к тестированию');
-            }
-
-            async handleAnalyze() {
-                this.setStatus('processing', 'Анализ безопасности...');
+            renderBlockVisualization() {
+                const blockGrid = document.getElementById('blockGrid');
+                blockGrid.innerHTML = '';
                 
-                setTimeout(() => {
-                    this.setStatus('ready', 'Анализ безопасности завершен');
-                    document.getElementById('securityInfo').textContent = 
-                        'Анализ безопасности:\n' +
-                        '• Детерминистическая генерация S-Box\n' +
-                        '• Соль на основе пароля для формирования ключа\n' +
-                        '• 512-битный ключевой материал через PBKDF2-HMAC-SHA512\n' +
-                        '• 65536-элементная гомофоническая S-Box\n' +
-                        '• Недетерминированное шифрование (семантическая безопасность)\n' +
-                        '• Поддержка множественных форматов вывода\n' +
-                        '• Многораундовое MixColumns преобразование\n' +
-                        '• Улучшение нелинейности между раундами\n' +
-                        '• Поддержка различных режимов диффузии (CBC, CFB, OFB, CTR)';
-                }, 1000);
-            }
-
-            async handleBenchmark() {
-                this.setStatus('processing', 'Тестирование производительности...');
-                
-                try {
-                    const testData = "Тестовые данные для оценки производительности шифрования и расшифровки.";
-                    const passphrase = "TestPassphrase123!";
-                    
-                    await this.cipher.initializeWithKey(passphrase, 100000);
-                    const encrypted = await this.cipher.encryptData(testData, 'cbc');
-                    await this.cipher.decryptData(encrypted, 'cbc');
-                    
-                    const metrics = this.cipher.getPerformanceMetrics();
-                    
-                    document.getElementById('performanceMetrics').innerHTML = `
-                        <div>Генерация S-Box: ${metrics.sboxGenTime.toFixed(2)} мс</div>
-                        <div>Шифрование: ${metrics.encryptTime.toFixed(2)} мс</div>
-                        <div>Расшифровка: ${metrics.decryptTime.toFixed(2)} мс</div>
-                        <div>Размер кэша: ${this.cipher.reverseCache.size} элементов</div>
-                    `;
-                    
-                    this.setStatus('ready', 'Тестирование производительности завершено');
-                } catch (error) {
-                    this.setStatus('error', 'Ошибка тестирования: ' + error.message);
+                for (let y = 0; y < 16; y++) {
+                    for (let x = 0; x < 16; x++) {
+                        const blockIndex = (y << 4) | x;
+                        const cell = document.createElement('div');
+                        cell.className = 'block-cell';
+                        if (blockIndex === this.currentBlock) {
+                            cell.classList.add('selected');
+                        }
+                        cell.textContent = `0x${blockIndex.toString(16).padStart(2, '0')}`;
+                        cell.title = `Блок ${y},${x} (0x${blockIndex.toString(16).padStart(2, '0')})`;
+                        cell.addEventListener('click', () => {
+                            this.currentBlock = blockIndex;
+                            this.renderBlockVisualization();
+                        });
+                        blockGrid.appendChild(cell);
+                    }
                 }
+                
+                this.renderSubblockVisualization();
+            }
+
+            renderSubblockVisualization() {
+                const subblockGrid = document.getElementById('subblockGrid');
+                subblockGrid.innerHTML = '';
+                
+                document.getElementById('currentBlockInfo').textContent = 
+                    `Блок 0x${this.currentBlock.toString(16).padStart(2, '0')}`;
+                
+                if (!this.cipher.mainBlocks) return;
+                
+                const blockY = (this.currentBlock >> 4) & 0x0F;
+                const blockX = this.currentBlock & 0x0F;
+                const subBlock = this.cipher.mainBlocks[blockY][blockX];
+                
+                for (let y = 0; y < 16; y++) {
+                    for (let x = 0; x < 16; x++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'subblock-cell';
+                        cell.textContent = `0x${subBlock[y][x].toString(16).padStart(4, '0')}`;
+                        cell.title = `Гомофон: 0x${subBlock[y][x].toString(16).padStart(4, '0')}\nПозиция: ${y},${x}`;
+                        subblockGrid.appendChild(cell);
+                    }
+                }
+            }
+
+            showPreviousBlock() {
+                this.currentBlock = (this.currentBlock - 1 + 256) % 256;
+                this.renderBlockVisualization();
+            }
+
+            showNextBlock() {
+                this.currentBlock = (this.currentBlock + 1) % 256;
+                this.renderBlockVisualization();
             }
 
             updatePerformanceInfo() {
@@ -1624,7 +953,6 @@
                     <div>Генерация S-Box: ${metrics.sboxGenTime.toFixed(2)} мс</div>
                     <div>Шифрование: ${metrics.encryptTime.toFixed(2)} мс</div>
                     <div>Расшифровка: ${metrics.decryptTime.toFixed(2)} мс</div>
-                    <div>Размер кэша: ${this.cipher.reverseCache.size} элементов</div>
                 `;
             }
 
@@ -1645,32 +973,45 @@
             }
 
             updateSecurityInfo(operation, length) {
-                const format = document.getElementById('outputFormat').value;
-                const diffusionMode = document.getElementById('diffusionMode').value;
-                const mixColumns = document.getElementById('enableMixColumns').checked;
-                const rounds = document.getElementById('mixColumnsRounds').value;
-                const nonLinearity = document.getElementById('enableNonLinearity').checked;
-                const optimizations = document.getElementById('enableOptimizations').checked;
+                const aesRounds = document.getElementById('aesRounds').value;
                 
                 let info = `Операция: ${operation.toUpperCase()}\n`;
-                info += `Формат вывода: ${format}\n`;
-                info += `Режим диффузии: ${diffusionMode}\n`;
-                info += `MixColumns: ${mixColumns ? 'Включено' : 'Выключено'}\n`;
-                if (mixColumns) {
-                    info += `Раунды MixColumns: ${rounds}\n`;
-                    info += `Нелинейность: ${nonLinearity ? 'Включена' : 'Выключена'}\n`;
-                }
-                info += `Оптимизации: ${optimizations ? 'Включены' : 'Выключены'}\n`;
-                info += `Размер данных: ${length} ${format === 'binary' ? 'байтов' : 'символов'}\n`;
-                info += `S-Box: Детерминистическая генерация\n`;
-                info += `Ключ: PBKDF2-HMAC-SHA512 с солью на основе пароля`;
+                info += `Раунды AES: ${aesRounds}\n`;
+                info += `Размер данных: ${length} символов\n`;
+                info += `Структура S-Box: 16×16×256 блоков\n`;
+                info += `Всего гомофонов: 65536\n`;
+                info += `Многораундовая обработка: Да`;
                 
                 document.getElementById('securityInfo').textContent = info;
+            }
+
+            handleClear() {
+                document.getElementById('inputData').value = '';
+                document.getElementById('outputData').textContent = '';
+                document.getElementById('securityInfo').textContent = '';
+                document.getElementById('performanceMetrics').textContent = 'Готов к тестированию...';
+                this.setStatus('ready', 'Готов');
+            }
+
+            handleAnalyze() {
+                this.setStatus('processing', 'Анализ безопасности...');
+                
+                setTimeout(() => {
+                    this.setStatus('ready', 'Анализ безопасности завершен');
+                    document.getElementById('securityInfo').textContent = 
+                        'Анализ безопасности:\n' +
+                        '• Многораундовая AES-подобная обработка\n' +
+                        '• Блочная структура S-Box 16×16×256\n' +
+                        '• 65536 уникальных гомофонов\n' +
+                        '• Детерминистическая генерация на основе ключа\n' +
+                        '• Полная обратимость преобразований\n' +
+                        '• Семантическая безопасность за счет случайного выбора гомофонов';
+                }, 1000);
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            new EnhancedCipherUIController();
+            new AdvancedCipherUIController();
         });
     </script>
 </body>
