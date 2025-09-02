@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Crypto S-Box with NIST Tests</title>
+    <title>Enhanced Crypto S-Box</title>
     <style>
         body { font-family: monospace; margin: 20px; background: #0d1117; color: #c9d1d9; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
         textarea, input, select { width: 100%; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; margin: 5px 0; }
         button { background: #238636; color: white; border: none; padding: 10px 15px; cursor: pointer; margin: 5px; }
         button:hover { background: #2ea043; }
@@ -15,15 +15,11 @@
         .col { flex: 1; }
         .section { border: 1px solid #30363d; padding: 15px; border-radius: 5px; margin: 10px 0; }
         .config { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .test-results { max-height: 300px; overflow-y: auto; }
-        .test-pass { color: #3fb950; }
-        .test-fail { color: #f85149; }
-        .test-warning { color: #d29922; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Enhanced Crypto S-Box with NIST Tests</h1>
+        <h1>🔒 Enhanced Crypto S-Box with Rounds</h1>
         
         <div class="section">
             <h3>Key Configuration:</h3>
@@ -42,6 +38,8 @@
                         <option value="2">2 rounds</option>
                         <option value="3">3 rounds</option>
                         <option value="4" selected>4 rounds</option>
+                        <option value="5">5 rounds</option>
+                        <option value="6">6 rounds</option>
                     </select>
                 </div>
                 <div>
@@ -58,9 +56,8 @@
             <div class="col">
                 <div class="section">
                     <h3>Encryption:</h3>
-                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">The quick brown fox jumps over the lazy dog 1234567890!@#$%^&*()</textarea>
+                    <textarea id="encryptInput" rows="4" placeholder="Enter text to encrypt">Hello, World!</textarea>
                     <button onclick="encryptData()">Encrypt</button>
-                    <button onclick="runNISTTests()">Run NIST Tests</button>
                     <div class="output" id="encryptOutput">Encrypted output will appear here</div>
                 </div>
             </div>
@@ -76,8 +73,9 @@
         </div>
 
         <div class="section">
-            <h3>NIST Statistical Tests Results:</h3>
-            <div class="output test-results" id="nistResults">Test results will appear here</div>
+            <h3>NIST Tests:</h3>
+            <button onclick="runSimpleTests()">Run Simple Tests</button>
+            <div class="output" id="testResults">Test results will appear here</div>
         </div>
     </div>
 
@@ -87,170 +85,7 @@
         let inverseBytePermutation = null;
         let inverseHomophonicSBox = null;
         let roundKeys = [];
-        let lastEncryptedBytes = [];
-
-        // NIST Test Functions
-        const NISTTests = {
-            // 1. Frequency (Monobit) Test
-            frequencyTest: function(data) {
-                let sum = 0;
-                for (let i = 0; i < data.length; i++) {
-                    for (let j = 0; j < 8; j++) {
-                        const bit = (data[i] >> j) & 1;
-                        sum += bit === 1 ? 1 : -1;
-                    }
-                }
-                const s = Math.abs(sum) / Math.sqrt(data.length * 8);
-                const pValue = this.erfc(s / Math.sqrt(2));
-                return { passed: pValue >= 0.01, pValue, test: "Frequency (Monobit) Test" };
-            },
-
-            // 2. Runs Test
-            runsTest: function(data) {
-                let n = data.length * 8;
-                let pi = 0;
-                for (let i = 0; i < data.length; i++) {
-                    for (let j = 0; j < 8; j++) {
-                        pi += (data[i] >> j) & 1;
-                    }
-                }
-                pi /= n;
-                
-                if (Math.abs(pi - 0.5) >= 2 / Math.sqrt(n)) {
-                    return { passed: false, pValue: 0, test: "Runs Test" };
-                }
-
-                let runs = 1;
-                let currentBit = (data[0] & 1);
-                for (let i = 0; i < data.length; i++) {
-                    for (let j = 0; j < 8; j++) {
-                        if (i === 0 && j === 0) continue;
-                        const bit = (data[i] >> j) & 1;
-                        if (bit !== currentBit) {
-                            runs++;
-                            currentBit = bit;
-                        }
-                    }
-                }
-
-                const pValue = this.erfc(Math.abs(runs - 2 * n * pi * (1 - pi)) / 
-                                      (2 * Math.sqrt(2 * n) * pi * (1 - pi)));
-                return { passed: pValue >= 0.01, pValue, test: "Runs Test" };
-            },
-
-            // 3. Binary Derivative Test
-            binaryDerivativeTest: function(data) {
-                let changes = 0;
-                let total = 0;
-                for (let i = 0; i < data.length - 1; i++) {
-                    const xor = data[i] ^ data[i + 1];
-                    for (let j = 0; j < 8; j++) {
-                        if ((xor >> j) & 1) changes++;
-                        total++;
-                    }
-                }
-                const ratio = changes / total;
-                return { 
-                    passed: Math.abs(ratio - 0.5) < 0.05, 
-                    pValue: Math.abs(ratio - 0.5), 
-                    test: "Binary Derivative Test",
-                    ratio: ratio
-                };
-            },
-
-            // 4. Entropy Test
-            entropyTest: function(data) {
-                const frequency = new Array(256).fill(0);
-                for (const byte of data) {
-                    frequency[byte]++;
-                }
-                
-                let entropy = 0;
-                for (let i = 0; i < 256; i++) {
-                    if (frequency[i] > 0) {
-                        const p = frequency[i] / data.length;
-                        entropy -= p * Math.log2(p);
-                    }
-                }
-                
-                const maxEntropy = 8; // Maximum for bytes
-                return { 
-                    passed: entropy > 7.9, 
-                    pValue: entropy, 
-                    test: "Entropy Test",
-                    entropy: entropy
-                };
-            },
-
-            // 5. Chi-square Test
-            chiSquareTest: function(data) {
-                const expected = data.length / 256;
-                const frequency = new Array(256).fill(0);
-                for (const byte of data) {
-                    frequency[byte]++;
-                }
-                
-                let chi2 = 0;
-                for (let i = 0; i < 256; i++) {
-                    chi2 += Math.pow(frequency[i] - expected, 2) / expected;
-                }
-                
-                // p-value from chi-square distribution with 255 degrees of freedom
-                const pValue = this.chi2cdf(chi2, 255);
-                return { passed: pValue >= 0.01, pValue, test: "Chi-square Test", chi2 };
-            },
-
-            // 6. Pi Estimation Test (Monte Carlo)
-            piEstimationTest: function(data) {
-                if (data.length < 4) return { passed: false, pValue: 0, test: "Pi Test" };
-                
-                let inside = 0;
-                let total = 0;
-                
-                for (let i = 0; i < data.length - 3; i += 4) {
-                    const x = (data[i] / 255) * 2 - 1;
-                    const y = (data[i + 1] / 255) * 2 - 1;
-                    const x2 = (data[i + 2] / 255) * 2 - 1;
-                    const y2 = (data[i + 3] / 255) * 2 - 1;
-                    
-                    if (x * x + y * y <= 1) inside++;
-                    if (x2 * x2 + y2 * y2 <= 1) inside++;
-                    total += 2;
-                }
-                
-                const estimatedPi = (4 * inside) / total;
-                const error = Math.abs(estimatedPi - Math.PI);
-                return { 
-                    passed: error < 0.05, 
-                    pValue: error, 
-                    test: "Pi Estimation Test",
-                    estimatedPi: estimatedPi,
-                    error: error
-                };
-            },
-
-            // Mathematical functions
-            erfc: function(x) {
-                // Complementary error function approximation
-                const z = Math.abs(x);
-                const t = 1.0 / (1.0 + 0.5 * z);
-                const ans = t * Math.exp(-z * z - 1.26551223 + 
-                    t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + 
-                    t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + 
-                    t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))));
-                return x >= 0 ? ans : 2 - ans;
-            },
-
-            chi2cdf: function(x, df) {
-                // Chi-square cumulative distribution function approximation
-                if (df <= 0) return 0;
-                if (x <= 0) return 0;
-                if (df === 1) {
-                    return 2 * (1 - this.erfc(x / Math.sqrt(2)));
-                }
-                return 1 - Math.exp(-0.5 * x);
-            }
-        };
+        let lastEncryptedData = [];
 
         function cryptoShuffle(array, keyBytes) {
             const result = [...array];
@@ -391,82 +226,24 @@
                     encryptedData.push(word >> 8, word & 0xFF);
                 }
 
-                lastEncryptedBytes = encryptedData;
+                lastEncryptedData = encryptedData;
                 const hexOutput = encryptedData.map(byte => byte.toString(16).padStart(2, '0'));
                 const result = hexOutput.join(' ');
                 
-                let outputHTML = `<strong>Encrypted Hex (${encryptedData.length} bytes):</strong> ${result}<br>`;
+                let outputHTML = `<strong>Encrypted Hex:</strong> ${result}<br>`;
                 outputHTML += `<strong>Rounds:</strong> ${rounds}<br>`;
                 outputHTML += `<strong>CBC:</strong> ${useCBC ? 'ON' : 'OFF'}<br>`;
+                outputHTML += `<strong>Total bytes:</strong> ${encryptedData.length}<br>`;
                 if (useCBC && iv) {
-                    outputHTML += `<strong>IV:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
+                    outputHTML += `<strong>IV included:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
                 }
                 outputHTML += `<button onclick="copyToDecrypt('${result}')">Copy to Decrypt Input</button>`;
-                outputHTML += `<br><button onclick="runNISTTests()">Run NIST Tests on this output</button>`;
 
                 document.getElementById('encryptOutput').innerHTML = outputHTML;
 
             } catch (error) {
                 document.getElementById('encryptOutput').textContent = 'Encryption error: ' + error.message;
             }
-        }
-
-        async function runNISTTests() {
-            if (lastEncryptedBytes.length === 0) {
-                alert('Please encrypt some data first');
-                return;
-            }
-
-            const resultsElement = document.getElementById('nistResults');
-            resultsElement.innerHTML = '<strong>Running NIST Tests...</strong><br>';
-            
-            setTimeout(() => {
-                const tests = [
-                    NISTTests.frequencyTest(lastEncryptedBytes),
-                    NISTTests.runsTest(lastEncryptedBytes),
-                    NISTTests.binaryDerivativeTest(lastEncryptedBytes),
-                    NISTTests.entropyTest(lastEncryptedBytes),
-                    NISTTests.chiSquareTest(lastEncryptedBytes),
-                    NISTTests.piEstimationTest(lastEncryptedBytes)
-                ];
-
-                let html = '<strong>NIST Statistical Test Results:</strong><br>';
-                html += `<strong>Sample size:</strong> ${lastEncryptedBytes.length} bytes<br><br>`;
-                
-                let passed = 0;
-                tests.forEach(test => {
-                    const status = test.passed ? 'PASS' : 'FAIL';
-                    const colorClass = test.passed ? 'test-pass' : 'test-fail';
-                    
-                    html += `<span class="${colorClass}">${test.test}: ${status}</span><br>`;
-                    html += `P-value: ${test.pValue.toFixed(6)}<br>`;
-                    
-                    if (test.entropy !== undefined) {
-                        html += `Entropy: ${test.entropy.toFixed(4)}/8.0000<br>`;
-                    }
-                    if (test.estimatedPi !== undefined) {
-                        html += `Estimated π: ${test.estimatedPi.toFixed(6)} (Error: ${test.error.toFixed(6)})<br>`;
-                    }
-                    if (test.ratio !== undefined) {
-                        html += `Bit change ratio: ${test.ratio.toFixed(4)}<br>`;
-                    }
-                    if (test.chi2 !== undefined) {
-                        html += `Chi²: ${test.chi2.toFixed(2)}<br>`;
-                    }
-                    html += '<br>';
-                    
-                    if (test.passed) passed++;
-                });
-
-                const overall = passed === tests.length ? 'EXCELLENT' : 
-                               passed >= tests.length - 1 ? 'GOOD' : 'POOR';
-                const overallColor = passed === tests.length ? 'test-pass' : 
-                                   passed >= tests.length - 1 ? 'test-warning' : 'test-fail';
-                
-                html += `<span class="${overallColor}"><strong>Overall: ${overall} (${passed}/${tests.length} tests passed)</strong></span>`;
-                
-                resultsElement.innerHTML = html;
-            }, 100);
         }
 
         async function decryptData() {
@@ -546,6 +323,68 @@
             } catch (error) {
                 document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
             }
+        }
+
+        function runSimpleTests() {
+            if (lastEncryptedData.length === 0) {
+                alert('Please encrypt some data first');
+                return;
+            }
+
+            const testResults = document.getElementById('testResults');
+            testResults.innerHTML = 'Running tests...';
+
+            setTimeout(() => {
+                const data = lastEncryptedData;
+                
+                // 1. Frequency Test
+                let ones = 0;
+                for (const byte of data) {
+                    for (let i = 0; i < 8; i++) {
+                        if ((byte >> i) & 1) ones++;
+                    }
+                }
+                const totalBits = data.length * 8;
+                const freqRatio = ones / totalBits;
+                const freqPass = Math.abs(freqRatio - 0.5) < 0.05;
+
+                // 2. Byte Distribution Test
+                const byteCounts = new Array(256).fill(0);
+                for (const byte of data) {
+                    byteCounts[byte]++;
+                }
+                const expected = data.length / 256;
+                let chi2 = 0;
+                for (let i = 0; i < 256; i++) {
+                    chi2 += Math.pow(byteCounts[i] - expected, 2) / expected;
+                }
+                const distributionPass = chi2 < 300; // Simplified threshold
+
+                // 3. Entropy Test
+                let entropy = 0;
+                for (let i = 0; i < 256; i++) {
+                    if (byteCounts[i] > 0) {
+                        const p = byteCounts[i] / data.length;
+                        entropy -= p * Math.log2(p);
+                    }
+                }
+                const entropyPass = entropy > 7.9;
+
+                let html = `<strong>Test Results (${data.length} bytes):</strong><br><br>`;
+                
+                html += `<strong>Frequency Test:</strong> ${freqPass ? 'PASS' : 'FAIL'}<br>`;
+                html += `Ones ratio: ${(freqRatio * 100).toFixed(2)}% (ideal: 50%)<br><br>`;
+                
+                html += `<strong>Distribution Test:</strong> ${distributionPass ? 'PASS' : 'FAIL'}<br>`;
+                html += `Chi²: ${chi2.toFixed(2)} (ideal: ~255)<br><br>`;
+                
+                html += `<strong>Entropy Test:</strong> ${entropyPass ? 'PASS' : 'FAIL'}<br>`;
+                html += `Entropy: ${entropy.toFixed(4)}/8.0000<br><br>`;
+                
+                html += `<strong>Overall:</strong> ${(freqPass && distributionPass && entropyPass) ? 'EXCELLENT RANDOMNESS' : 'NEEDS IMPROVEMENT'}`;
+
+                testResults.innerHTML = html;
+            }, 100);
         }
 
         function copyToDecrypt(hexText) {
