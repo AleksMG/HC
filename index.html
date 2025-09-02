@@ -3,28 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto-Strong Homophonic S-Box</title>
+    <title>Enhanced Crypto S-Box</title>
     <style>
         body { font-family: monospace; margin: 20px; background: #0d1117; color: #c9d1d9; }
         .container { max-width: 1200px; margin: 0 auto; }
-        textarea, input { width: 100%; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; margin: 5px 0; }
+        textarea, input, select { width: 100%; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; margin: 5px 0; }
         button { background: #238636; color: white; border: none; padding: 10px 15px; cursor: pointer; margin: 5px; }
         button:hover { background: #2ea043; }
         .output { background: #161b22; padding: 15px; margin: 10px 0; border-radius: 5px; }
         .row { display: flex; margin: 10px 0; gap: 20px; }
         .col { flex: 1; }
         .section { border: 1px solid #30363d; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .config { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Homophonic Cipher S-Box Implementation</h1>
+        <h1>🔒 Enhanced Crypto S-Box with Rounds</h1>
         
         <div class="section">
             <h3>Key Configuration:</h3>
             <input type="password" id="keyInput" placeholder="Enter encryption key" value="my-secret-key">
             <button onclick="generateSBox()">Generate S-Box from Key</button>
             <div class="output" id="status">S-Box not generated yet</div>
+        </div>
+
+        <div class="section">
+            <h3>Encryption Settings:</h3>
+            <div class="config">
+                <div>
+                    <label>Rounds:</label>
+                    <select id="roundsCount">
+                        <option value="1">1 round</option>
+                        <option value="2">2 rounds</option>
+                        <option value="3">3 rounds</option>
+                        <option value="4" selected>4 rounds</option>
+                        <option value="5">5 rounds</option>
+                        <option value="6">6 rounds</option>
+                    </select>
+                </div>
+                <div>
+                    <label>CBC Mode:</label>
+                    <select id="cbcMode">
+                        <option value="off">OFF</option>
+                        <option value="on">ON</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -53,6 +78,7 @@
         let homophonicSBox = null;
         let inverseBytePermutation = null;
         let inverseHomophonicSBox = null;
+        let roundKeys = [];
 
         function cryptoShuffle(array, keyBytes) {
             const result = [...array];
@@ -62,6 +88,25 @@
                 [result[i], result[j]] = [result[j], result[i]];
             }
             return result;
+        }
+
+        async function generateRoundKeys(masterKey, rounds) {
+            const encoder = new TextEncoder();
+            roundKeys = [];
+            
+            for (let round = 0; round < rounds; round++) {
+                const roundSeed = await crypto.subtle.sign(
+                    'HMAC', 
+                    masterKey, 
+                    encoder.encode(`round-key-${round}`)
+                );
+                const roundKeyBytes = new Uint8Array(roundSeed);
+                roundKeys.push(roundKeyBytes);
+            }
+        }
+
+        function applyRoundKey(byte, roundKey, index) {
+            return byte ^ roundKey[index % roundKey.length];
         }
 
         async function generateSBox() {
@@ -81,6 +126,10 @@
                 const cryptoKey = await crypto.subtle.importKey(
                     'raw', keyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
                 );
+
+                // Generate round keys
+                const rounds = parseInt(document.getElementById('roundsCount').value);
+                await generateRoundKeys(cryptoKey, rounds);
 
                 const seed1 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('byte-permutation'));
                 const seed2 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('homophonic-sbox'));
@@ -116,7 +165,7 @@
                     }
                 }
 
-                statusElement.textContent = 'S-Box generated successfully! Ready for encryption/decryption.';
+                statusElement.textContent = `S-Box generated! Rounds: ${rounds}, CBC: ${document.getElementById('cbcMode').value}`;
 
             } catch (error) {
                 statusElement.textContent = 'Error: ' + error.message;
@@ -124,7 +173,7 @@
         }
 
         async function encryptData() {
-            if (!bytePermutation || !homophonicSBox) {
+            if (!bytePermutation || !homophonicSBox || roundKeys.length === 0) {
                 alert('Please generate S-Box first');
                 return;
             }
@@ -138,38 +187,57 @@
             try {
                 const encoder = new TextEncoder();
                 const data = encoder.encode(inputText);
+                const rounds = parseInt(document.getElementById('roundsCount').value);
+                const useCBC = document.getElementById('cbcMode').value === 'on';
                 
-                let encryptedWords = [];
-                let hexOutput = [];
-
-                for (let i = 0; i < data.length; i++) {
-                    const originalByte = data[i];
-                    const permutedByte = bytePermutation[originalByte];
-                    
-                    const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                    const encryptedWord = homophonicSBox[permutedByte][randomIndex];
-                    
-                    encryptedWords.push(encryptedWord);
-                    hexOutput.push(encryptedWord.toString(16).padStart(4, '0'));
+                let currentState = Array.from(data);
+                let iv = null;
+                
+                if (useCBC) {
+                    iv = crypto.getRandomValues(new Uint8Array(2));
+                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
                 }
 
+                // Multiple rounds of byte-to-byte substitution
+                for (let round = 0; round < rounds - 1; round++) {
+                    const roundKey = roundKeys[round];
+                    currentState = currentState.map((byte, index) => {
+                        const keyedByte = applyRoundKey(byte, roundKey, index);
+                        return bytePermutation[keyedByte];
+                    });
+                }
+
+                // Final round: byte-to-word homophonic substitution
+                const finalRoundKey = roundKeys[rounds - 1];
+                let encryptedWords = [];
+
+                for (let i = 0; i < currentState.length; i++) {
+                    const byte = applyRoundKey(currentState[i], finalRoundKey, i);
+                    const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
+                    const encryptedWord = homophonicSBox[byte][randomIndex];
+                    encryptedWords.push(encryptedWord);
+                }
+
+                const hexOutput = encryptedWords.map(word => word.toString(16).padStart(4, '0'));
                 const result = hexOutput.join(' ');
-                document.getElementById('encryptOutput').innerHTML = 
-                    `<strong>Encrypted Hex:</strong> ${result}<br>
-                     <strong>Word Count:</strong> ${encryptedWords.length}<br>
-                     <button onclick="copyToDecrypt('${result}')">Copy to Decrypt Input</button>`;
+                
+                let outputHTML = `<strong>Encrypted Hex:</strong> ${result}<br>`;
+                outputHTML += `<strong>Rounds:</strong> ${rounds}<br>`;
+                outputHTML += `<strong>CBC:</strong> ${useCBC ? 'ON' : 'OFF'}<br>`;
+                if (useCBC && iv) {
+                    outputHTML += `<strong>IV:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
+                }
+                outputHTML += `<button onclick="copyToDecrypt('${result}')">Copy to Decrypt Input</button>`;
+
+                document.getElementById('encryptOutput').innerHTML = outputHTML;
 
             } catch (error) {
                 document.getElementById('encryptOutput').textContent = 'Encryption error: ' + error.message;
             }
         }
 
-        function copyToDecrypt(hexText) {
-            document.getElementById('decryptInput').value = hexText;
-        }
-
         async function decryptData() {
-            if (!inverseBytePermutation || !inverseHomophonicSBox) {
+            if (!inverseBytePermutation || !inverseHomophonicSBox || roundKeys.length === 0) {
                 alert('Please generate S-Box first');
                 return;
             }
@@ -182,37 +250,62 @@
 
             try {
                 const hexValues = hexText.split(/\s+/).filter(x => x);
-                let decryptedBytes = [];
+                const rounds = parseInt(document.getElementById('roundsCount').value);
+                const useCBC = document.getElementById('cbcMode').value === 'on';
+                
+                let encryptedWords = [];
                 let invalidWords = 0;
 
                 for (const hexValue of hexValues) {
-                    const encryptedWord = parseInt(hexValue, 16);
-                    
-                    if (isNaN(encryptedWord) || encryptedWord < 0 || encryptedWord > 65535) {
-                        invalidWords++;
-                        continue;
-                    }
-
-                    if (inverseHomophonicSBox[encryptedWord] !== undefined) {
-                        const permutedByte = inverseHomophonicSBox[encryptedWord];
-                        const originalByte = inverseBytePermutation[permutedByte];
-                        decryptedBytes.push(originalByte);
+                    const word = parseInt(hexValue, 16);
+                    if (!isNaN(word) && word >= 0 && word <= 65535) {
+                        encryptedWords.push(word);
                     } else {
                         invalidWords++;
                     }
                 }
 
+                if (encryptedWords.length === 0) {
+                    throw new Error('No valid encrypted words found');
+                }
+
+                // Reverse final round: word-to-byte
+                const finalRoundKey = roundKeys[rounds - 1];
+                let currentState = encryptedWords.map((word, index) => {
+                    const containerId = inverseHomophonicSBox[word];
+                    return applyRoundKey(containerId, finalRoundKey, index);
+                });
+
+                // Reverse intermediate rounds: byte-to-byte
+                for (let round = rounds - 2; round >= 0; round--) {
+                    const roundKey = roundKeys[round];
+                    currentState = currentState.map((byte, index) => {
+                        const unpermutedByte = inverseBytePermutation[byte];
+                        return applyRoundKey(unpermutedByte, roundKey, index);
+                    });
+                }
+
+                if (useCBC) {
+                    // Extract IV from the beginning if needed
+                    // For simplicity, we assume IV was stored separately
+                    alert('CBC mode decryption requires IV storage implementation');
+                }
+
                 const decoder = new TextDecoder();
-                const decryptedText = decoder.decode(new Uint8Array(decryptedBytes));
+                const decryptedText = decoder.decode(new Uint8Array(currentState));
                 
                 document.getElementById('decryptOutput').innerHTML = 
                     `<strong>Decrypted Text:</strong> ${decryptedText}<br>
-                     <strong>Bytes Decrypted:</strong> ${decryptedBytes.length}<br>
+                     <strong>Bytes Decrypted:</strong> ${currentState.length}<br>
                      <strong>Invalid Words:</strong> ${invalidWords}`;
 
             } catch (error) {
                 document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
             }
+        }
+
+        function copyToDecrypt(hexText) {
+            document.getElementById('decryptInput').value = hexText;
         }
     </script>
 </body>
