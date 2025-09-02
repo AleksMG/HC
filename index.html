@@ -635,6 +635,7 @@
                 this.mainBlocks = null;
                 this.aesMapping = null;
                 this.hmacKey = null;
+                this.homophoneReverseMap = new Map(); // Карта для быстрого поиска
                 this.performanceMetrics = {
                     sboxGenTime: 0,
                     encryptTime: 0,
@@ -685,6 +686,21 @@
                     
                     // Генерируем AES-подобное преобразование
                     this.aesMapping = await AdvancedSBoxGenerator.generateAesLikeMapping(this.hmacKey, aesRounds);
+                    
+                    // СОЗДАЕМ ОБРАТНУЮ КАРТУ ДЛЯ БЫСТРОГО ДЕШИФРОВАНИЯ
+                    this.homophoneReverseMap.clear();
+                    for (let blockY = 0; blockY < 16; blockY++) {
+                        for (let blockX = 0; blockX < 16; blockX++) {
+                            const transformedByte = (blockY << 4) | blockX;
+                            
+                            for (let subY = 0; subY < 16; subY++) {
+                                for (let subX = 0; subX < 16; subX++) {
+                                    const homophone = this.mainBlocks[blockY][blockX][subY][subX];
+                                    this.homophoneReverseMap.set(homophone, transformedByte);
+                                }
+                            }
+                        }
+                    }
                     
                     this.performanceMetrics.sboxGenTime = performance.now() - startTime;
                     return true;
@@ -741,8 +757,8 @@
                     for (let i = 0; i < ciphertext.length; i++) {
                         const homophone = ciphertext[i];
                         
-                        // Находим исходный байт путем поиска по всей структуре
-                        const originalByte = await this.findOriginalByte(homophone);
+                        // БЫСТРЫЙ поиск с использованием reverse map
+                        const originalByte = await this.findOriginalByteFast(homophone);
                         plaintextBuffer[i] = originalByte;
                     }
                     
@@ -757,28 +773,22 @@
                 }
             }
 
-            async findOriginalByte(homophone) {
-                // Ищем гомофон во всей структуре блоков
-                for (let blockY = 0; blockY < 16; blockY++) {
-                    for (let blockX = 0; blockX < 16; blockX++) {
-                        for (let subY = 0; subY < 16; subY++) {
-                            for (let subX = 0; subX < 16; subX++) {
-                                if (this.mainBlocks[blockY][blockX][subY][subX] === homophone) {
-                                    // Восстанавливаем transformed byte из координат блока
-                                    const transformedByte = (blockY << 4) | blockX;
-                                    
-                                    // Находим обратное AES преобразование
-                                    for (let originalByte = 0; originalByte < 256; originalByte++) {
-                                        if (this.aesMapping[originalByte] === transformedByte) {
-                                            return originalByte;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            async findOriginalByteFast(homophone) {
+                // Используем reverse map для быстрого поиска
+                const transformedByte = this.homophoneReverseMap.get(homophone);
+                
+                if (transformedByte === undefined) {
+                    throw new Error('Гомофон не найден: ' + homophone);
+                }
+                
+                // Находим обратное AES преобразование
+                for (let originalByte = 0; originalByte < 256; originalByte++) {
+                    if (this.aesMapping[originalByte] === transformedByte) {
+                        return originalByte;
                     }
                 }
-                throw new Error('Гомофон не найден: ' + homophone);
+                
+                throw new Error('Обратное преобразование не найдено для: ' + transformedByte);
             }
 
             arrayToHex(array) {
@@ -1005,7 +1015,8 @@
                         '• 65536 уникальных гомофонов\n' +
                         '• Детерминистическая генерация на основе ключа\n' +
                         '• Полная обратимость преобразований\n' +
-                        '• Семантическая безопасность за счет случайного выбора гомофонов';
+                        '• Семантическая безопасность за счет случайного выбора гомофонов\n' +
+                        '• Оптимизированное дешифрование с reverse mapping';
                 }, 1000);
             }
         }
