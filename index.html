@@ -192,9 +192,12 @@
                 
                 let currentState = Array.from(data);
                 let iv = null;
-                
+                let encryptedData = [];
+
                 if (useCBC) {
                     iv = crypto.getRandomValues(new Uint8Array(2));
+                    // Store IV at the beginning of encrypted data
+                    encryptedData.push(...Array.from(iv));
                     currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
                 }
 
@@ -218,14 +221,20 @@
                     encryptedWords.push(encryptedWord);
                 }
 
-                const hexOutput = encryptedWords.map(word => word.toString(16).padStart(4, '0'));
+                // Convert words to bytes and add to encrypted data
+                for (const word of encryptedWords) {
+                    encryptedData.push(word >> 8, word & 0xFF);
+                }
+
+                const hexOutput = encryptedData.map(byte => byte.toString(16).padStart(2, '0'));
                 const result = hexOutput.join(' ');
                 
                 let outputHTML = `<strong>Encrypted Hex:</strong> ${result}<br>`;
                 outputHTML += `<strong>Rounds:</strong> ${rounds}<br>`;
                 outputHTML += `<strong>CBC:</strong> ${useCBC ? 'ON' : 'OFF'}<br>`;
+                outputHTML += `<strong>Total bytes:</strong> ${encryptedData.length}<br>`;
                 if (useCBC && iv) {
-                    outputHTML += `<strong>IV:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
+                    outputHTML += `<strong>IV included:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
                 }
                 outputHTML += `<button onclick="copyToDecrypt('${result}')">Copy to Decrypt Input</button>`;
 
@@ -253,20 +262,38 @@
                 const rounds = parseInt(document.getElementById('roundsCount').value);
                 const useCBC = document.getElementById('cbcMode').value === 'on';
                 
-                let encryptedWords = [];
-                let invalidWords = 0;
-
+                // Convert hex to bytes
+                const encryptedBytes = [];
                 for (const hexValue of hexValues) {
-                    const word = parseInt(hexValue, 16);
-                    if (!isNaN(word) && word >= 0 && word <= 65535) {
-                        encryptedWords.push(word);
-                    } else {
-                        invalidWords++;
+                    const byte = parseInt(hexValue, 16);
+                    if (!isNaN(byte) && byte >= 0 && byte <= 255) {
+                        encryptedBytes.push(byte);
                     }
                 }
 
-                if (encryptedWords.length === 0) {
-                    throw new Error('No valid encrypted words found');
+                if (encryptedBytes.length === 0) {
+                    throw new Error('No valid encrypted bytes found');
+                }
+
+                let iv = null;
+                let dataStart = 0;
+
+                if (useCBC) {
+                    // Extract IV from first 2 bytes
+                    if (encryptedBytes.length < 2) {
+                        throw new Error('CBC mode requires at least 2 bytes for IV');
+                    }
+                    iv = new Uint8Array(encryptedBytes.slice(0, 2));
+                    dataStart = 2;
+                }
+
+                // Convert remaining bytes to words (2 bytes = 1 word)
+                const encryptedWords = [];
+                for (let i = dataStart; i < encryptedBytes.length; i += 2) {
+                    if (i + 1 < encryptedBytes.length) {
+                        const word = (encryptedBytes[i] << 8) | encryptedBytes[i + 1];
+                        encryptedWords.push(word);
+                    }
                 }
 
                 // Reverse final round: word-to-byte
@@ -285,10 +312,9 @@
                     });
                 }
 
-                if (useCBC) {
-                    // Extract IV from the beginning if needed
-                    // For simplicity, we assume IV was stored separately
-                    alert('CBC mode decryption requires IV storage implementation');
+                if (useCBC && iv) {
+                    // Reverse CBC XOR
+                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
                 }
 
                 const decoder = new TextDecoder();
@@ -297,7 +323,7 @@
                 document.getElementById('decryptOutput').innerHTML = 
                     `<strong>Decrypted Text:</strong> ${decryptedText}<br>
                      <strong>Bytes Decrypted:</strong> ${currentState.length}<br>
-                     <strong>Invalid Words:</strong> ${invalidWords}`;
+                     <strong>Mode:</strong> ${useCBC ? 'CBC' : 'ECB'}`;
 
             } catch (error) {
                 document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
