@@ -1,1069 +1,230 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Улучшенная система гомофонического шифрования</title>
+    <title>Crypto-Strong Homophonic S-Box with Permutation</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --secondary: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #22c55e;
-            --background: #0f172a;
-            --surface: #1e293b;
-            --text: #f8fafc;
-            --border: #334155;
-            --card-bg: rgba(30, 41, 59, 0.8);
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-        }
-        
-        body {
-            background: var(--background);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 1rem;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: var(--surface);
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            color: #94a3b8;
-            font-size: 1.1rem;
-        }
-        
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            height: fit-content;
-        }
-        
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #e2e8f0;
-        }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            background: rgba(15, 23, 42, 0.6);
-            color: var(--text);
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-        
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-        
-        textarea {
-            min-height: 120px;
-            resize: vertical;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.9rem;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            margin: 1.5rem 0;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            padding: 0.875rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-        
-        .btn-secondary {
-            background: var(--secondary);
-            color: white;
-        }
-        
-        .btn-secondary:hover:not(:disabled) {
-            background: #0d9669;
-        }
-        
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-        
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-        
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
-        .result-container {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .result-title {
-            font-weight: 600;
-            color: var(--secondary);
-        }
-        
-        .result-content {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.9rem;
-            word-break: break-all;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        
-        .status-ready { background: rgba(16, 185, 129, 0.2); color: var(--secondary); }
-        .status-processing { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .status-error { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .status-success { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-        
-        .footer {
-            text-align: center;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .performance-info {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-
-        .test-results {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .test-card {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 1rem;
-        }
-        
-        .test-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .test-name {
-            font-weight: 600;
-            color: var(--primary);
-        }
-        
-        .test-status {
-            font-size: 0.875rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-        }
-        
-        .test-pass { background: rgba(16, 185, 129, 0.2); color: var(--secondary); }
-        .test-fail { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .test-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        
-        .test-details {
-            font-size: 0.875rem;
-            color: #94a3b8;
-        }
-        
-        .entropy-chart {
-            width: 100%;
-            height: 200px;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .chart-bar {
-            position: absolute;
-            bottom: 0;
-            background: var(--primary);
-            transition: all 0.3s ease;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .stat-card {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin: 0.5rem 0;
-        }
-        
-        .stat-label {
-            font-size: 0.875rem;
-            color: #94a3b8;
-        }
-        
-        .visualization {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border);
-        }
-        
-        .byte-distribution {
-            display: grid;
-            grid-template-columns: repeat(16, 1fr);
-            gap: 2px;
-            margin-top: 1rem;
-        }
-        
-        .byte-cell {
-            padding: 0.5rem;
-            text-align: center;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid var(--border);
-            border-radius: 0.25rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 0.7rem;
-        }
-        
-        .byte-cell:hover {
-            background: rgba(37, 99, 235, 0.3);
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 0.5rem;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
+        body { font-family: monospace; margin: 20px; background: #0d1117; color: #c9d1d9; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        textarea, input { width: 100%; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; }
+        button { background: #238636; color: white; border: none; padding: 10px 15px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2ea043; }
+        .output { background: #161b22; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .row { display: flex; margin: 10px 0; }
+        .col { flex: 1; padding: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🚀 Улучшенная система гомофонического шифрования</h1>
-            <p class="subtitle">Многораундовая обработка с блочной структурой S-Box 16×16×256</p>
-        </header>
-
-        <div class="dashboard">
-            <div class="card">
-                <h2 class="card-title">🔑 Параметры шифрования</h2>
-                
-                <div class="form-group">
-                    <label for="keyInput">Ключ шифрования:</label>
-                    <input type="password" id="keyInput" placeholder="Введите надежную парольную фразу" value="SecurePassphrase123!">
-                </div>
-                
-                <div class="form-group">
-                    <label for="keyConfirmation">Подтверждение ключа:</label>
-                    <input type="password" id="keyConfirmation" placeholder="Подтвердите вашу парольную фразу" value="SecurePassphrase123!">
-                </div>
-                
-                <div class="form-group">
-                    <label for="iterations">PBKDF2 Итерации:</label>
-                    <select id="iterations">
-                        <option value="10000">10,000 (Тест)</option>
-                        <option value="100000">100,000 (Стандарт)</option>
-                        <option value="250000">250,000 (Улучшенный)</option>
-                        <option value="500000" selected>500,000 (Военный)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="aesRounds">Раунды AES-подобного преобразования:</label>
-                    <select id="aesRounds">
-                        <option value="1">1 Раунд</option>
-                        <option value="2">2 Раунда</option>
-                        <option value="3" selected>3 Раунда</option>
-                        <option value="4">4 Раунда</option>
-                        <option value="5">5 Раундов</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="inputData">Входные данные:</label>
-                    <textarea id="inputData" placeholder="Введите данные для обработки">Конфиденциальная информация, требующая шифрования военного уровня. Секретные данные для тестирования системы.</textarea>
-                </div>
-                
-                <div class="btn-group">
-                    <button id="encryptBtn" class="btn-primary">
-                        <span class="loading" id="encryptLoading" style="display: none;"></span>
-                        🔒 Зашифровать
-                    </button>
-                    <button id="decryptBtn" class="btn-secondary">
-                        <span class="loading" id="decryptLoading" style="display: none;"></span>
-                        🔓 Расшифровать
-                    </button>
-                    <button id="testBtn" class="btn-success">🧪 Тестировать</button>
-                    <button id="clearBtn" class="btn-danger">🗑️ Очистить</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title">📊 Результаты и аналитика</h2>
-                
-                <div class="result-container">
-                    <div class="result-header">
-                        <span class="result-title">Вывод:</span>
-                        <span id="statusIndicator" class="status-ready">Готов</span>
-                    </div>
-                    <div id="outputData" class="result-content"></div>
-                </div>
-                
-                <div class="performance-info">
-                    <h4>⏱️ Производительность:</h4>
-                    <div id="performanceMetrics">Готов к работе...</div>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-label">Энтропия</div>
-                        <div class="stat-value" id="entropyValue">0.00</div>
-                        <div class="stat-label">бит/байт</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Размер</div>
-                        <div class="stat-value" id="sizeValue">0</div>
-                        <div class="stat-label">байт</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Коэффициент</div>
-                        <div class="stat-value" id="compressionValue">1.00</div>
-                        <div class="stat-label">расширения</div>
-                    </div>
-                </div>
+        <h1>🔒 Homophonic Cipher with AES-like SubBytes</h1>
+        
+        <div class="row">
+            <div class="col">
+                <h3>Key Input:</h3>
+                <input type="password" id="keyInput" placeholder="Enter encryption key" value="my-secret-key">
+                <button onclick="generateSBox()">Generate S-Box from Key</button>
+                <button onclick="encryptData()">Encrypt</button>
+                <button onclick="decryptData()">Decrypt</button>
             </div>
         </div>
 
-        <div class="card">
-            <h2 class="card-title">📈 Анализ безопасности и тесты</h2>
-            
-            <div class="test-results" id="testResults">
-                <div class="test-card">
-                    <div class="test-header">
-                        <span class="test-name">Энтропия Шеннона</span>
-                        <span class="test-status test-pass">PASS</span>
-                    </div>
-                    <div class="test-details">Измерение случайности данных</div>
-                    <div class="entropy-chart" id="entropyChart"></div>
-                </div>
-                
-                <div class="test-card">
-                    <div class="test-header">
-                        <span class="test-name">Частотный анализ</span>
-                        <span class="test-status test-pass">PASS</span>
-                    </div>
-                    <div class="test-details">Равномерность распределения байтов</div>
-                    <div class="byte-distribution" id="byteDistribution"></div>
-                </div>
-                
-                <div class="test-card">
-                    <div class="test-header">
-                        <span class="test-name">Тест на уникальность</span>
-                        <span class="test-status test-pass">PASS</span>
-                    </div>
-                    <div class="test-details">Уникальные гомофоны: <span id="uniqueHomophones">0</span>/65536</div>
-                </div>
-                
-                <div class="test-card">
-                    <div class="test-header">
-                        <span class="test-name">Проверка обратимости</span>
-                        <span class="test-status test-pass">PASS</span>
-                    </div>
-                    <div class="test-details">Шифрование → Дешифрование = Исходник</div>
-                </div>
+        <div class="row">
+            <div class="col">
+                <h3>Input Text:</h3>
+                <textarea id="inputText" rows="4" placeholder="Enter text to encrypt">Hello, World!</textarea>
+            </div>
+            <div class="col">
+                <h3>Output:</h3>
+                <div class="output" id="output"></div>
             </div>
         </div>
 
-        <div class="footer">
-            <p>🛡️ Улучшенная система гомофонического шифрования v6.0 | Блочная структура 16×16×256</p>
-            <p>© 2024 Криптографические системы | Все операции выполняются на стороне клиента</p>
+        <div class="row">
+            <div class="col">
+                <h3>S-Box Status:</h3>
+                <div class="output" id="status">S-Box not generated yet</div>
+            </div>
         </div>
     </div>
 
     <script>
-        class AdvancedCryptoSystem {
-            constructor() {
-                this.mainBlocks = null;
-                this.aesForwardMapping = null;
-                this.aesInverseMapping = null;
-                this.hmacKey = null;
-                this.homophoneReverseMap = new Map();
-                this.performanceMetrics = {
-                    sboxGenTime: 0,
-                    encryptTime: 0,
-                    decryptTime: 0,
-                    totalTime: 0
-                };
-                this.testResults = {
-                    entropy: 0,
-                    uniqueBytes: 0,
-                    compressionRatio: 1,
-                    frequencyAnalysis: new Array(256).fill(0)
-                };
+        // Global variables
+        let bytePermutation = null;    // SubBytes перестановка: 256 байт → 256 байт
+        let homophonicSBox = null;     // Омофонический S-Box: 256 контейнеров → 256 омофонов
+        let inverseBytePermutation = null; // Обратная перестановка байтов
+        let inverseHomophonicSBox = null;  // Обратный S-Box для дешифрования
+
+        // Crypto-safe Fisher-Yates shuffle
+        function cryptoShuffle(array, keyBytes) {
+            const result = [...array];
+            for (let i = result.length - 1; i > 0; i--) {
+                const keyIndex = i % keyBytes.length;
+                const j = keyBytes[keyIndex] % (i + 1);
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+            return result;
+        }
+
+        // Generate both permutations from key
+        async function generateSBox() {
+            const key = document.getElementById('keyInput').value;
+            if (!key) {
+                alert('Please enter a key');
+                return;
             }
 
-            async initializeWithKey(passphrase, iterations = 500000, aesRounds = 3) {
-                const startTime = performance.now();
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = 'Generating S-Box...';
+
+            try {
+                const encoder = new TextEncoder();
+                const keyData = encoder.encode(key);
                 
-                try {
-                    const encoder = new TextEncoder();
-                    const passphraseBuffer = encoder.encode(passphrase);
-                    
-                    // Генерация соли на основе пароля
-                    const salt = await crypto.subtle.digest('SHA-256', passphraseBuffer);
-                    
-                    const importedKey = await crypto.subtle.importKey(
-                        'raw', passphraseBuffer,
-                        { name: 'PBKDF2' },
-                        false,
-                        ['deriveBits', 'deriveKey']
-                    );
-
-                    const derivedBits = await crypto.subtle.deriveBits(
-                        {
-                            name: 'PBKDF2',
-                            salt: salt,
-                            iterations: iterations,
-                            hash: 'SHA-512'
-                        },
-                        importedKey,
-                        512
-                    );
-
-                    const encryptionKey = new Uint8Array(derivedBits).slice(0, 32);
-
-                    this.hmacKey = await crypto.subtle.importKey(
-                        'raw', encryptionKey,
-                        { name: 'HMAC', hash: 'SHA-512' },
-                        false, ['sign']
-                    );
-
-                    // Генерация S-Box
-                    this.mainBlocks = await this.generateSBox(encryptionKey);
-                    
-                    // Генерация AES преобразований
-                    const mappings = await this.generateAesMappings(aesRounds);
-                    this.aesForwardMapping = mappings.forward;
-                    this.aesInverseMapping = mappings.inverse;
-                    
-                    // Создание обратной карты
-                    this.createReverseMapping();
-                    
-                    this.performanceMetrics.sboxGenTime = performance.now() - startTime;
-                    return true;
-                    
-                } catch (error) {
-                    console.error('Ошибка инициализации:', error);
-                    throw error;
-                }
-            }
-
-            async generateSBox(encryptionKey) {
-                const mainBlocks = new Array(16);
-                const hmacKey = await crypto.subtle.importKey(
-                    'raw', encryptionKey,
+                // Import key for HMAC
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    keyData,
                     { name: 'HMAC', hash: 'SHA-512' },
-                    false, ['sign']
+                    false,
+                    ['sign']
                 );
-                
-                // Генерация 65536 уникальных гомофонов
-                const homophones = new Set();
-                let counter = 0;
-                
-                for (let blockY = 0; blockY < 16; blockY++) {
-                    mainBlocks[blockY] = new Array(16);
-                    for (let blockX = 0; blockX < 16; blockX++) {
-                        const subBlock = new Array(16);
-                        for (let subY = 0; subY < 16; subY++) {
-                            subBlock[subY] = new Array(16);
-                            for (let subX = 0; subX < 16; subX++) {
-                                const counterData = new DataView(new ArrayBuffer(4));
-                                counterData.setUint32(0, counter++, false);
-                                
-                                const hmac = await crypto.subtle.sign('HMAC', hmacKey, counterData);
-                                const hmacBytes = new Uint8Array(hmac);
-                                
-                                // Создание 16-битного гомофона
-                                let homophone;
-                                do {
-                                    const rand = (hmacBytes[0] << 8) | hmacBytes[1];
-                                    homophone = rand;
-                                } while (homophones.has(homophone));
-                                
-                                homophones.add(homophone);
-                                subBlock[subY][subX] = homophone;
-                            }
-                        }
-                        mainBlocks[blockY][blockX] = subBlock;
-                    }
-                }
-                
-                this.testResults.uniqueBytes = homophones.size;
-                return mainBlocks;
-            }
 
-            async generateAesMappings(rounds = 3) {
-                const forward = new Array(256);
-                const inverse = new Array(256);
+                // Generate seeds for both permutations
+                const seed1 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('byte-permutation'));
+                const seed2 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('homophonic-sbox'));
                 
-                for (let byte = 0; byte < 256; byte++) {
-                    let current = byte;
-                    
-                    for (let round = 0; round < rounds; round++) {
-                        const roundData = new Uint8Array([current, round]);
-                        const hmac = await crypto.subtle.sign('HMAC', this.hmacKey, roundData);
-                        const bytes = new Uint8Array(hmac);
-                        
-                        // AES-подобное преобразование
-                        current = bytes[0] ^ bytes[1] ^ bytes[2];
-                        current = this.galoisMultiply(current, 0x1B);
-                        current = current ^ 0x63;
-                    }
-                    
-                    forward[byte] = current;
-                }
+                const seedBytes1 = new Uint8Array(seed1);
+                const seedBytes2 = new Uint8Array(seed2);
+
+                // 1. Create and shuffle byte permutation (SubBytes)
+                const byteArray = Array.from({length: 256}, (_, i) => i);
+                bytePermutation = cryptoShuffle(byteArray, Array.from(seedBytes1));
                 
-                // Создание обратного преобразования
+                // Create inverse permutation for decryption
+                inverseBytePermutation = Array(256);
                 for (let i = 0; i < 256; i++) {
-                    inverse[forward[i]] = i;
+                    inverseBytePermutation[bytePermutation[i]] = i;
                 }
-                
-                return { forward, inverse };
-            }
 
-            galoisMultiply(a, b) {
-                let p = 0;
-                for (let i = 0; i < 8; i++) {
-                    if (b & 1) p ^= a;
-                    const hiBitSet = a & 0x80;
-                    a <<= 1;
-                    if (hiBitSet) a ^= 0x1B;
-                    b >>= 1;
-                }
-                return p & 0xFF;
-            }
+                // 2. Create and shuffle homophonic S-Box
+                const wordArray = Array.from({length: 65536}, (_, i) => i);
+                const shuffledWords = cryptoShuffle(wordArray, Array.from(seedBytes2));
 
-            createReverseMapping() {
-                this.homophoneReverseMap.clear();
-                for (let blockY = 0; blockY < 16; blockY++) {
-                    for (let blockX = 0; blockX < 16; blockX++) {
-                        const transformedByte = (blockY << 4) | blockX;
-                        const originalByte = this.aesInverseMapping[transformedByte];
-                        
-                        for (let subY = 0; subY < 16; subY++) {
-                            for (let subX = 0; subX < 16; subX++) {
-                                const homophone = this.mainBlocks[blockY][blockX][subY][subX];
-                                this.homophoneReverseMap.set(homophone, originalByte);
-                            }
+                // Build homophonic S-Box structure
+                homophonicSBox = {};
+                inverseHomophonicSBox = {};
+
+                let wordIndex = 0;
+                for (let containerId = 0; containerId < 256; containerId++) {
+                    homophonicSBox[containerId] = [];
+                    for (let i = 0; i < 256; i++) {
+                        if (wordIndex < shuffledWords.length) {
+                            const word = shuffledWords[wordIndex++];
+                            homophonicSBox[containerId].push(word);
+                            inverseHomophonicSBox[word] = containerId; // Reverse mapping
                         }
                     }
                 }
-            }
 
-            async encryptData(plaintext) {
-                const startTime = performance.now();
-                
-                try {
-                    const encoder = new TextEncoder();
-                    const plaintextBuffer = encoder.encode(plaintext);
-                    const ciphertext = new Uint16Array(plaintextBuffer.length);
-                    
-                    // Сброс частотного анализа
-                    this.testResults.frequencyAnalysis = new Array(256).fill(0);
-                    
-                    for (let i = 0; i < plaintextBuffer.length; i++) {
-                        const plainByte = plaintextBuffer[i];
-                        const transformedByte = this.aesForwardMapping[plainByte];
-                        
-                        const blockY = (transformedByte >> 4) & 0x0F;
-                        const blockX = transformedByte & 0x0F;
-                        
-                        // Случайный выбор гомофона
-                        const randomY = crypto.getRandomValues(new Uint8Array(1))[0] & 0x0F;
-                        const randomX = crypto.getRandomValues(new Uint8Array(1))[0] & 0x0F;
-                        
-                        const homophone = this.mainBlocks[blockY][blockX][randomY][randomX];
-                        ciphertext[i] = homophone;
-                        
-                        // Запись для частотного анализа
-                        this.testResults.frequencyAnalysis[homophone & 0xFF]++;
-                        this.testResults.frequencyAnalysis[(homophone >> 8) & 0xFF]++;
-                    }
-                    
-                    // Расчет энтропии
-                    this.calculateEntropy();
-                    this.testResults.compressionRatio = ciphertext.length * 2 / plaintextBuffer.length;
-                    
-                    this.performanceMetrics.encryptTime = performance.now() - startTime;
-                    return this.arrayToHex(new Uint8Array(ciphertext.buffer));
-                    
-                } catch (error) {
-                    console.error('Ошибка шифрования:', error);
-                    throw error;
-                }
-            }
+                statusElement.textContent = 'S-Box generated! Byte permutation: 256→256, Homophonic: 256×256→65536';
 
-            async decryptData(encryptedData) {
-                const startTime = performance.now();
-                
-                try {
-                    const encryptedArray = this.hexToArray(encryptedData);
-                    const ciphertext = new Uint16Array(encryptedArray.buffer);
-                    const plaintextBuffer = new Uint8Array(ciphertext.length);
-                    
-                    for (let i = 0; i < ciphertext.length; i++) {
-                        const homophone = ciphertext[i];
-                        const originalByte = this.homophoneReverseMap.get(homophone);
-                        
-                        if (originalByte === undefined) {
-                            throw new Error(`Гомофон не найден: ${homophone}`);
-                        }
-                        
-                        plaintextBuffer[i] = originalByte;
-                    }
-                    
-                    this.performanceMetrics.decryptTime = performance.now() - startTime;
-                    
-                    const decoder = new TextDecoder();
-                    return decoder.decode(plaintextBuffer);
-                    
-                } catch (error) {
-                    console.error('Ошибка расшифровки:', error);
-                    throw error;
-                }
-            }
-
-            calculateEntropy() {
-                const totalBytes = this.testResults.frequencyAnalysis.reduce((a, b) => a + b, 0);
-                if (totalBytes === 0) {
-                    this.testResults.entropy = 0;
-                    return;
-                }
-                
-                let entropy = 0;
-                for (let i = 0; i < 256; i++) {
-                    if (this.testResults.frequencyAnalysis[i] > 0) {
-                        const p = this.testResults.frequencyAnalysis[i] / totalBytes;
-                        entropy -= p * Math.log2(p);
-                    }
-                }
-                
-                this.testResults.entropy = entropy;
-            }
-
-            arrayToHex(array) {
-                return Array.from(array)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join('');
-            }
-
-            hexToArray(hexString) {
-                const result = new Uint8Array(hexString.length / 2);
-                for (let i = 0; i < hexString.length; i += 2) {
-                    result[i / 2] = parseInt(hexString.substr(i, 2), 16);
-                }
-                return result;
-            }
-
-            getPerformanceMetrics() {
-                return this.performanceMetrics;
-            }
-
-            getTestResults() {
-                return this.testResults;
+            } catch (error) {
+                statusElement.textContent = 'Error: ' + error.message;
+                console.error(error);
             }
         }
 
-        class CryptoUI {
-            constructor() {
-                this.cryptoSystem = new AdvancedCryptoSystem();
-                this.initializeEventListeners();
-                this.initializeTestResults();
+        // Encrypt with proper AES-like substitution
+        async function encryptData() {
+            if (!bytePermutation || !homophonicSBox) {
+                alert('Please generate S-Box first');
+                return;
             }
 
-            initializeEventListeners() {
-                document.getElementById('encryptBtn').addEventListener('click', () => this.handleEncrypt());
-                document.getElementById('decryptBtn').addEventListener('click', () => this.handleDecrypt());
-                document.getElementById('testBtn').addEventListener('click', () => this.runTests());
-                document.getElementById('clearBtn').addEventListener('click', () => this.handleClear());
+            const inputText = document.getElementById('inputText').value;
+            if (!inputText) {
+                alert('Please enter text to encrypt');
+                return;
             }
 
-            initializeTestResults() {
-                // Инициализация визуализации тестов
-                this.updateEntropyChart(0);
-                this.updateByteDistribution(new Array(256).fill(0));
-                document.getElementById('uniqueHomophones').textContent = '0';
-            }
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(inputText);
+                
+                let output = [];
+                let hexOutput = [];
 
-            async handleEncrypt() {
-                this.setStatus('processing', 'Шифрование...');
-                this.showLoading('encrypt', true);
-
-                try {
-                    const passphrase = document.getElementById('keyInput').value;
-                    const confirmation = document.getElementById('keyConfirmation').value;
+                for (let i = 0; i < data.length; i++) {
+                    const originalByte = data[i];
                     
-                    if (passphrase !== confirmation) {
-                        throw new Error('Подтверждение ключа не совпадает');
+                    // 1. AES-like SubBytes: нелинейная замена байта
+                    const permutedByte = bytePermutation[originalByte];
+                    
+                    // 2. Homophonic substitution: выбираем случайный омофон
+                    if (homophonicSBox[permutedByte]) {
+                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
+                        const encryptedWord = homophonicSBox[permutedByte][randomIndex];
+                        
+                        output.push(encryptedWord);
+                        hexOutput.push(encryptedWord.toString(16).padStart(4, '0'));
                     }
-
-                    const iterations = parseInt(document.getElementById('iterations').value);
-                    const aesRounds = parseInt(document.getElementById('aesRounds').value);
-                    const inputData = document.getElementById('inputData').value;
-
-                    await this.cryptoSystem.initializeWithKey(passphrase, iterations, aesRounds);
-                    const result = await this.cryptoSystem.encryptData(inputData);
-
-                    document.getElementById('outputData').textContent = result;
-                    this.updateSecurityInfo('encrypt', result.length);
-                    this.updatePerformanceInfo();
-                    this.updateTestResults();
-                    
-                    this.setStatus('success', 'Шифрование успешно завершено');
-                } catch (error) {
-                    this.setStatus('error', 'Ошибка шифрования: ' + error.message);
-                } finally {
-                    this.showLoading('encrypt', false);
                 }
-            }
 
-            async handleDecrypt() {
-                this.setStatus('processing', 'Расшифровка...');
-                this.showLoading('decrypt', true);
+                document.getElementById('output').innerHTML = 
+                    `<strong>Encrypted (hex):</strong> ${hexOutput.join(' ')}<br><br>
+                     <strong>Words:</strong> ${output.join(', ')}`;
 
-                try {
-                    const passphrase = document.getElementById('keyInput').value;
-                    const iterations = parseInt(document.getElementById('iterations').value);
-                    const aesRounds = parseInt(document.getElementById('aesRounds').value);
-                    const inputData = document.getElementById('inputData').value;
-
-                    await this.cryptoSystem.initializeWithKey(passphrase, iterations, aesRounds);
-                    const result = await this.cryptoSystem.decryptData(inputData);
-
-                    document.getElementById('outputData').textContent = result;
-                    this.updateSecurityInfo('decrypt', result.length);
-                    this.updatePerformanceInfo();
-                    
-                    this.setStatus('success', 'Расшифровка успешно завершена');
-                } catch (error) {
-                    this.setStatus('error', 'Ошибка расшифровки: ' + error.message);
-                } finally {
-                    this.showLoading('decrypt', false);
-                }
-            }
-
-            async runTests() {
-                this.setStatus('processing', 'Выполнение тестов...');
-                
-                try {
-                    const passphrase = document.getElementById('keyInput').value;
-                    const iterations = parseInt(document.getElementById('iterations').value);
-                    const aesRounds = parseInt(document.getElementById('aesRounds').value);
-                    
-                    await this.cryptoSystem.initializeWithKey(passphrase, iterations, aesRounds);
-                    
-                    // Тестовые данные
-                    const testData = "Тестовые данные для проверки криптостойкости системы ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 !@#$%^&*()";
-                    const encrypted = await this.cryptoSystem.encryptData(testData);
-                    const decrypted = await this.cryptoSystem.decryptData(encrypted);
-                    
-                    // Проверка обратимости
-                    const reversibilityTest = testData === decrypted ? 'PASS' : 'FAIL';
-                    
-                    // Обновление результатов тестов
-                    this.updateTestResults();
-                    this.updateReversibilityTest(reversibilityTest);
-                    
-                    this.setStatus('success', 'Тестирование завершено');
-                } catch (error) {
-                    this.setStatus('error', 'Ошибка тестирования: ' + error.message);
-                }
-            }
-
-            updateTestResults() {
-                const testResults = this.cryptoSystem.getTestResults();
-                
-                // Обновление статистики
-                document.getElementById('entropyValue').textContent = testResults.entropy.toFixed(4);
-                document.getElementById('sizeValue').textContent = testResults.frequencyAnalysis.reduce((a, b) => a + b, 0);
-                document.getElementById('compressionValue').textContent = testResults.compressionRatio.toFixed(2);
-                document.getElementById('uniqueHomophones').textContent = testResults.uniqueBytes;
-                
-                // Обновление графиков
-                this.updateEntropyChart(testResults.entropy);
-                this.updateByteDistribution(testResults.frequencyAnalysis);
-            }
-
-            updateEntropyChart(entropy) {
-                const chart = document.getElementById('entropyChart');
-                chart.innerHTML = '';
-                
-                const maxEntropy = 8; // Максимальная энтропия для байта
-                const percentage = (entropy / maxEntropy) * 100;
-                
-                const bar = document.createElement('div');
-                bar.className = 'chart-bar';
-                bar.style.width = `${percentage}%`;
-                bar.style.height = '100%';
-                bar.style.left = '0';
-                
-                const label = document.createElement('div');
-                label.style.position = 'absolute';
-                label.style.top = '50%';
-                label.style.left = '50%';
-                label.style.transform = 'translate(-50%, -50%)';
-                label.style.color = 'white';
-                label.style.fontWeight = 'bold';
-                label.textContent = `${entropy.toFixed(2)} bits/byte`;
-                
-                chart.appendChild(bar);
-                chart.appendChild(label);
-            }
-
-            updateByteDistribution(frequencies) {
-                const container = document.getElementById('byteDistribution');
-                container.innerHTML = '';
-                
-                const maxFrequency = Math.max(...frequencies);
-                
-                for (let i = 0; i < 256; i++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'byte-cell';
-                    cell.title = `Byte 0x${i.toString(16).padStart(2, '0')}: ${frequencies[i]}`;
-                    
-                    // Визуальное представление частоты
-                    const intensity = Math.floor((frequencies[i] / maxFrequency) * 100);
-                    cell.style.background = `rgba(37, 99, 235, ${intensity / 100})`;
-                    
-                    // Отображение значения для первых 16 байт
-                    if (i < 16) {
-                        cell.textContent = `0x${i.toString(16).padStart(2, '0')}`;
-                    }
-                    
-                    container.appendChild(cell);
-                }
-            }
-
-            updateReversibilityTest(result) {
-                const testElement = document.querySelector('.test-card:nth-child(4) .test-status');
-                testElement.textContent = result;
-                testElement.className = `test-status test-${result.toLowerCase()}`;
-            }
-
-            updateSecurityInfo(operation, length) {
-                const aesRounds = document.getElementById('aesRounds').value;
-                
-                let info = `Операция: ${operation.toUpperCase()}\n`;
-                info += `Раунды AES: ${aesRounds}\n`;
-                info += `Размер данных: ${length} байт\n`;
-                info += `Структура S-Box: 16×16×256 блоков\n`;
-                info += `Всего гомофонов: 65536\n`;
-                info += `Многораундовая обработка: Да`;
-                
-                // document.getElementById('securityInfo').textContent = info;
-            }
-
-            updatePerformanceInfo() {
-                const metrics = this.cryptoSystem.getPerformanceMetrics();
-                
-                document.getElementById('performanceMetrics').innerHTML = `
-                    <div>Генерация S-Box: ${metrics.sboxGenTime.toFixed(2)} мс</div>
-                    <div>Шифрование: ${metrics.encryptTime.toFixed(2)} мс</div>
-                    <div>Расшифровка: ${metrics.decryptTime.toFixed(2)} мс</div>
-                    <div>Общее время: ${(metrics.sboxGenTime + metrics.encryptTime + metrics.decryptTime).toFixed(2)} мс</div>
-                `;
-            }
-
-            setStatus(type, message) {
-                const indicator = document.getElementById('statusIndicator');
-                indicator.className = `status-${type}`;
-                indicator.textContent = message;
-            }
-
-            showLoading(button, show) {
-                const loadingElement = document.getElementById(`${button}Loading`);
-                const buttonElement = document.getElementById(`${button}Btn`);
-                
-                if (show) {
-                    loadingElement.style.display = 'inline-block';
-                    buttonElement.disabled = true;
-                } else {
-                    loadingElement.style.display = 'none';
-                    buttonElement.disabled = false;
-                }
-            }
-
-            handleClear() {
-                document.getElementById('inputData').value = '';
-                document.getElementById('outputData').textContent = '';
-                document.getElementById('performanceMetrics').textContent = 'Готов к работе...';
-                this.setStatus('ready', 'Готов');
-                this.initializeTestResults();
+            } catch (error) {
+                document.getElementById('output').textContent = 'Encryption error: ' + error.message;
             }
         }
 
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', () => {
-            new CryptoUI();
+        // Decrypt with inverse operations
+        async function decryptData() {
+            if (!inverseBytePermutation || !inverseHomophonicSBox) {
+                alert('Please generate S-Box first');
+                return;
+            }
+
+            const outputText = document.getElementById('output').textContent;
+            const hexMatch = outputText.match(/Encrypted \(hex\): ([0-9a-f ]+)/);
+            
+            if (!hexMatch) {
+                alert('No encrypted data found');
+                return;
+            }
+
+            try {
+                const hexValues = hexMatch[1].split(' ').filter(x => x);
+                const decoder = new TextDecoder();
+                let decryptedBytes = [];
+
+                for (const hexValue of hexValues) {
+                    const encryptedWord = parseInt(hexValue, 16);
+                    
+                    // 1. Reverse homophonic substitution: находим контейнер
+                    if (inverseHomophonicSBox[encryptedWord] !== undefined) {
+                        const permutedByte = inverseHomophonicSBox[encryptedWord];
+                        
+                        // 2. Reverse SubBytes: обратная перестановка
+                        const originalByte = inverseBytePermutation[permutedByte];
+                        decryptedBytes.push(originalByte);
+                    }
+                }
+
+                const decryptedText = decoder.decode(new Uint8Array(decryptedBytes));
+                document.getElementById('output').innerHTML += 
+                    `<br><br><strong>Decrypted:</strong> ${decryptedText}`;
+
+            } catch (error) {
+                document.getElementById('output').textContent += '\nDecryption error: ' + error.message;
+            }
+        }
+
+        // Initialize
+        document.getElementById('inputText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') encryptData();
         });
     </script>
 </body>
