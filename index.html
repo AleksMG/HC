@@ -276,6 +276,55 @@
             width: 0%;
             transition: width 0.5s;
         }
+        
+        .histogram {
+            display: flex;
+            height: 200px;
+            align-items: flex-end;
+            gap: 1px;
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        .bar {
+            background: var(--accent);
+            flex: 1;
+            min-width: 1px;
+        }
+        
+        .byte-distribution {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 2px;
+            margin-top: 15px;
+        }
+        
+        .byte-cell {
+            height: 20px;
+            background: var(--bg-tertiary);
+            position: relative;
+        }
+        
+        .byte-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--accent);
+            height: 0%;
+        }
+        
+        .byte-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7em;
+            color: white;
+            text-shadow: 0 0 2px black;
+        }
     </style>
 </head>
 <body>
@@ -362,6 +411,7 @@
                     <button onclick="runFrequencyTest()">Частотный анализ</button>
                     <button onclick="runAvalancheTest()">Тест лавинного эффекта</button>
                     <button onclick="runRandomnessTests()">Тесты случайности</button>
+                    <button onclick="runAllTests()">Запустить все тесты</button>
                 </div>
                 
                 <div class="analysis-panel">
@@ -387,12 +437,27 @@
                             <div class="metric-title">p-значение</div>
                             <div class="metric-value" id="pValue">0.00</div>
                         </div>
+                        
+                        <div class="metric">
+                            <div class="metric-title">Оценка числа π</div>
+                            <div class="metric-value" id="piEstimate">0.00</div>
+                        </div>
+                        
+                        <div class="metric">
+                            <div class="metric-title">Количество runs</div>
+                            <div class="metric-value" id="runsCount">0</div>
+                        </div>
                     </div>
                     
                     <div>
-                        <h3>Статистические тесты</h3>
-                        <div class="test-results" id="statTestResults">
-                            <div class="test-item">Тесты не проводились</div>
+                        <h3>Визуализация распределения</h3>
+                        <div class="histogram" id="byteHistogram">
+                            <!-- Будет заполнено через JavaScript -->
+                        </div>
+                        
+                        <h3>Распределение байтов</h3>
+                        <div class="byte-distribution" id="byteDistribution">
+                            <!-- Будет заполнено через JavaScript -->
                         </div>
                     </div>
                 </div>
@@ -804,12 +869,110 @@
                 chiSquare += Math.pow(frequencies[i] - expected, 2) / expected;
             }
             
-            // Упрощенный расчет p-значения
-            const degreesOfFreedom = 255;
-            const pValue = Math.exp(-chiSquare / 2) * Math.pow(chiSquare / 2, degreesOfFreedom / 2 - 1) / 
-                          (Math.sqrt(Math.PI * 2) * Math.pow(2, degreesOfFreedom / 2 - 1));
+            // Более точное вычисление p-значения с использованием аппроксимации
+            const pValue = chiSquarePValue(chiSquare, 255);
             
             return { chiSquare, pValue };
+        }
+        
+        // Функция для вычисления p-значения для распределения хи-квадрат
+        function chiSquarePValue(chi2, df) {
+            if (df <= 0) return 0;
+            if (chi2 <= 0) return 1;
+            
+            // Аппроксимация для больших степеней свободы (df > 30)
+            const z = (Math.sqrt(2 * chi2) - Math.sqrt(2 * df - 1));
+            return 1 - (1 + erf(z / Math.sqrt(2))) / 2;
+        }
+        
+        // Функция ошибок (error function)
+        function erf(x) {
+            // Approximation from Abramowitz and Stegun
+            const a1 = 0.254829592;
+            const a2 = -0.284496736;
+            const a3 = 1.421413741;
+            const a4 = -1.453152027;
+            const a5 = 1.061405429;
+            const p = 0.3275911;
+            
+            const sign = Math.sign(x);
+            x = Math.abs(x);
+            
+            const t = 1.0 / (1.0 + p * x);
+            const y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            
+            return sign * y;
+        }
+        
+        // Функция для расчета числа π методом Монте-Карло
+        function calculatePiEstimate(data) {
+            if (!data || data.length < 2) return 0;
+            
+            let inCircle = 0;
+            let totalPairs = 0;
+            
+            // Обрабатываем данные парами байтов
+            for (let i = 0; i < data.length - 1; i += 2) {
+                const x = data[i] / 255.0;       // Нормализуем к [0, 1]
+                const y = data[i + 1] / 255.0;   // Нормализуем к [0, 1]
+                
+                // Проверяем, попадает ли точка в единичную окружность
+                if (x * x + y * y <= 1.0) {
+                    inCircle++;
+                }
+                totalPairs++;
+            }
+            
+            if (totalPairs === 0) return 0;
+            
+            // Оценка π: (4 * точки в круге) / общее количество точек
+            return (4.0 * inCircle) / totalPairs;
+        }
+        
+        // Функция для подсчета runs (серий)
+        function calculateRuns(data) {
+            if (!data || data.length < 2) return 0;
+            
+            let runs = 1;
+            let previous = data[0] >= 128; // Преобразуем в бинарную последовательность
+            
+            for (let i = 1; i < data.length; i++) {
+                const current = data[i] >= 128;
+                if (current !== previous) {
+                    runs++;
+                    previous = current;
+                }
+            }
+            
+            return runs;
+        }
+        
+        // Функция для вычисления автокорреляции
+        function calculateAutocorrelation(data, lag = 1) {
+            if (!data || data.length <= lag) return 0;
+            
+            const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+            let numerator = 0;
+            let denominator = 0;
+            
+            for (let i = 0; i < data.length - lag; i++) {
+                numerator += (data[i] - mean) * (data[i + lag] - mean);
+                denominator += Math.pow(data[i] - mean, 2);
+            }
+            
+            return numerator / denominator;
+        }
+        
+        // Функция для частотного анализа
+        function frequencyAnalysis(data) {
+            if (!data || data.length === 0) return null;
+            
+            const frequencies = new Array(256).fill(0);
+            for (const byte of data) {
+                frequencies[byte]++;
+            }
+            
+            return frequencies;
         }
         
         // Функции для работы с интерфейсом
@@ -983,8 +1146,8 @@
                 { 
                     name: 'χ² тест', 
                     value: chiSquareResult.chiSquare, 
-                    pass: chiSquareResult.chiSquare > 200 && chiSquareResult.chiSquare < 300,
-                    description: `χ²: ${chiSquareResult.chiSquare.toFixed(2)} (ожидается: 200-300)`
+                    pass: chiSquareResult.pValue > 0.05,
+                    description: `χ²: ${chiSquareResult.chiSquare.toFixed(2)}, p-value: ${chiSquareResult.pValue.toFixed(6)} (ожидается: p > 0.05)`
                 }
             ];
             
@@ -1010,18 +1173,143 @@
         }
         
         function runFrequencyTest() {
-            // Реализация частотного анализа
-            alert('Частотный анализ выполняется...');
+            if (!lastOperationResult || lastOperationResult.length === 0) {
+                alert('Сначала выполните шифрование или дешифрование');
+                return;
+            }
+            
+            const frequencies = frequencyAnalysis(lastOperationResult);
+            if (!frequencies) return;
+            
+            const analysisResults = document.getElementById('analysisResults');
+            analysisResults.innerHTML = '';
+            
+            // Создаем гистограмму
+            const histogram = document.getElementById('byteHistogram');
+            histogram.innerHTML = '';
+            
+            const distribution = document.getElementById('byteDistribution');
+            distribution.innerHTML = '';
+            
+            const maxFreq = Math.max(...frequencies);
+            
+            // Заполняем гистограмму
+            for (let i = 0; i < 256; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${(frequencies[i] / maxFreq) * 100}%`;
+                bar.title = `Byte ${i}: ${frequencies[i]} occurrences`;
+                histogram.appendChild(bar);
+            }
+            
+            // Заполняем распределение байтов
+            for (let i = 0; i < 256; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'byte-cell';
+                
+                const fill = document.createElement('div');
+                fill.className = 'byte-fill';
+                fill.style.height = `${(frequencies[i] / maxFreq) * 100}%`;
+                
+                const value = document.createElement('div');
+                value.className = 'byte-value';
+                value.textContent = i.toString(16).toUpperCase().padStart(2, '0');
+                
+                cell.appendChild(fill);
+                cell.appendChild(value);
+                distribution.appendChild(cell);
+            }
+            
+            // Добавляем информацию о тесте
+            const expected = lastOperationResult.length / 256;
+            const uniformity = frequencies.reduce((sum, freq) => sum + Math.pow(freq - expected, 2), 0) / expected;
+            
+            const item = document.createElement('div');
+            item.className = 'test-item';
+            item.innerHTML = `
+                <div>Частотный анализ</div>
+                <div class="test-info">ВЫПОЛНЕНО</div>
+            `;
+            analysisResults.appendChild(item);
+            
+            const desc = document.createElement('div');
+            desc.className = 'test-item';
+            desc.innerHTML = `Равномерность распределения: ${uniformity.toFixed(2)} (идеал: близко к 0)`;
+            analysisResults.appendChild(desc);
         }
         
         function runAvalancheTest() {
-            // Реализация теста лавинного эффекта
-            alert('Тест лавинного эффекта выполняется...');
+            if (!cipherInstance || !lastOperationResult) {
+                alert('Сначала выполните шифрование');
+                return;
+            }
+            
+            const analysisResults = document.getElementById('analysisResults');
+            analysisResults.innerHTML = '<div class="test-item">Тест лавинного эффекта в разработке</div>';
         }
         
         function runRandomnessTests() {
-            // Реализация тестов случайности
-            alert('Тесты случайности выполняются...');
+            if (!lastOperationResult || lastOperationResult.length === 0) {
+                alert('Сначала выполните шифрование или дешифрование');
+                return;
+            }
+            
+            const piEstimate = calculatePiEstimate(lastOperationResult);
+            const runs = calculateRuns(lastOperationResult);
+            const autocorrelation = calculateAutocorrelation(lastOperationResult, 1);
+            
+            document.getElementById('piEstimate').textContent = piEstimate.toFixed(6);
+            document.getElementById('runsCount').textContent = runs;
+            
+            const analysisResults = document.getElementById('analysisResults');
+            analysisResults.innerHTML = '';
+            
+            const tests = [
+                { 
+                    name: 'Оценка числа π', 
+                    value: piEstimate, 
+                    pass: Math.abs(piEstimate - Math.PI) < 0.05,
+                    description: `π ≈ ${piEstimate.toFixed(6)} (ошибка: ${Math.abs(piEstimate - Math.PI).toFixed(6)})`
+                },
+                { 
+                    name: 'Тест серий (runs)', 
+                    value: runs, 
+                    pass: runs > lastOperationResult.length * 0.4 && runs < lastOperationResult.length * 0.6,
+                    description: `Runs: ${runs} (ожидается: ~${Math.round(lastOperationResult.length / 2)})`
+                },
+                { 
+                    name: 'Автокорреляция (lag=1)', 
+                    value: autocorrelation, 
+                    pass: Math.abs(autocorrelation) < 0.1,
+                    description: `Автокорреляция: ${autocorrelation.toFixed(6)} (ожидается: |r| < 0.1)`
+                }
+            ];
+            
+            for (const test of tests) {
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                
+                const statusClass = test.pass ? 'test-pass' : 'test-fail';
+                const statusText = test.pass ? 'ПРОЙДЕН' : 'НЕ ПРОЙДЕН';
+                
+                item.innerHTML = `
+                    <div>${test.name}</div>
+                    <div class="${statusClass}">${statusText}</div>
+                `;
+                
+                analysisResults.appendChild(item);
+                
+                const desc = document.createElement('div');
+                desc.className = 'test-item';
+                desc.innerHTML = test.description;
+                analysisResults.appendChild(desc);
+            }
+        }
+        
+        function runAllTests() {
+            runEntropyAnalysis();
+            runFrequencyTest();
+            runRandomnessTests();
         }
         
         function analyzeSBox() {
