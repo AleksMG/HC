@@ -65,7 +65,7 @@
             <div class="col">
                 <div class="section">
                     <h3>Decryption:</h3>
-                    <textarea id="decryptInput" rows="4" placeholder="Paste encrypted hex here (with IV if CBC)"></textarea>
+                    <textarea id="decryptInput" rows="4" placeholder="Paste encrypted hex here"></textarea>
                     <button onclick="decryptData()">Decrypt</button>
                     <div class="output" id="decryptOutput">Decrypted output will appear here</div>
                 </div>
@@ -192,63 +192,33 @@
                 
                 let currentState = Array.from(data);
                 let iv = null;
-                let encryptedData = [];
-
+                
                 if (useCBC) {
                     iv = crypto.getRandomValues(new Uint8Array(2));
-                    // Store IV at the beginning of encrypted data
-                    encryptedData.push(...Array.from(iv));
+                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
                 }
 
-                // CBC: XOR with IV or previous block
-                let previousBlock = iv ? new Uint8Array(2) : null;
-                
+                // Multiple rounds of byte-to-byte substitution
+                for (let round = 0; round < rounds - 1; round++) {
+                    const roundKey = roundKeys[round];
+                    currentState = currentState.map((byte, index) => {
+                        const keyedByte = applyRoundKey(byte, roundKey, index);
+                        return bytePermutation[keyedByte];
+                    });
+                }
+
+                // Final round: byte-to-word homophonic substitution
+                const finalRoundKey = roundKeys[rounds - 1];
+                let encryptedWords = [];
+
                 for (let i = 0; i < currentState.length; i++) {
-                    let byte = currentState[i];
-                    
-                    if (useCBC) {
-                        // For CBC, we need to process blocks of 2 bytes (since output is 2 bytes)
-                        if (i % 2 === 0 && i + 1 < currentState.length) {
-                            const block = (currentState[i] << 8) | currentState[i + 1];
-                            const xoredBlock = block ^ (previousBlock ? (previousBlock[0] << 8 | previousBlock[1]) : 0);
-                            
-                            // Process the xored block through rounds
-                            let processedBlock = xoredBlock;
-                            for (let round = 0; round < rounds - 1; round++) {
-                                const roundKey = roundKeys[round];
-                                processedBlock = bytePermutation[applyRoundKey(processedBlock & 0xFF, roundKey, i)] |
-                                                (bytePermutation[applyRoundKey((processedBlock >> 8) & 0xFF, roundKey, i + 1)] << 8);
-                            }
-                            
-                            // Final round with homophonic substitution
-                            const finalRoundKey = roundKeys[rounds - 1];
-                            const highByte = applyRoundKey((processedBlock >> 8) & 0xFF, finalRoundKey, i);
-                            const lowByte = applyRoundKey(processedBlock & 0xFF, finalRoundKey, i + 1);
-                            
-                            const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                            const encryptedWord = homophonicSBox[highByte][randomIndex];
-                            
-                            encryptedData.push(encryptedWord >> 8, encryptedWord & 0xFF);
-                            previousBlock = new Uint8Array([encryptedWord >> 8, encryptedWord & 0xFF]);
-                        }
-                    } else {
-                        // ECB mode - process each byte independently
-                        for (let round = 0; round < rounds - 1; round++) {
-                            const roundKey = roundKeys[round];
-                            byte = bytePermutation[applyRoundKey(byte, roundKey, i)];
-                        }
-                        
-                        const finalRoundKey = roundKeys[rounds - 1];
-                        byte = applyRoundKey(byte, finalRoundKey, i);
-                        
-                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                        const encryptedWord = homophonicSBox[byte][randomIndex];
-                        
-                        encryptedData.push(encryptedWord >> 8, encryptedWord & 0xFF);
-                    }
+                    const byte = applyRoundKey(currentState[i], finalRoundKey, i);
+                    const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
+                    const encryptedWord = homophonicSBox[byte][randomIndex];
+                    encryptedWords.push(encryptedWord);
                 }
 
-                const hexOutput = Array.from(encryptedData).map(byte => byte.toString(16).padStart(2, '0'));
+                const hexOutput = encryptedWords.map(word => word.toString(16).padStart(4, '0'));
                 const result = hexOutput.join(' ');
                 
                 let outputHTML = `<strong>Encrypted Hex:</strong> ${result}<br>`;
@@ -283,78 +253,51 @@
                 const rounds = parseInt(document.getElementById('roundsCount').value);
                 const useCBC = document.getElementById('cbcMode').value === 'on';
                 
-                // Convert hex to bytes
-                const encryptedBytes = [];
+                let encryptedWords = [];
+                let invalidWords = 0;
+
                 for (const hexValue of hexValues) {
-                    const byte = parseInt(hexValue, 16);
-                    if (!isNaN(byte) && byte >= 0 && byte <= 255) {
-                        encryptedBytes.push(byte);
+                    const word = parseInt(hexValue, 16);
+                    if (!isNaN(word) && word >= 0 && word <= 65535) {
+                        encryptedWords.push(word);
+                    } else {
+                        invalidWords++;
                     }
                 }
 
-                if (encryptedBytes.length === 0) {
-                    throw new Error('No valid encrypted bytes found');
+                if (encryptedWords.length === 0) {
+                    throw new Error('No valid encrypted words found');
                 }
 
-                let decryptedBytes = [];
-                let iv = null;
-                let dataStart = 0;
+                // Reverse final round: word-to-byte
+                const finalRoundKey = roundKeys[rounds - 1];
+                let currentState = encryptedWords.map((word, index) => {
+                    const containerId = inverseHomophonicSBox[word];
+                    return applyRoundKey(containerId, finalRoundKey, index);
+                });
+
+                // Reverse intermediate rounds: byte-to-byte
+                for (let round = rounds - 2; round >= 0; round--) {
+                    const roundKey = roundKeys[round];
+                    currentState = currentState.map((byte, index) => {
+                        const unpermutedByte = inverseBytePermutation[byte];
+                        return applyRoundKey(unpermutedByte, roundKey, index);
+                    });
+                }
 
                 if (useCBC) {
-                    // Extract IV from first 2 bytes
-                    if (encryptedBytes.length < 2) {
-                        throw new Error('CBC mode requires at least 2 bytes for IV');
-                    }
-                    iv = new Uint8Array(encryptedBytes.slice(0, 2));
-                    dataStart = 2;
-                }
-
-                let previousBlock = iv;
-                
-                for (let i = dataStart; i < encryptedBytes.length; i += 2) {
-                    if (i + 1 >= encryptedBytes.length) break;
-                    
-                    const encryptedWord = (encryptedBytes[i] << 8) | encryptedBytes[i + 1];
-                    
-                    if (useCBC) {
-                        // Reverse final round
-                        const containerId = inverseHomophonicSBox[encryptedWord];
-                        const finalRoundKey = roundKeys[rounds - 1];
-                        let processedBlock = applyRoundKey(containerId, finalRoundKey, i);
-                        
-                        // Reverse intermediate rounds
-                        for (let round = rounds - 2; round >= 0; round--) {
-                            const roundKey = roundKeys[round];
-                            processedBlock = applyRoundKey(inverseBytePermutation[processedBlock], roundKey, i);
-                        }
-                        
-                        // CBC XOR with previous block
-                        const xoredBlock = processedBlock ^ (previousBlock ? (previousBlock[0] << 8 | previousBlock[1]) : 0);
-                        decryptedBytes.push(xoredBlock >> 8, xoredBlock & 0xFF);
-                        
-                        previousBlock = new Uint8Array([encryptedBytes[i], encryptedBytes[i + 1]]);
-                    } else {
-                        // ECB mode
-                        const containerId = inverseHomophonicSBox[encryptedWord];
-                        const finalRoundKey = roundKeys[rounds - 1];
-                        let byte = applyRoundKey(containerId, finalRoundKey, i);
-                        
-                        for (let round = rounds - 2; round >= 0; round--) {
-                            const roundKey = roundKeys[round];
-                            byte = applyRoundKey(inverseBytePermutation[byte], roundKey, i);
-                        }
-                        
-                        decryptedBytes.push(byte);
-                    }
+                    // Extract IV from the beginning if needed
+                    // For simplicity, we assume IV was stored separately
+                    alert('CBC mode decryption requires IV storage implementation');
                 }
 
                 const decoder = new TextDecoder();
-                const decryptedText = decoder.decode(new Uint8Array(decryptedBytes));
+                const decryptedText = decoder.decode(new Uint8Array(currentState));
                 
                 document.getElementById('decryptOutput').innerHTML = 
                     `<strong>Decrypted Text:</strong> ${decryptedText}<br>
-                     <strong>Bytes Decrypted:</strong> ${decryptedBytes.length}<br>
-                     <strong>Mode:</strong> ${useCBC ? 'CBC' : 'ECB'}`;
+                     <strong>Bytes Decrypted:</strong> ${currentState.length}<br>
+                     <strong>Invalid Words:</strong> ${invalidWords}`;
 
             } catch (error) {
                 document.getElementById('decryptOutput').textContent = 'Decryption error: ' + error.message;
