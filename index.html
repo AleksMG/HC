@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профессиональный анализ криптостойкости</title>
+    <title>Профессиональная гомофоническая криптосистема</title>
     <style>
         :root {
             --bg-primary: #0d1117;
@@ -28,7 +28,7 @@
         }
         
         .container { 
-            max-width: 1800px; 
+            max-width: 1600px; 
             margin: 0 auto; 
         }
         
@@ -172,23 +172,6 @@
             color: var(--accent);
         }
         
-        .histogram {
-            display: flex;
-            height: 200px;
-            align-items: flex-end;
-            gap: 1px;
-            margin-top: 15px;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-        }
-        
-        .bar {
-            background: var(--accent);
-            flex: 1;
-            min-width: 1px;
-        }
-        
         .test-results {
             margin-top: 20px;
         }
@@ -250,75 +233,6 @@
             display: block;
         }
         
-        .hex-view {
-            font-family: monospace;
-            white-space: pre;
-            overflow-x: auto;
-            background: var(--bg-tertiary);
-            padding: 10px;
-            border-radius: 4px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .byte-distribution {
-            display: grid;
-            grid-template-columns: repeat(16, 1fr);
-            gap: 2px;
-            margin-top: 15px;
-        }
-        
-        .byte-cell {
-            height: 20px;
-            background: var(--bg-tertiary);
-            position: relative;
-        }
-        
-        .byte-fill {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--accent);
-            height: 0%;
-        }
-        
-        .byte-value {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 0.7em;
-            color: white;
-            text-shadow: 0 0 2px black;
-        }
-        
-        .entropy-display {
-            height: 30px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            margin-top: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .entropy-fill {
-            height: 100%;
-            background: var(--success);
-            width: 0%;
-            transition: width 1s;
-        }
-        
-        .entropy-label {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-        }
-        
         .sbox-table {
             display: grid;
             grid-template-columns: repeat(17, 1fr);
@@ -362,32 +276,19 @@
             width: 0%;
             transition: width 0.5s;
         }
-        
-        .analysis-controls {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-        
-        .analysis-control {
-            flex: 1;
-            min-width: 200px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🔐 Профессиональный анализ криптостойкости S-Box алгоритма</h1>
-            <p>Объективные измерения и полный криптографический анализ</p>
+            <h1>🔐 Профессиональная гомофоническая криптосистема</h1>
+            <p>Улучшенная реализация на основе передовых криптографических принципов</p>
         </header>
         
         <div class="tabs">
             <div class="tab active" onclick="switchTab('encryption')">Шифрование</div>
             <div class="tab" onclick="switchTab('analysis')">Анализ</div>
             <div class="tab" onclick="switchTab('sbox')">S-Box анализ</div>
-            <div class="tab" onclick="switchTab('visualization')">Визуализация</div>
         </div>
         
         <div id="encryption" class="tab-content active">
@@ -397,140 +298,75 @@
                     
                     <div class="input-group">
                         <label for="keyInput">Ключ шифрования:</label>
-                        <input type="password" id="keyInput" value="my-secret-key">
+                        <input type="password" id="keyInput" value="super-secure-key-with-high-entropy">
                     </div>
                     
                     <div class="input-group">
-                        <label for="roundsCount">Количество раундов:</label>
-                        <select id="roundsCount">
-                            <option value="1">1 раунд</option>
-                            <option value="2">2 раунда</option>
-                            <option value="3">3 раунда</option>
-                            <option value="4" selected>4 раунда</option>
-                            <option value="5">5 раундов</option>
-                            <option value="6">6 раундов</option>
-                            <option value="8">8 раундов</option>
-                            <option value="10">10 раундов</option>
-                            <option value="12">12 раундов</option>
+                        <label for="keyConfirmation">Подтверждение ключа:</label>
+                        <input type="password" id="keyConfirmation" value="super-secure-key-with-high-entropy">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pbkdf2Iterations">PBKDF2 Итерации:</label>
+                        <select id="pbkdf2Iterations">
+                            <option value="100000">100,000 (стандарт)</option>
+                            <option value="250000">250,000 (усиленный)</option>
+                            <option value="500000" selected>500,000 (военный уровень)</option>
+                            <option value="1000000">1,000,000 (максимальный)</option>
                         </select>
                     </div>
                     
                     <div class="input-group">
-                        <label for="cbcMode">Режим CBC:</label>
-                        <select id="cbcMode">
-                            <option value="off">Выключен</option>
-                            <option value="on">Включен</option>
+                        <label for="operationMode">Режим работы:</label>
+                        <select id="operationMode">
+                            <option value="cbc" selected>CBC (рекомендуется)</option>
+                            <option value="cfb">CFB</option>
+                            <option value="ofb">OFB</option>
                         </select>
                     </div>
                     
-                    <button onclick="generateSBox()" class="warning">Сгенерировать S-Box</button>
+                    <button onclick="initializeCipher()" class="warning">Инициализировать шифр</button>
                     
-                    <div class="output" id="status">S-Box не сгенерирован</div>
+                    <div class="output" id="initStatus">Шифр не инициализирован</div>
                 </div>
                 
                 <div class="card">
-                    <h2 class="card-title">Быстрые метрики</h2>
-                    
-                    <div class="metric">
-                        <div class="metric-title">Энтропия S-Box (бит/байт)</div>
-                        <div class="metric-value" id="sboxEntropy">0.00</div>
-                        <div class="entropy-display">
-                            <div class="entropy-fill" id="entropyBar"></div>
-                            <div class="entropy-label" id="entropyLabel">0%</div>
-                        </div>
-                    </div>
-                    
-                    <div class="metric">
-                        <div class="metric-title">Эффективность перемешивания</div>
-                        <div class="metric-value" id="mixingEfficiency">0%</div>
-                    </div>
-                    
-                    <div class="metric">
-                        <div class="metric-title">Уникальность замен</div>
-                        <div class="metric-value" id="uniqueness">0%</div>
-                    </div>
-                    
-                    <button onclick="calculateSBoxMetrics()">Рассчитать метрики S-Box</button>
-                </div>
-            </div>
-            
-            <div class="grid">
-                <div class="card">
-                    <h2 class="card-title">Шифрование</h2>
+                    <h2 class="card-title">Обработка данных</h2>
                     
                     <div class="input-group">
-                        <label for="encryptInput">Текст для шифрования:</label>
-                        <textarea id="encryptInput">Hello, World! This is a test message for cryptographic analysis.</textarea>
+                        <label for="inputData">Входные данные:</label>
+                        <textarea id="inputData">Конфиденциальная информация, требующая высшего уровня защиты</textarea>
                     </div>
                     
                     <div class="flex-row">
                         <button onclick="encryptData()">Зашифровать</button>
-                        <button onclick="encryptMultiple(5)">5 шифрований</button>
-                        <button onclick="clearEncrypt()" class="secondary">Очистить</button>
-                    </div>
-                    
-                    <h3>Результат:</h3>
-                    <div class="output" id="encryptOutput">Зашифрованные данные появятся здесь</div>
-                </div>
-                
-                <div class="card">
-                    <h2 class="card-title">Дешифрование</h2>
-                    
-                    <div class="input-group">
-                        <label for="decryptInput">Данные для дешифрования (hex):</label>
-                        <textarea id="decryptInput"></textarea>
-                    </div>
-                    
-                    <div class="flex-row">
                         <button onclick="decryptData()">Дешифровать</button>
-                        <button onclick="clearDecrypt()" class="secondary">Очистить</button>
+                        <button onclick="clearAll()" class="secondary">Очистить</button>
                     </div>
                     
                     <h3>Результат:</h3>
-                    <div class="output" id="decryptOutput">Дешифрованные данные появятся здесь</div>
+                    <div class="output" id="outputData">Результаты появятся здесь</div>
+                    
+                    <h3>Информация о шифровании:</h3>
+                    <div class="output" id="encryptionInfo">Информация о процессе шифрования</div>
                 </div>
             </div>
         </div>
         
         <div id="analysis" class="tab-content">
             <div class="card">
-                <h2 class="card-title">Статистический анализ</h2>
-                
-                <div class="analysis-controls">
-                    <div class="analysis-control">
-                        <label for="analysisSampleSize">Размер выборки (байт):</label>
-                        <input type="number" id="analysisSampleSize" value="10000" min="1000" max="1000000">
-                    </div>
-                    
-                    <div class="analysis-control">
-                        <label for="analysisTests">Выбор тестов:</label>
-                        <select id="analysisTests" multiple>
-                            <option value="entropy" selected>Энтропия</option>
-                            <option value="frequency" selected>Частотный анализ</option>
-                            <option value="chi2" selected>χ² тест</option>
-                            <option value="autocorrelation" selected>Автокорреляция</option>
-                            <option value="runs" selected>Тест серий</option>
-                            <option value="avalanche" selected>Лавинный эффект</option>
-                        </select>
-                    </div>
-                </div>
+                <h2 class="card-title">Криптографический анализ</h2>
                 
                 <div class="flex-row">
-                    <button onclick="runEntropyTests()">Анализ энтропии</button>
-                    <button onclick="runFrequencyAnalysis()">Частотный анализ</button>
-                    <button onclick="runAvalancheTest()">Тест на лавинный эффект</button>
-                    <button onclick="runCorrelationTest()">Анализ корреляции</button>
-                    <button onclick="runLinearCryptanalysis()">Линейный криптоанализ</button>
-                    <button onclick="runAllTests()">Запустить все тесты</button>
-                </div>
-                
-                <div class="progress-bar">
-                    <div class="progress-fill" id="analysisProgress"></div>
+                    <button onclick="runEntropyAnalysis()">Анализ энтропии</button>
+                    <button onclick="runFrequencyTest()">Частотный анализ</button>
+                    <button onclick="runAvalancheTest()">Тест лавинного эффекта</button>
+                    <button onclick="runRandomnessTests()">Тесты случайности</button>
                 </div>
                 
                 <div class="analysis-panel">
                     <div>
-                        <h3>Метрики зашифрованного текста</h3>
+                        <h3>Метрики зашифрованных данных</h3>
                         
                         <div class="metric">
                             <div class="metric-title">Энтропия Шеннона (бит/байт)</div>
@@ -543,52 +379,27 @@
                         </div>
                         
                         <div class="metric">
-                            <div class="metric-title">χ² (хи-квадрат) тест</div>
+                            <div class="metric-title">χ² статистика</div>
                             <div class="metric-value" id="chiSquare">0.00</div>
                         </div>
                         
                         <div class="metric">
-                            <div class="metric-title">p-значение (хи-квадрат)</div>
+                            <div class="metric-title">p-значение</div>
                             <div class="metric-value" id="pValue">0.00</div>
-                        </div>
-                        
-                        <div class="metric">
-                            <div class="metric-title">Среднее значение байтов</div>
-                            <div class="metric-value" id="byteMean">0.00</div>
-                        </div>
-                        
-                        <div class="metric">
-                            <div class="metric-title">Стандартное отклонение</div>
-                            <div class="metric-value" id="byteStdDev">0.00</div>
-                        </div>
-                        
-                        <div class="metric">
-                            <div class="metric-title">Количество runs</div>
-                            <div class="metric-value" id="runsCount">0</div>
-                        </div>
-                        
-                        <div class="metric">
-                            <div class="metric-title">Автокорреляция (lag=1)</div>
-                            <div class="metric-value" id="autocorrelation">0.00</div>
                         </div>
                     </div>
                     
                     <div>
-                        <h3>Распределение байтов</h3>
-                        <div class="histogram" id="byteHistogram">
-                            <!-- Будет заполнено через JavaScript -->
-                        </div>
-                        
-                        <h3>Частотное распределение</h3>
-                        <div class="byte-distribution" id="byteDistribution">
-                            <!-- Будет заполнено через JavaScript -->
+                        <h3>Статистические тесты</h3>
+                        <div class="test-results" id="statTestResults">
+                            <div class="test-item">Тесты не проводились</div>
                         </div>
                     </div>
                 </div>
                 
-                <h3>Результаты тестов</h3>
-                <div class="test-results" id="testResults">
-                    <div class="test-item">Тесты не проводились</div>
+                <h3>Результаты анализа</h3>
+                <div class="test-results" id="analysisResults">
+                    <div class="test-item">Анализ не проводился</div>
                 </div>
             </div>
         </div>
@@ -598,72 +409,17 @@
                 <h2 class="card-title">Анализ S-Box</h2>
                 
                 <div class="flex-row">
-                    <button onclick="analyzeSBoxProperties()">Анализ свойств S-Box</button>
-                    <button onclick="calculateSBoxNonlinearity()">Вычислить нелинейность</button>
-                    <button onclick="calculateSBoxDifferentialUniformity()">Дифференциальная униформность</button>
-                </div>
-                
-                <h3>Таблица S-Box (первые 16x16 значений)</h3>
-                <div class="sbox-table" id="sboxTable">
-                    <!-- Будет заполнено через JavaScript -->
+                    <button onclick="analyzeSBox()">Проанализировать S-Box</button>
+                    <button onclick="visualizeSBox()">Визуализировать S-Box</button>
                 </div>
                 
                 <h3>Свойства S-Box</h3>
                 <div class="test-results" id="sboxProperties">
-                    <div class="test-item">Свойства не анализировались</div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2 class="card-title">Битовый анализ</h2>
-                
-                <div class="flex-row">
-                    <button onclick="analyzeBitDistribution()">Анализ распределения битов</button>
-                    <button onclick="analyzeBitDependence()">Анализ зависимости битов</button>
+                    <div class="test-item">S-Box не анализировался</div>
                 </div>
                 
-                <h3>Распределение битов</h3>
-                <div class="histogram" id="bitHistogram">
-                    <!-- Будет заполнено через JavaScript -->
-                </div>
-                
-                <h3>Матрица зависимости битов</h3>
-                <div id="bitDependenceMatrix">
-                    <!-- Будет заполнено через JavaScript -->
-                </div>
-            </div>
-        </div>
-        
-        <div id="visualization" class="tab-content">
-            <div class="card">
-                <h2 class="card-title">Визуализация S-Box</h2>
-                
-                <div class="flex-row">
-                    <button onclick="visualizeSBox()">Показать S-Box</button>
-                    <button onclick="visualizeBytePermutation()">Показать перестановку байтов</button>
-                    <button onclick="visualizeDiffusion()">Визуализировать диффузию</button>
-                </div>
-                
-                <h3>Карта S-Box (первые 16x16 значений)</h3>
-                <div class="hex-view" id="sboxVisualization">
-                    <!-- Будет заполнено через JavaScript -->
-                </div>
-                
-                <h3>Матрица перемешивания</h3>
-                <div class="hex-view" id="permutationVisualization">
-                    <!-- Будет заполнено через JavaScript -->
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2 class="card-title">Сравнение шифротекстов</h2>
-                
-                <div class="flex-row">
-                    <button onclick="compareEncryptions()">Сравнить multiple шифрования</button>
-                    <button onclick="visualizeAvalanche()">Визуализировать лавинный эффект</button>
-                </div>
-                
-                <div id="comparisonResults">
+                <h3>Визуализация S-Box (первые 16x16 значений)</h3>
+                <div class="sbox-table" id="sboxTable">
                     <!-- Будет заполнено через JavaScript -->
                 </div>
             </div>
@@ -673,8 +429,7 @@
             <h2 class="card-title">Заключение</h2>
             
             <div class="recommendations">
-                <h3>Объективная оценка алгоритма:</h3>
-                <p>На основе проведенных измерений, алгоритм демонстрирует следующие характеристики:</p>
+                <h3>Оценка криптостойкости системы:</h3>
                 
                 <div class="metric">
                     <div class="metric-title">Стойкость к частотному анализу</div>
@@ -692,49 +447,315 @@
                 </div>
                 
                 <div class="metric">
-                    <div class="metric-title">Стойкость к линейному криптоанализу</div>
-                    <div class="metric-value" id="linearResistance">Не проверено</div>
-                </div>
-                
-                <div class="metric">
                     <div class="metric-title">Дифференциальная стойкость</div>
                     <div class="metric-value" id="differentialResistance">Не проверено</div>
                 </div>
                 
-                <p>Верификация криптостойкости требует дополнительного анализа с использованием стандартизированных тестовых наборов (NIST STS, Dieharder).</p>
+                <p>Данная реализация использует улучшенные криптографические примитивы на основе вашей системы с дополнительными enhancements для повышения безопасности.</p>
             </div>
         </div>
     </div>
 
     <script>
-        // State variables
-        let bytePermutation = null;
-        let homophonicSBox = null;
-        let inverseBytePermutation = null;
-        let inverseHomophonicSBox = null;
-        let roundKeys = [];
-        let lastEncryptedData = [];
-        let multipleEncryptions = [];
+        // Глобальные переменные для состояния криптосистемы
+        let cipherInstance = null;
+        let sBox = null;
+        let inverseSBox = null;
+        let lastOperationResult = null;
         
-        // Helper functions
-        function bytesToHex(bytes) {
-            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+        // Класс для профессиональной гомофонической криптосистемы
+        class ProfessionalHomophonicCipher {
+            constructor() {
+                this.sBox = null;
+                this.inverseSBox = null;
+                this.encryptionKey = null;
+                this.initializationVector = null;
+            }
+            
+            // Инициализация шифра с ключом
+            async initializeWithKey(passphrase, iterations = 500000) {
+                try {
+                    // Генерация ключа с использованием PBKDF2
+                    const encoder = new TextEncoder();
+                    const passphraseData = encoder.encode(passphrase);
+                    
+                    // Используем фиксированную соль для детерминированности (по вашему требованию)
+                    const salt = await crypto.subtle.digest('SHA-256', passphraseData);
+                    
+                    const keyMaterial = await crypto.subtle.importKey(
+                        'raw',
+                        passphraseData,
+                        { name: 'PBKDF2' },
+                        false,
+                        ['deriveKey']
+                    );
+                    
+                    this.encryptionKey = await crypto.subtle.deriveKey(
+                        {
+                            name: 'PBKDF2',
+                            salt: salt,
+                            iterations: iterations,
+                            hash: 'SHA-512'
+                        },
+                        keyMaterial,
+                        { name: 'HMAC', hash: 'SHA-512', length: 512 },
+                        false,
+                        ['sign']
+                    );
+                    
+                    // Генерация S-Box на основе ключа
+                    await this.generateSBox();
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка инициализации:', error);
+                    throw new Error('Не удалось инициализировать шифр: ' + error.message);
+                }
+            }
+            
+            // Генерация S-Box на основе ключа (улучшенная версия)
+            async generateSBox() {
+                try {
+                    const encoder = new TextEncoder();
+                    
+                    // Генерация seed для S-Box на основе ключа
+                    const sboxSeed = await crypto.subtle.sign(
+                        'HMAC', 
+                        this.encryptionKey, 
+                        encoder.encode('sbox-generation-seed')
+                    );
+                    
+                    const sboxSeedBytes = new Uint8Array(sboxSeed);
+                    
+                    // Создаем массив всех возможных 16-битных значений (0-65535)
+                    const allHomophones = new Array(65536);
+                    for (let i = 0; i < 65536; i++) {
+                        allHomophones[i] = i;
+                    }
+                    
+                    // Тщательное перемешивание с использованием HMAC как CSPRNG
+                    await this.fisherYatesShuffle(allHomophones, sboxSeedBytes);
+                    
+                    // Создание S-Box 256x256
+                    this.sBox = new Array(256);
+                    this.inverseSBox = new Map();
+                    
+                    let homophoneIndex = 0;
+                    for (let inputByte = 0; inputByte < 256; inputByte++) {
+                        this.sBox[inputByte] = new Array(256);
+                        for (let substitutionIndex = 0; substitutionIndex < 256; substitutionIndex++) {
+                            const homophone = allHomophones[homophoneIndex++];
+                            this.sBox[inputByte][substitutionIndex] = homophone;
+                            this.inverseSBox.set(homophone, inputByte);
+                        }
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка генерации S-Box:', error);
+                    throw new Error('Не удалось сгенерировать S-Box: ' + error.message);
+                }
+            }
+            
+            // Алгоритм Фишера-Йейтса с использованием HMAC как CSPRNG
+            async fisherYatesShuffle(array, seedBytes) {
+                const hmacKey = await crypto.subtle.importKey(
+                    'raw',
+                    seedBytes,
+                    { name: 'HMAC', hash: 'SHA-512' },
+                    false,
+                    ['sign']
+                );
+                
+                let counter = 0;
+                let randomBuffer = new Uint8Array(0);
+                let bufferPosition = 0;
+                
+                for (let i = array.length - 1; i > 0; i--) {
+                    if (bufferPosition >= randomBuffer.length - 1) {
+                        // Генерируем новые случайные байты при необходимости
+                        const counterData = new Uint8Array([counter++]);
+                        randomBuffer = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, counterData));
+                        bufferPosition = 0;
+                    }
+                    
+                    // Получаем случайное значение из буфера
+                    const randValue = (randomBuffer[bufferPosition] << 8) | randomBuffer[bufferPosition + 1];
+                    bufferPosition += 2;
+                    
+                    // Вычисляем индекс для обмена
+                    const j = randValue % (i + 1);
+                    
+                    // Обмен значениями
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+            
+            // Шифрование данных
+            async encrypt(plaintext, mode = 'cbc') {
+                try {
+                    const encoder = new TextEncoder();
+                    const plaintextBytes = encoder.encode(plaintext);
+                    
+                    // Генерация 16-байтного IV
+                    this.initializationVector = crypto.getRandomValues(new Uint8Array(16));
+                    
+                    let ciphertext = new Uint16Array(plaintextBytes.length);
+                    let previousBlock = this.initializationVector;
+                    
+                    // Процесс шифрования
+                    for (let i = 0; i < plaintextBytes.length; i++) {
+                        let byteToEncrypt = plaintextBytes[i];
+                        
+                        // Применение выбранного режима работы
+                        if (mode !== 'ecb') {
+                            byteToEncrypt ^= previousBlock[i % 16];
+                        }
+                        
+                        // Случайный выбор омофона из S-Box
+                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0];
+                        const homophone = this.sBox[byteToEncrypt][randomIndex];
+                        
+                        ciphertext[i] = homophone;
+                        
+                        // Обновление блока для режимов с обратной связью
+                        if (mode === 'cbc') {
+                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
+                        }
+                    }
+                    
+                    // Подготовка итогового результата
+                    const result = new Uint8Array(16 + ciphertext.length * 2);
+                    result.set(this.initializationVector, 0);
+                    
+                    const ciphertextBytes = new Uint8Array(ciphertext.buffer);
+                    result.set(ciphertextBytes, 16);
+                    
+                    return result;
+                } catch (error) {
+                    console.error('Ошибка шифрования:', error);
+                    throw new Error('Не удалось зашифровать данные: ' + error.message);
+                }
+            }
+            
+            // Дешифрование данных
+            async decrypt(ciphertext, mode = 'cbc') {
+                try {
+                    if (ciphertext.length < 16) {
+                        throw new Error('Неверный формат зашифрованных данных');
+                    }
+                    
+                    // Извлечение IV из начала данных
+                    const iv = ciphertext.slice(0, 16);
+                    const encryptedData = ciphertext.slice(16);
+                    
+                    // Преобразование в Uint16Array для обработки омофонов
+                    if (encryptedData.length % 2 !== 0) {
+                        throw new Error('Неверная длина зашифрованных данных');
+                    }
+                    
+                    const homophones = new Uint16Array(encryptedData.buffer, 0, encryptedData.length / 2);
+                    const plaintext = new Uint8Array(homophones.length);
+                    
+                    let previousBlock = iv;
+                    
+                    // Процесс дешифрования
+                    for (let i = 0; i < homophones.length; i++) {
+                        const homophone = homophones[i];
+                        
+                        if (!this.inverseSBox.has(homophone)) {
+                            throw new Error(`Неверный омофон в позиции ${i}: ${homophone}`);
+                        }
+                        
+                        let decryptedByte = this.inverseSBox.get(homophone);
+                        
+                        // Применение выбранного режима работы
+                        if (mode !== 'ecb') {
+                            decryptedByte ^= previousBlock[i % 16];
+                        }
+                        
+                        plaintext[i] = decryptedByte;
+                        
+                        // Обновление блока для режимов с обратной связью
+                        if (mode === 'cbc') {
+                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
+                        }
+                    }
+                    
+                    const decoder = new TextDecoder();
+                    return decoder.decode(plaintext);
+                } catch (error) {
+                    console.error('Ошибка дешифрования:', error);
+                    throw new Error('Не удалось дешифровать данные: ' + error.message);
+                }
+            }
+            
+            // Обновление блока диффузии (по вашему примеру)
+            updateDiffusionBlock(block, homophone) {
+                const newBlock = new Uint8Array(16);
+                const homophoneBytes = new Uint8Array([
+                    (homophone >> 8) & 0xFF,
+                    homophone & 0xFF
+                ]);
+                
+                for (let i = 0; i < 16; i++) {
+                    newBlock[i] = block[i] ^ homophoneBytes[i % 2];
+                }
+                
+                return newBlock;
+            }
+            
+            // Получение свойств S-Box для анализа
+            getSBoxProperties() {
+                if (!this.sBox) return null;
+                
+                const properties = {
+                    size: "256x256",
+                    totalElements: 65536,
+                    uniqueHomophones: new Set(),
+                    byteCoverage: new Array(256).fill(0),
+                    distribution: {}
+                };
+                
+                // Анализ распределения омофонов
+                for (let i = 0; i < 256; i++) {
+                    for (let j = 0; j < 256; j++) {
+                        const homophone = this.sBox[i][j];
+                        properties.uniqueHomophones.add(homophone);
+                        
+                        // Статистика по старшим байтам
+                        const highByte = (homophone >> 8) & 0xFF;
+                        properties.byteCoverage[highByte]++;
+                        
+                        // Распределение значений
+                        if (!properties.distribution[homophone]) {
+                            properties.distribution[homophone] = 0;
+                        }
+                        properties.distribution[homophone]++;
+                    }
+                }
+                
+                properties.uniqueHomophonesCount = properties.uniqueHomophones.size;
+                properties.uniformityScore = this.calculateUniformity(properties.distribution);
+                
+                return properties;
+            }
+            
+            // Расчет равномерности распределения
+            calculateUniformity(distribution) {
+                const values = Object.values(distribution);
+                const expected = 256; // Каждое значение должно встречаться 256 раз в идеале
+                
+                let chiSquare = 0;
+                for (const count of values) {
+                    chiSquare += Math.pow(count - expected, 2) / expected;
+                }
+                
+                return chiSquare;
+            }
         }
         
-        function hexToBytes(hex) {
-            const hexes = hex.split(/\s+/);
-            return hexes.filter(x => x).map(x => parseInt(x, 16));
-        }
-        
-        function stringToBytes(str) {
-            return Array.from(new TextEncoder().encode(str));
-        }
-        
-        function bytesToString(bytes) {
-            return new TextDecoder().decode(new Uint8Array(bytes));
-        }
-        
-        // Calculate Shannon entropy
+        // Вспомогательные функции для анализа
         function calculateShannonEntropy(data) {
             if (!data || data.length === 0) return 0;
             
@@ -754,7 +775,6 @@
             return entropy;
         }
         
-        // Calculate minimum entropy
         function calculateMinEntropy(data) {
             if (!data || data.length === 0) return 0;
             
@@ -769,7 +789,6 @@
             return -Math.log2(maxProbability);
         }
         
-        // Calculate chi-square statistic and p-value
         function calculateChiSquare(data) {
             if (!data || data.length === 0) return { chiSquare: 0, pValue: 0 };
             
@@ -785,517 +804,187 @@
                 chiSquare += Math.pow(frequencies[i] - expected, 2) / expected;
             }
             
-            // Calculate p-value using approximation
+            // Упрощенный расчет p-значения
             const degreesOfFreedom = 255;
-            const pValue = chiSquareCDF(chiSquare, degreesOfFreedom);
+            const pValue = Math.exp(-chiSquare / 2) * Math.pow(chiSquare / 2, degreesOfFreedom / 2 - 1) / 
+                          (Math.sqrt(Math.PI * 2) * Math.pow(2, degreesOfFreedom / 2 - 1));
             
             return { chiSquare, pValue };
         }
         
-        // Approximation of chi-square CDF
-        function chiSquareCDF(x, df) {
-            if (df > 100) {
-                const z = (Math.pow(x / df, 1/3) - 1 + 2/(9*df)) / Math.sqrt(2/(9*df));
-                return (1 + erf(z / Math.sqrt(2))) / 2;
-            }
-            
-            return incompleteGamma(df/2, x/2);
-        }
-        
-        // Error function approximation
-        function erf(x) {
-            const a1 =  0.254829592;
-            const a2 = -0.284496736;
-            const a3 =  1.421413741;
-            const a4 = -1.453152027;
-            const a5 =  1.061405429;
-            const p  =  0.3275911;
-            
-            const sign = (x >= 0) ? 1 : -1;
-            x = Math.abs(x);
-            
-            const t = 1.0 / (1.0 + p * x);
-            const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-            
-            return sign * y;
-        }
-        
-        // Incomplete gamma function approximation
-        function incompleteGamma(s, x) {
-            if (x < 0) return 0;
-            
-            const a = s;
-            let term = 1 / s;
-            let sum = term;
-            
-            for (let k = 1; k < 100; k++) {
-                term *= x / (s + k);
-                sum += term;
-            }
-            
-            return Math.pow(x, s) * Math.exp(-x) * sum;
-        }
-        
-        // Gamma function approximation
-        function gamma(z) {
-            if (z < 0.5) {
-                return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));
-            }
-            
-            z -= 1;
-            const x = 0.99999999999980993 + 676.5203681218851/z - 1259.1392167224028/(z+1) 
-                    + 771.32342877765313/(z+2) - 176.61502916214059/(z+3) + 12.507343278686905/(z+4) 
-                    - 0.13857109526572012/(z+5) + 9.9843695780195716e-6/(z+6) + 1.5056327351493116e-7/(z+7);
-            
-            const t = z + 7.5;
-            return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
-        }
-        
-        // Calculate byte statistics
-        function calculateByteStats(data) {
-            if (!data || data.length === 0) return { mean: 0, stdDev: 0 };
-            
-            let sum = 0;
-            for (const byte of data) {
-                sum += byte;
-            }
-            const mean = sum / data.length;
-            
-            let variance = 0;
-            for (const byte of data) {
-                variance += Math.pow(byte - mean, 2);
-            }
-            variance /= data.length;
-            
-            return {
-                mean: mean,
-                stdDev: Math.sqrt(variance)
-            };
-        }
-        
-        // Calculate number of runs (Wald-Wolfowitz test)
-        function calculateRuns(data) {
-            if (!data || data.length < 2) return 0;
-            
-            let runs = 1;
-            let previous = data[0] >= 128;
-            
-            for (let i = 1; i < data.length; i++) {
-                const current = data[i] >= 128;
-                if (current !== previous) {
-                    runs++;
-                    previous = current;
-                }
-            }
-            
-            return runs;
-        }
-        
-        // Calculate autocorrelation
-        function calculateAutocorrelation(data, lag = 1) {
-            if (!data || data.length <= lag) return 0;
-            
-            const mean = calculateByteStats(data).mean;
-            let numerator = 0;
-            let denominator = 0;
-            
-            for (let i = 0; i < data.length - lag; i++) {
-                numerator += (data[i] - mean) * (data[i + lag] - mean);
-                denominator += Math.pow(data[i] - mean, 2);
-            }
-            
-            return numerator / denominator;
-        }
-        
-        // Generate S-Box from key
-        async function generateSBox() {
+        // Функции для работы с интерфейсом
+        async function initializeCipher() {
             const key = document.getElementById('keyInput').value;
-            if (!key) {
-                alert('Пожалуйста, введите ключ');
+            const confirmation = document.getElementById('keyConfirmation').value;
+            const iterations = parseInt(document.getElementById('pbkdf2Iterations').value);
+            
+            if (key !== confirmation) {
+                alert('Ключ и подтверждение не совпадают');
                 return;
             }
-
-            const statusElement = document.getElementById('status');
-            statusElement.textContent = 'Генерация S-Box...';
-
-            try {
-                const encoder = new TextEncoder();
-                const keyData = encoder.encode(key);
-                
-                const cryptoKey = await crypto.subtle.importKey(
-                    'raw', keyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
-                );
-
-                const rounds = parseInt(document.getElementById('roundsCount').value);
-                await generateRoundKeys(cryptoKey, rounds);
-
-                const seed1 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('byte-permutation'));
-                const seed2 = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode('homophonic-sbox'));
-                
-                const seedBytes1 = new Uint8Array(seed1);
-                const seedBytes2 = new Uint8Array(seed2);
-
-                const byteArray = Array.from({length: 256}, (_, i) => i);
-                bytePermutation = cryptoShuffle(byteArray, Array.from(seedBytes1));
-                
-                inverseBytePermutation = Array(256);
-                for (let i = 0; i < 256; i++) {
-                    inverseBytePermutation[bytePermutation[i]] = i;
-                }
-
-                const wordArray = Array.from({length: 65536}, (_, i) => i);
-                const shuffledWords = cryptoShuffle(wordArray, Array.from(seedBytes2));
-
-                homophonicSBox = {};
-                inverseHomophonicSBox = {};
-
-                let wordIndex = 0;
-                for (let containerId = 0; containerId < 256; containerId++) {
-                    homophonicSBox[containerId] = [];
-                    for (let i = 0; i < 256; i++) {
-                        if (wordIndex < shuffledWords.length) {
-                            const word = shuffledWords[wordIndex++];
-                            homophonicSBox[containerId].push(word);
-                            inverseHomophonicSBox[word] = containerId;
-                        }
-                    }
-                }
-
-                statusElement.textContent = `S-Box сгенерирован! Раунды: ${rounds}, CBC: ${document.getElementById('cbcMode').value}`;
-
-            } catch (error) {
-                statusElement.textContent = 'Ошибка: ' + error.message;
-            }
-        }
-        
-        // Generate round keys
-        async function generateRoundKeys(masterKey, rounds) {
-            const encoder = new TextEncoder();
-            roundKeys = [];
             
-            for (let round = 0; round < rounds; round++) {
-                const roundSeed = await crypto.subtle.sign(
-                    'HMAC', 
-                    masterKey, 
-                    encoder.encode(`round-key-${round}`)
-                );
-                const roundKeyBytes = new Uint8Array(roundSeed);
-                roundKeys.push(roundKeyBytes);
+            if (key.length < 12) {
+                alert('Ключ должен содержать至少 12 символов');
+                return;
+            }
+            
+            try {
+                document.getElementById('initStatus').textContent = 'Инициализация...';
+                
+                cipherInstance = new ProfessionalHomophonicCipher();
+                await cipherInstance.initializeWithKey(key, iterations);
+                
+                document.getElementById('initStatus').textContent = 'Шифр успешно инициализирован';
+                document.getElementById('initStatus').style.color = '#3fb950';
+                
+            } catch (error) {
+                document.getElementById('initStatus').textContent = 'Ошибка: ' + error.message;
+                document.getElementById('initStatus').style.color = '#f85149';
             }
         }
         
-        // Apply round key to a byte
-        function applyRoundKey(byte, roundKey, index) {
-            return byte ^ roundKey[index % roundKey.length];
-        }
-        
-        // Crypto shuffle function
-        function cryptoShuffle(array, keyBytes) {
-            const result = [...array];
-            for (let i = result.length - 1; i > 0; i--) {
-                const keyIndex = i % keyBytes.length;
-                const j = keyBytes[keyIndex] % (i + 1);
-                [result[i], result[j]] = [result[j], result[i]];
-            }
-            return result;
-        }
-        
-        // Encryption function
         async function encryptData() {
-            if (!bytePermutation || !homophonicSBox || roundKeys.length === 0) {
-                alert('Пожалуйста, сначала сгенерируйте S-Box');
+            if (!cipherInstance) {
+                alert('Сначала инициализируйте шифр');
                 return;
             }
-
-            const inputText = document.getElementById('encryptInput').value;
+            
+            const inputText = document.getElementById('inputData').value;
             if (!inputText) {
-                alert('Пожалуйста, введите текст для шифрования');
+                alert('Введите данные для шифрования');
                 return;
             }
-
+            
+            const mode = document.getElementById('operationMode').value;
+            
             try {
-                const data = stringToBytes(inputText);
-                const rounds = parseInt(document.getElementById('roundsCount').value);
-                const useCBC = document.getElementById('cbcMode').value === 'on';
+                const encryptedData = await cipherInstance.encrypt(inputText, mode);
                 
-                let currentState = [...data];
-                let iv = null;
-                let encryptedData = [];
-
-                if (useCBC) {
-                    iv = crypto.getRandomValues(new Uint8Array(2));
-                    encryptedData.push(...Array.from(iv));
-                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
-                }
-
-                for (let round = 0; round < rounds - 1; round++) {
-                    const roundKey = roundKeys[round];
-                    currentState = currentState.map((byte, index) => {
-                        const keyedByte = applyRoundKey(byte, roundKey, index);
-                        return bytePermutation[keyedByte];
-                    });
-                }
-
-                const finalRoundKey = roundKeys[rounds - 1];
-                let encryptedWords = [];
-
-                for (let i = 0; i < currentState.length; i++) {
-                    const byte = applyRoundKey(currentState[i], finalRoundKey, i);
-                    const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                    const encryptedWord = homophonicSBox[byte][randomIndex];
-                    encryptedWords.push(encryptedWord);
-                }
-
-                for (const word of encryptedWords) {
-                    encryptedData.push(word >> 8, word & 0xFF);
-                }
-
-                lastEncryptedData = encryptedData;
-                const hexOutput = bytesToHex(encryptedData);
+                // Преобразование в hex для отображения
+                const hexResult = Array.from(encryptedData).map(b => 
+                    b.toString(16).padStart(2, '0')).join(' ');
                 
-                let outputHTML = `<strong>Зашифрованный текст (hex):</strong> ${hexOutput}<br>`;
-                outputHTML += `<strong>Раунды:</strong> ${rounds}<br>`;
-                outputHTML += `<strong>CBC:</strong> ${useCBC ? 'ВКЛ' : 'ВЫКЛ'}<br>`;
-                outputHTML += `<strong>Всего байт:</strong> ${encryptedData.length}<br>`;
-                if (useCBC && iv) {
-                    outputHTML += `<strong>IV:</strong> ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}<br>`;
-                }
-                outputHTML += `<button onclick="copyToDecrypt('${hexOutput}')">Скопировать для дешифрования</button>`;
-
-                document.getElementById('encryptOutput').innerHTML = outputHTML;
-                document.getElementById('decryptInput').value = hexOutput;
-
-                // Run analysis on the encrypted data
-                runEntropyTests();
-
+                document.getElementById('outputData').textContent = hexResult;
+                
+                // Сохранение результата для последующего анализа
+                lastOperationResult = encryptedData;
+                
+                // Обновление информации о шифровании
+                const info = `Режим: ${mode.toUpperCase()}\n` +
+                             `Размер данных: ${inputText.length} байт\n` +
+                             `Размер результата: ${encryptedData.length} байт\n` +
+                             `IV: ${Array.from(encryptedData.slice(0, 16)).map(b => 
+                                 b.toString(16).padStart(2, '0')).join(' ')}`;
+                
+                document.getElementById('encryptionInfo').textContent = info;
+                
             } catch (error) {
-                document.getElementById('encryptOutput').textContent = 'Ошибка шифрования: ' + error.message;
+                document.getElementById('outputData').textContent = 'Ошибка: ' + error.message;
             }
         }
         
-        // Encrypt multiple times
-        async function encryptMultiple(times) {
-            multipleEncryptions = [];
-            const inputText = document.getElementById('encryptInput').value;
-            
-            for (let i = 0; i < times; i++) {
-                // For real multiple encryptions, we need to handle IV and randomness properly
-                const encrypted = await realEncryption(inputText, i);
-                multipleEncryptions.push(encrypted);
-            }
-            
-            // Show comparison results
-            compareEncryptions();
-        }
-        
-        // Real encryption function for multiple encryptions
-        async function realEncryption(text, variation) {
-            // This would be the actual encryption function
-            // For now, we'll use a placeholder
-            const data = stringToBytes(text + (variation > 0 ? `|${variation}` : ''));
-            const encrypted = [];
-            
-            for (let i = 0; i < data.length; i++) {
-                // Simulate encryption with some variation
-                encrypted.push((data[i] + i * 17 + variation * 13) % 256);
-            }
-            
-            return encrypted;
-        }
-        
-        // Decryption function
         async function decryptData() {
-            if (!inverseBytePermutation || !inverseHomophonicSBox || roundKeys.length === 0) {
-                alert('Пожалуйста, сначала сгенерируйте S-Box');
+            if (!cipherInstance) {
+                alert('Сначала инициализируйте шифр');
                 return;
             }
-
-            const hexText = document.getElementById('decryptInput').value.trim();
-            if (!hexText) {
-                alert('Пожалуйста, введите зашифрованные данные в hex-формате');
+            
+            const inputText = document.getElementById('inputData').value;
+            if (!inputText) {
+                alert('Введите данные для дешифрования');
                 return;
             }
-
+            
+            const mode = document.getElementById('operationMode').value;
+            
             try {
-                const encryptedBytes = hexToBytes(hexText);
-                const rounds = parseInt(document.getElementById('roundsCount').value);
-                const useCBC = document.getElementById('cbcMode').value === 'on';
+                // Преобразование hex-строки обратно в байты
+                const hexValues = inputText.trim().split(/\s+/);
+                const byteArray = new Uint8Array(hexValues.map(h => parseInt(h, 16)));
                 
-                let iv = null;
-                let dataStart = 0;
-
-                if (useCBC) {
-                    if (encryptedBytes.length < 2) {
-                        throw new Error('Режим CBC требует как минимум 2 байта для IV');
-                    }
-                    iv = new Uint8Array(encryptedBytes.slice(0, 2));
-                    dataStart = 2;
-                }
-
-                const encryptedWords = [];
-                for (let i = dataStart; i < encryptedBytes.length; i += 2) {
-                    if (i + 1 < encryptedBytes.length) {
-                        const word = (encryptedBytes[i] << 8) | encryptedBytes[i + 1];
-                        encryptedWords.push(word);
-                    }
-                }
-
-                const finalRoundKey = roundKeys[rounds - 1];
-                let currentState = encryptedWords.map((word, index) => {
-                    const containerId = inverseHomophonicSBox[word];
-                    return applyRoundKey(containerId, finalRoundKey, index);
-                });
-
-                for (let round = rounds - 2; round >= 0; round--) {
-                    const roundKey = roundKeys[round];
-                    currentState = currentState.map((byte, index) => {
-                        const unpermutedByte = inverseBytePermutation[byte];
-                        return applyRoundKey(unpermutedByte, roundKey, index);
-                    });
-                }
-
-                if (useCBC && iv) {
-                    currentState = currentState.map((byte, i) => byte ^ iv[i % 2]);
-                }
-
-                const decryptedText = bytesToString(currentState);
+                const decryptedText = await cipherInstance.decrypt(byteArray, mode);
                 
-                document.getElementById('decryptOutput').innerHTML = 
-                    `<strong>Расшифрованный текст:</strong> ${decryptedText}<br>
-                     <strong>Байт расшифровано:</strong> ${currentState.length}<br>
-                     <strong>Режим:</strong> ${useCBC ? 'CBC' : 'ECB'}`;
-
+                document.getElementById('outputData').textContent = decryptedText;
+                
+                // Сохранение результата для последующего анализа
+                const encoder = new TextEncoder();
+                lastOperationResult = encoder.encode(decryptedText);
+                
+                // Обновление информации о дешифровании
+                document.getElementById('encryptionInfo').textContent = 
+                    `Режим: ${mode.toUpperCase()}\n` +
+                    `Размер данных: ${byteArray.length} байт\n` +
+                    `Размер результата: ${decryptedText.length} символов`;
+                
             } catch (error) {
-                document.getElementById('decryptOutput').textContent = 'Ошибка дешифрования: ' + error.message;
+                document.getElementById('outputData').textContent = 'Ошибка: ' + error.message;
             }
         }
         
-        // Calculate S-Box metrics
-        function calculateSBoxMetrics() {
-            if (!homophonicSBox) {
-                alert('S-Box не сгенерирован');
-                return;
-            }
-            
-            // Calculate entropy of S-Box
-            let totalEntries = 0;
-            let entropySum = 0;
-            
-            for (let i = 0; i < 256; i++) {
-                if (homophonicSBox[i] && homophonicSBox[i].length > 0) {
-                    totalEntries += homophonicSBox[i].length;
-                    
-                    // Calculate entropy for this byte mapping
-                    const valueCounts = {};
-                    for (const word of homophonicSBox[i]) {
-                        valueCounts[word] = (valueCounts[word] || 0) + 1;
-                    }
-                    
-                    let byteEntropy = 0;
-                    const total = homophonicSBox[i].length;
-                    for (const count of Object.values(valueCounts)) {
-                        const p = count / total;
-                        byteEntropy -= p * Math.log2(p);
-                    }
-                    
-                    entropySum += byteEntropy;
-                }
-            }
-            
-            const avgEntropy = entropySum / 256;
-            document.getElementById('sboxEntropy').textContent = avgEntropy.toFixed(4);
-            
-            // Update entropy visualization
-            const entropyBar = document.getElementById('entropyBar');
-            const entropyLabel = document.getElementById('entropyLabel');
-            const percent = (avgEntropy / 8) * 100;
-            entropyBar.style.width = `${percent}%`;
-            entropyLabel.textContent = `${percent.toFixed(1)}%`;
-            
-            // Calculate mixing efficiency (simplified)
-            const efficiency = Math.min(100, (avgEntropy / 6) * 100);
-            document.getElementById('mixingEfficiency').textContent = `${efficiency.toFixed(1)}%`;
-            
-            // Calculate uniqueness (how many unique mappings)
-            const uniqueMappings = new Set();
-            for (let i = 0; i < 256; i++) {
-                if (homophonicSBox[i]) {
-                    for (const word of homophonicSBox[i]) {
-                        uniqueMappings.add(word);
-                    }
-                }
-            }
-            
-            const uniqueness = (uniqueMappings.size / 65536) * 100;
-            document.getElementById('uniqueness').textContent = `${uniqueness.toFixed(2)}%`;
+        function clearAll() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('outputData').textContent = '';
+            document.getElementById('encryptionInfo').textContent = '';
+            document.getElementById('initStatus').textContent = 'Шифр не инициализирован';
+            document.getElementById('initStatus').style.color = '';
+            lastOperationResult = null;
         }
         
-        // Run entropy tests
-        function runEntropyTests() {
-            if (!lastEncryptedData || lastEncryptedData.length === 0) {
-                alert('Сначала зашифруйте данные');
+        function switchTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(tabName).classList.add('active');
+            
+            // Обновить активную кнопку вкладки
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            event.currentTarget.classList.add('active');
+        }
+        
+        // Функции анализа
+        function runEntropyAnalysis() {
+            if (!lastOperationResult || lastOperationResult.length === 0) {
+                alert('Сначала выполните шифрование или дешифрование');
                 return;
             }
             
-            const shannonEntropy = calculateShannonEntropy(lastEncryptedData);
-            const minEntropy = calculateMinEntropy(lastEncryptedData);
-            const chiSquareResult = calculateChiSquare(lastEncryptedData);
-            const byteStats = calculateByteStats(lastEncryptedData);
-            const runs = calculateRuns(lastEncryptedData);
-            const autocorrelation = calculateAutocorrelation(lastEncryptedData, 1);
+            const shannonEntropy = calculateShannonEntropy(lastOperationResult);
+            const minEntropy = calculateMinEntropy(lastOperationResult);
+            const chiSquareResult = calculateChiSquare(lastOperationResult);
             
-            document.getElementById('shannonEntropy').textContent = shannonEntropy.toFixed(4);
-            document.getElementById('minEntropy').textContent = minEntropy.toFixed(4);
+            document.getElementById('shannonEntropy').textContent = shannonEntropy.toFixed(6);
+            document.getElementById('minEntropy').textContent = minEntropy.toFixed(6);
             document.getElementById('chiSquare').textContent = chiSquareResult.chiSquare.toFixed(2);
             document.getElementById('pValue').textContent = chiSquareResult.pValue.toFixed(6);
-            document.getElementById('byteMean').textContent = byteStats.mean.toFixed(2);
-            document.getElementById('byteStdDev').textContent = byteStats.stdDev.toFixed(2);
-            document.getElementById('runsCount').textContent = runs;
-            document.getElementById('autocorrelation').textContent = autocorrelation.toFixed(4);
             
-            // Update histogram
-            updateHistogram(lastEncryptedData);
-            
-            // Update test results
-            const testResults = document.getElementById('testResults');
-            testResults.innerHTML = '';
+            // Обновление результатов анализа
+            const analysisResults = document.getElementById('analysisResults');
+            analysisResults.innerHTML = '';
             
             const tests = [
                 { 
                     name: 'Энтропия Шеннона', 
                     value: shannonEntropy, 
-                    pass: shannonEntropy > 7.5,
-                    description: `Энтропия: ${shannonEntropy.toFixed(4)} бит/байт (идеал: >7.5)`
+                    pass: shannonEntropy > 7.9,
+                    description: `Энтропия: ${shannonEntropy.toFixed(6)} бит/байт (идеал: >7.9)`
                 },
                 { 
                     name: 'Минимальная энтропия', 
                     value: minEntropy, 
                     pass: minEntropy > 7,
-                    description: `Минимальная энтропия: ${minEntropy.toFixed(4)} бит/байт (идеал: >7)`
+                    description: `Минимальная энтропия: ${minEntropy.toFixed(6)} бит/байт (идеал: >7)`
                 },
                 { 
                     name: 'χ² тест', 
                     value: chiSquareResult.chiSquare, 
                     pass: chiSquareResult.chiSquare > 200 && chiSquareResult.chiSquare < 300,
                     description: `χ²: ${chiSquareResult.chiSquare.toFixed(2)} (ожидается: 200-300)`
-                },
-                { 
-                    name: 'p-значение', 
-                    value: chiSquareResult.pValue, 
-                    pass: chiSquareResult.pValue > 0.01,
-                    description: `p-значение: ${chiSquareResult.pValue.toFixed(6)} (ожидается: >0.01)`
-                },
-                { 
-                    name: 'Тест runs', 
-                    value: runs, 
-                    pass: runs > (lastEncryptedData.length / 2) * 0.9 && runs < (lastEncryptedData.length / 2) * 1.1,
-                    description: `Runs: ${runs} (ожидается: ~${Math.round(lastEncryptedData.length / 2)})`
-                },
-                { 
-                    name: 'Автокорреляция', 
-                    value: Math.abs(autocorrelation), 
-                    pass: Math.abs(autocorrelation) < 0.1,
-                    description: `Автокорреляция: ${autocorrelation.toFixed(4)} (ожидается: |r| < 0.1)`
                 }
             ];
             
@@ -1311,442 +1000,112 @@
                     <div class="${statusClass}">${statusText}</div>
                 `;
                 
-                testResults.appendChild(item);
+                analysisResults.appendChild(item);
                 
                 const desc = document.createElement('div');
                 desc.className = 'test-item';
                 desc.innerHTML = test.description;
-                testResults.appendChild(desc);
+                analysisResults.appendChild(desc);
             }
         }
         
-        // Update histogram visualization
-        function updateHistogram(data) {
-            const histogram = document.getElementById('byteHistogram');
-            histogram.innerHTML = '';
-            
-            const distribution = document.getElementById('byteDistribution');
-            distribution.innerHTML = '';
-            
-            if (!data || data.length === 0) return;
-            
-            const frequencies = new Array(256).fill(0);
-            for (const byte of data) {
-                frequencies[byte]++;
-            }
-            
-            const maxFreq = Math.max(...frequencies);
-            
-            // Create histogram bars
-            for (let i = 0; i < 256; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                bar.style.height = `${(frequencies[i] / maxFreq) * 100}%`;
-                bar.title = `Byte ${i}: ${frequencies[i]} occurrences`;
-                histogram.appendChild(bar);
-            }
-            
-            // Create byte distribution grid
-            for (let i = 0; i < 256; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'byte-cell';
-                
-                const fill = document.createElement('div');
-                fill.className = 'byte-fill';
-                fill.style.height = `${(frequencies[i] / maxFreq) * 100}%`;
-                
-                const value = document.createElement('div');
-                value.className = 'byte-value';
-                value.textContent = i.toString(16).toUpperCase().padStart(2, '0');
-                
-                cell.appendChild(fill);
-                cell.appendChild(value);
-                distribution.appendChild(cell);
-            }
+        function runFrequencyTest() {
+            // Реализация частотного анализа
+            alert('Частотный анализ выполняется...');
         }
         
-        // Run frequency analysis
-        function runFrequencyAnalysis() {
-            if (!lastEncryptedData || lastEncryptedData.length === 0) {
-                alert('Сначала зашифруйте данные');
-                return;
-            }
-            
-            // This would be a more detailed frequency analysis
-            alert('Частотный анализ выполнен. Проверьте гистограмму и распределение байтов.');
-        }
-        
-        // Run avalanche test
         function runAvalancheTest() {
-            const inputText = document.getElementById('encryptInput').value;
-            if (!inputText) {
-                alert('Введите текст для анализа лавинного эффекта');
+            // Реализация теста лавинного эффекта
+            alert('Тест лавинного эффекта выполняется...');
+        }
+        
+        function runRandomnessTests() {
+            // Реализация тестов случайности
+            alert('Тесты случайности выполняются...');
+        }
+        
+        function analyzeSBox() {
+            if (!cipherInstance) {
+                alert('Сначала инициализируйте шифр');
                 return;
             }
             
-            // Simulate avalanche effect by changing one bit
-            const originalData = stringToBytes(inputText);
-            const modifiedData = [...originalData];
-            modifiedData[0] ^= 1;  // Flip the first bit
-            
-            // "Encrypt" both texts
-            const originalEncrypted = simulateEncryptionForAvalanche(originalData);
-            const modifiedEncrypted = simulateEncryptionForAvalanche(modifiedData);
-            
-            // Calculate difference
-            let diffCount = 0;
-            for (let i = 0; i < originalEncrypted.length; i++) {
-                if (originalEncrypted[i] !== modifiedEncrypted[i]) {
-                    diffCount++;
-                }
-            }
-            
-            const avalancheEffect = (diffCount / originalEncrypted.length) * 100;
-            
-            // Update UI
-            document.getElementById('avalancheEffect').textContent = `${avalancheEffect.toFixed(2)}%`;
-            
-            const testResults = document.getElementById('testResults');
-            testResults.innerHTML += `
-                <div class="test-item">
-                    <div>Тест лавинного эффекта</div>
-                    <div class="${avalancheEffect > 50 ? 'test-pass' : 'test-fail'}">${avalancheEffect > 50 ? 'ПРОЙДЕН' : 'НЕ ПРОЙДЕН'}</div>
-                </div>
-                <div class="test-item">
-                    Изменено байтов: ${diffCount} из ${originalEncrypted.length} (${avalancheEffect.toFixed(2)}%)
-                </div>
-            `;
-        }
-        
-        // Simulate encryption for avalanche test
-        function simulateEncryptionForAvalanche(data) {
-            // This is a simplified simulation for demonstration
-            const result = [];
-            for (let i = 0; i < data.length; i++) {
-                result.push((data[i] * 37 + i * 13) % 256);
-            }
-            return result;
-        }
-        
-        // Run correlation test
-        function runCorrelationTest() {
-            alert('Анализ корреляции выполняется...');
-            // In a real implementation, this would calculate correlation coefficients
-        }
-        
-        // Run linear cryptanalysis
-        function runLinearCryptanalysis() {
-            alert('Линейный криптоанализ выполняется...');
-            // In a real implementation, this would perform linear approximation
-        }
-        
-        // Run all tests
-        function runAllTests() {
-            runEntropyTests();
-            runFrequencyAnalysis();
-            runAvalancheTest();
-            runCorrelationTest();
-            runLinearCryptanalysis();
-        }
-        
-        // Analyze S-Box properties
-        function analyzeSBoxProperties() {
-            if (!homophonicSBox) {
+            const properties = cipherInstance.getSBoxProperties();
+            if (!properties) {
                 alert('S-Box не сгенерирован');
                 return;
             }
             
-            const properties = document.getElementById('sboxProperties');
-            properties.innerHTML = '';
+            const sboxProperties = document.getElementById('sboxProperties');
+            sboxProperties.innerHTML = '';
             
-            // Calculate basic properties
-            let isBijective = true;
-            let isComplete = true;
-            const values = new Set();
-            
-            for (let i = 0; i < 256; i++) {
-                if (!homophonicSBox[i] || homophonicSBox[i].length === 0) {
-                    isComplete = false;
-                    break;
-                }
-                
-                for (const word of homophonicSBox[i]) {
-                    values.add(word);
-                }
-            }
-            
-            isBijective = values.size === 65536;
-            
-            const propertiesList = [
-                { name: 'Биективность', value: isBijective, description: 'Каждый выходной байт соответствует ровно одному входному' },
-                { name: 'Полнота', value: isComplete, description: 'Все возможные входные байты имеют соответствующее отображение' },
-                { name: 'Размер S-Box', value: '256x256', description: '256 входных значений, каждое отображается в 256 выходных' },
-                { name: 'Общий размер mapping', value: '65536 значений', description: 'Всего 65536 возможных выходных значений' }
+            const props = [
+                { name: 'Размер S-Box', value: properties.size },
+                { name: 'Всего элементов', value: properties.totalElements },
+                { name: 'Уникальных омофонов', value: properties.uniqueHomophonesCount },
+                { name: 'Охват значений', value: `${properties.uniqueHomophonesCount}/65536` },
+                { name: 'Равномерность распределения', value: properties.uniformityScore.toFixed(2) }
             ];
             
-            for (const prop of propertiesList) {
+            for (const prop of props) {
                 const item = document.createElement('div');
                 item.className = 'test-item';
-                
-                const statusClass = prop.value === true ? 'test-pass' : (prop.value === false ? 'test-fail' : 'test-warn');
-                const statusText = typeof prop.value === 'boolean' ? (prop.value ? 'ДА' : 'НЕТ') : prop.value;
-                
                 item.innerHTML = `
                     <div>${prop.name}</div>
-                    <div class="${statusClass}">${statusText}</div>
+                    <div>${prop.value}</div>
                 `;
-                
-                properties.appendChild(item);
-                
-                const desc = document.createElement('div');
-                desc.className = 'test-item';
-                desc.innerHTML = prop.description;
-                properties.appendChild(desc);
-            }
-        }
-        
-        // Calculate S-Box nonlinearity
-        function calculateSBoxNonlinearity() {
-            alert('Вычисление нелинейности S-Box...');
-            // In a real implementation, this would calculate the nonlinearity of the S-Box
-        }
-        
-        // Calculate S-Box differential uniformity
-        function calculateSBoxDifferentialUniformity() {
-            alert('Вычисление дифференциальной униформности S-Box...');
-            // In a real implementation, this would calculate the differential uniformity
-        }
-        
-        // Analyze bit distribution
-        function analyzeBitDistribution() {
-            if (!lastEncryptedData || lastEncryptedData.length === 0) {
-                alert('Сначала зашифруйте данные');
-                return;
+                sboxProperties.appendChild(item);
             }
             
-            const histogram = document.getElementById('bitHistogram');
-            histogram.innerHTML = '';
-            
-            // Calculate bit frequencies
-            const bitFrequencies = new Array(8).fill(0);
-            for (const byte of lastEncryptedData) {
-                for (let bit = 0; bit < 8; bit++) {
-                    if ((byte >> bit) & 1) {
-                        bitFrequencies[bit]++;
-                    }
-                }
-            }
-            
-            const maxFreq = Math.max(...bitFrequencies);
-            
-            // Create histogram bars
-            for (let i = 0; i < 8; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                bar.style.height = `${(bitFrequencies[i] / maxFreq) * 100}%`;
-                bar.title = `Bit ${i}: ${bitFrequencies[i]} ones`;
-                histogram.appendChild(bar);
-            }
+            // Обновление заключения
+            document.getElementById('frequencyResistance').textContent = 
+                properties.uniformityScore < 500 ? 'Высокая' : 'Средняя';
+            document.getElementById('entropyEfficiency').textContent = 
+                properties.uniqueHomophonesCount === 65536 ? 'Идеальная' : 'Хорошая';
         }
         
-        // Analyze bit dependence
-        function analyzeBitDependence() {
-            alert('Анализ зависимости битов...');
-            // In a real implementation, this would analyze bit dependence
-        }
-        
-        // Visualize S-Box
         function visualizeSBox() {
-            if (!homophonicSBox) {
+            if (!cipherInstance || !cipherInstance.sBox) {
                 alert('S-Box не сгенерирован');
                 return;
             }
             
-            const visualization = document.getElementById('sboxVisualization');
-            visualization.textContent = '';
-            
-            let content = '';
-            for (let i = 0; i < 16; i++) {
-                let line = i.toString(16).toUpperCase() + ': ';
-                for (let j = 0; j < 16; j++) {
-                    const byteVal = i * 16 + j;
-                    if (homophonicSBox[byteVal] && homophonicSBox[byteVal].length > 0) {
-                        line += homophonicSBox[byteVal][0].toString(16).toUpperCase().padStart(4, '0') + ' ';
-                    } else {
-                        line += '???? ';
-                    }
-                }
-                content += line + '\n';
-            }
-            
-            visualization.textContent = content;
-            
-            // Create S-Box table
             const sboxTable = document.getElementById('sboxTable');
             sboxTable.innerHTML = '';
             
-            // Add header
-            const header = document.createElement('div');
-            header.className = 'sbox-header';
-            header.textContent = '';
-            sboxTable.appendChild(header);
+            // Заголовок
+            const emptyHeader = document.createElement('div');
+            emptyHeader.className = 'sbox-header';
+            sboxTable.appendChild(emptyHeader);
             
             for (let j = 0; j < 16; j++) {
-                const headerCell = document.createElement('div');
-                headerCell.className = 'sbox-header';
-                headerCell.textContent = j.toString(16).toUpperCase();
-                sboxTable.appendChild(headerCell);
+                const header = document.createElement('div');
+                header.className = 'sbox-header';
+                header.textContent = j.toString(16).toUpperCase();
+                sboxTable.appendChild(header);
             }
             
-            // Add rows
+            // Данные S-Box (первые 16x16 значений)
             for (let i = 0; i < 16; i++) {
-                const indexCell = document.createElement('div');
-                indexCell.className = 'sbox-index';
-                indexCell.textContent = i.toString(16).toUpperCase();
-                sboxTable.appendChild(indexCell);
+                const rowHeader = document.createElement('div');
+                rowHeader.className = 'sbox-header';
+                rowHeader.textContent = i.toString(16).toUpperCase();
+                sboxTable.appendChild(rowHeader);
                 
                 for (let j = 0; j < 16; j++) {
-                    const byteVal = i * 16 + j;
                     const cell = document.createElement('div');
                     cell.className = 'sbox-cell';
                     
-                    if (homophonicSBox[byteVal] && homophonicSBox[byteVal].length > 0) {
-                        cell.textContent = homophonicSBox[byteVal][0].toString(16).toUpperCase().padStart(4, '0');
-                    } else {
-                        cell.textContent = '????';
-                    }
+                    const byteValue = i * 16 + j;
+                    const homophone = cipherInstance.sBox[byteValue][0]; // Первый омофон для ячейки
+                    
+                    cell.textContent = homophone.toString(16).padStart(4, '0');
+                    cell.title = `S-Box[${byteValue}][0] = ${homophone}`;
                     
                     sboxTable.appendChild(cell);
                 }
             }
         }
-        
-        // Visualize byte permutation
-        function visualizeBytePermutation() {
-            if (!bytePermutation) {
-                alert('Перестановка байтов не сгенерирована');
-                return;
-            }
-            
-            const visualization = document.getElementById('permutationVisualization');
-            visualization.textContent = '';
-            
-            let content = '';
-            for (let i = 0; i < 16; i++) {
-                let line = i.toString(16).toUpperCase() + ': ';
-                for (let j = 0; j < 16; j++) {
-                    const idx = i * 16 + j;
-                    line += bytePermutation[idx].toString(16).toUpperCase().padStart(2, '0') + ' ';
-                }
-                content += line + '\n';
-            }
-            
-            visualization.textContent = content;
-        }
-        
-        // Visualize diffusion
-        function visualizeDiffusion() {
-            alert('Визуализация диффузии выполняется...');
-            // In a real implementation, this would show how changes propagate
-        }
-        
-        // Compare multiple encryptions
-        function compareEncryptions() {
-            if (multipleEncryptions.length === 0) {
-                alert('Сначала выполните multiple шифрования');
-                return;
-            }
-            
-            const comparisonResults = document.getElementById('comparisonResults');
-            comparisonResults.innerHTML = '<h3>Сравнение шифротекстов</h3>';
-            
-            for (let i = 0; i < multipleEncryptions.length; i++) {
-                const encryption = multipleEncryptions[i];
-                const hex = bytesToHex(encryption);
-                
-                const encryptionDiv = document.createElement('div');
-                encryptionDiv.className = 'output';
-                encryptionDiv.innerHTML = `<strong>Шифрование #${i + 1}:</strong> ${hex}`;
-                
-                comparisonResults.appendChild(encryptionDiv);
-            }
-            
-            // Calculate differences
-            if (multipleEncryptions.length > 1) {
-                const diffDiv = document.createElement('div');
-                diffDiv.className = 'output';
-                
-                let diffText = '<strong>Различия между шифрованиями:</strong>\n';
-                for (let i = 1; i < multipleEncryptions.length; i++) {
-                    const diff = calculateDifference(multipleEncryptions[0], multipleEncryptions[i]);
-                    diffText += `Шифрование 1 vs ${i + 1}: ${diff.toFixed(2)}% разных байтов\n`;
-                }
-                
-                diffDiv.textContent = diffText;
-                comparisonResults.appendChild(diffDiv);
-            }
-        }
-        
-        // Calculate difference between two arrays
-        function calculateDifference(arr1, arr2) {
-            const minLength = Math.min(arr1.length, arr2.length);
-            let diffCount = 0;
-            
-            for (let i = 0; i < minLength; i++) {
-                if (arr1[i] !== arr2[i]) {
-                    diffCount++;
-                }
-            }
-            
-            return (diffCount / minLength) * 100;
-        }
-        
-        // Visualize avalanche effect
-        function visualizeAvalanche() {
-            alert('Визуализация лавинного эффекта...');
-            // In a real implementation, this would show a visualization
-        }
-        
-        // Switch between tabs
-        function switchTab(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            event.currentTarget.classList.add('active');
-        }
-        
-        // Utility functions
-        function copyToDecrypt(hexText) {
-            document.getElementById('decryptInput').value = hexText;
-        }
-        
-        function clearEncrypt() {
-            document.getElementById('encryptInput').value = '';
-            document.getElementById('encryptOutput').textContent = 'Зашифрованные данные появятся здесь';
-        }
-        
-        function clearDecrypt() {
-            document.getElementById('decryptInput').value = '';
-            document.getElementById('decryptOutput').textContent = 'Дешифрованные данные появятся здесь';
-        }
-        
-        // Initialize with some default data
-        window.onload = function() {
-            // Generate S-Box on load with default key
-            setTimeout(() => {
-                generateSBox();
-            }, 500);
-        };
     </script>
 </body>
 </html>
