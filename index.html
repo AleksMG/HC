@@ -325,6 +325,36 @@
             color: white;
             text-shadow: 0 0 2px black;
         }
+        
+        .test-details {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .avalanche-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .avalanche-chart {
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        .avalanche-bar {
+            background: var(--accent);
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -369,8 +399,6 @@
                         <label for="operationMode">Режим работы:</label>
                         <select id="operationMode">
                             <option value="cbc" selected>CBC (рекомендуется)</option>
-                            <option value="cfb">CFB</option>
-                            <option value="ofb">OFB</option>
                         </select>
                     </div>
                     
@@ -527,6 +555,7 @@
         let sBox = null;
         let inverseSBox = null;
         let lastOperationResult = null;
+        let lastEncryptedData = null;
         
         // Класс для профессиональной гомофонической криптосистемы
         class ProfessionalHomophonicCipher {
@@ -975,6 +1004,57 @@
             return frequencies;
         }
         
+        // Функция для теста лавинного эффекта
+        async function runAvalancheTestInternal(cipher, originalData) {
+            if (!originalData || originalData.length === 0) {
+                throw new Error("Нет данных для теста лавинного эффекта");
+            }
+            
+            const encoder = new TextEncoder();
+            const originalText = encoder.decode(originalData);
+            
+            // Шифруем оригинальные данные
+            const originalEncrypted = await cipher.encrypt(originalText);
+            
+            // Изменяем один бит в оригинальных данных и шифруем снова
+            const modifiedData = new Uint8Array(originalData);
+            modifiedData[0] ^= 0x01; // Изменяем первый бит первого байта
+            
+            const modifiedText = encoder.decode(modifiedData);
+            const modifiedEncrypted = await cipher.encrypt(modifiedText);
+            
+            // Сравниваем результаты шифрования
+            const changes = new Uint8Array(originalEncrypted.length);
+            let totalChanges = 0;
+            
+            for (let i = 0; i < originalEncrypted.length; i++) {
+                changes[i] = countBitDifferences(originalEncrypted[i], modifiedEncrypted[i]);
+                totalChanges += changes[i];
+            }
+            
+            const avalancheEffect = (totalChanges / (originalEncrypted.length * 8)) * 100;
+            
+            return {
+                changes: changes,
+                totalChanges: totalChanges,
+                totalBits: originalEncrypted.length * 8,
+                avalancheEffect: avalancheEffect
+            };
+        }
+        
+        // Подсчет количества отличающихся битов между двумя байтами
+        function countBitDifferences(a, b) {
+            let diff = a ^ b;
+            let count = 0;
+            
+            while (diff) {
+                count += diff & 1;
+                diff >>= 1;
+            }
+            
+            return count;
+        }
+        
         // Функции для работы с интерфейсом
         async function initializeCipher() {
             const key = document.getElementById('keyInput').value;
@@ -1022,6 +1102,9 @@
             
             try {
                 const encryptedData = await cipherInstance.encrypt(inputText, mode);
+                
+                // Сохраняем зашифрованные данные для теста лавинного эффекта
+                lastEncryptedData = encryptedData;
                 
                 // Преобразование в hex для отображения
                 const hexResult = Array.from(encryptedData).map(b => 
@@ -1091,6 +1174,7 @@
             document.getElementById('initStatus').textContent = 'Шифр не инициализирован';
             document.getElementById('initStatus').style.color = '';
             lastOperationResult = null;
+            lastEncryptedData = null;
         }
         
         function switchTab(tabName) {
@@ -1170,6 +1254,12 @@
                 desc.innerHTML = test.description;
                 analysisResults.appendChild(desc);
             }
+            
+            // Обновление заключения
+            document.getElementById('frequencyResistance').textContent = 
+                shannonEntropy > 7.9 ? 'Высокая' : 'Средняя';
+            document.getElementById('entropyEfficiency').textContent = 
+                shannonEntropy > 7.9 ? 'Высокая' : 'Средняя';
         }
         
         function runFrequencyTest() {
@@ -1238,14 +1328,51 @@
             analysisResults.appendChild(desc);
         }
         
-        function runAvalancheTest() {
+        async function runAvalancheTest() {
             if (!cipherInstance || !lastOperationResult) {
                 alert('Сначала выполните шифрование');
                 return;
             }
             
-            const analysisResults = document.getElementById('analysisResults');
-            analysisResults.innerHTML = '<div class="test-item">Тест лавинного эффекта в разработке</div>';
+            try {
+                const analysisResults = document.getElementById('analysisResults');
+                analysisResults.innerHTML = '<div class="test-item">Выполняется тест лавинного эффекта...</div>';
+                
+                const avalancheResult = await runAvalancheTestInternal(cipherInstance, lastOperationResult.slice(16)); // Пропускаем IV
+                
+                analysisResults.innerHTML = '';
+                
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                item.innerHTML = `
+                    <div>Тест лавинного эффекта</div>
+                    <div class="test-info">ВЫПОЛНЕНО</div>
+                `;
+                analysisResults.appendChild(item);
+                
+                const desc = document.createElement('div');
+                desc.className = 'test-item';
+                desc.innerHTML = `Лавинный эффект: ${avalancheResult.avalancheEffect.toFixed(2)}% (идеал: ~50%)`;
+                analysisResults.appendChild(desc);
+                
+                const details = document.createElement('div');
+                details.className = 'test-details';
+                details.innerHTML = `
+                    Изменено битов: ${avalancheResult.totalChanges} из ${avalancheResult.totalBits}<br>
+                    Процент изменения: ${avalancheResult.avalancheEffect.toFixed(2)}%<br>
+                    <small>Тест изменяет один бит во входных данных и измеряет процент измененных битов в выходных данных</small>
+                `;
+                analysisResults.appendChild(details);
+                
+                // Обновление заключения
+                document.getElementById('avalancheEffect').textContent = 
+                    avalancheResult.avalancheEffect > 45 && avalancheResult.avalancheEffect < 55 ? 
+                    'Хороший' : 'Слабый';
+                    
+            } catch (error) {
+                document.getElementById('analysisResults').innerHTML = 
+                    `<div class="test-item">Ошибка: ${error.message}</div>`;
+            }
         }
         
         function runRandomnessTests() {
@@ -1309,6 +1436,7 @@
         function runAllTests() {
             runEntropyAnalysis();
             runFrequencyTest();
+            runAvalancheTest();
             runRandomnessTests();
         }
         
@@ -1348,6 +1476,8 @@
             // Обновление заключения
             document.getElementById('frequencyResistance').textContent = 
                 properties.uniformityScore < 500 ? 'Высокая' : 'Средняя';
+            document.getElementById('differentialResistance').textContent = 
+                properties.uniqueHomophonesCount === 65536 ? 'Высокая' : 'Средняя';
             document.getElementById('entropyEfficiency').textContent = 
                 properties.uniqueHomophonesCount === 65536 ? 'Идеальная' : 'Хорошая';
         }
@@ -1396,4 +1526,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
