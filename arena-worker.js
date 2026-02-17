@@ -1,7 +1,7 @@
 // ============================================================================
-// HC ARENA WORKER — v18.0 PRODUCTION READY (WITH COMPUTER VISION)
+// HC ARENA WORKER — v18.1 WITH BASE MOVEMENT
 // 338 dim State | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
-// CNN Vision | Hindsight Learning | Full Reversibility
+// CNN Vision | Hindsight Learning | Full Reversibility | ALWAYS MOVING
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
@@ -41,13 +41,12 @@ class SeededRandom {
 }
 
 // ============================================================================
-// CNN VISION PROCESSOR — Настоящее машинное зрение
+// CNN VISION PROCESSOR
 // ============================================================================
 class VisionCNN {
     constructor(password) {
         const rng = new SeededRandom(password + "_VISION_CNN");
         
-        // Размеры входного изображения
         this.inputWidth = 84;
         this.inputHeight = 84;
         
@@ -85,8 +84,7 @@ class VisionCNN {
         }
         this.conv2_bias = Array(64).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
         
-        // После двух сверток и пулингов: 84 -> 42 -> 21
-        this.fc_input_size = 64 * 21 * 21; // 28224
+        this.fc_input_size = 64 * 21 * 21;
         this.fc_hidden = 512;
         
         // FC1: 28224 -> 512
@@ -100,7 +98,7 @@ class VisionCNN {
         }
         this.fc1_bias = Array(this.fc_hidden).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
         
-        // FC2: 512 -> 128 (выходные фичи)
+        // FC2: 512 -> 128
         this.fc2_weights = [];
         for (let i = 0; i < 128; i++) {
             let row = [];
@@ -111,42 +109,41 @@ class VisionCNN {
         }
         this.fc2_bias = Array(128).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
         
-        // Кэш для последнего обработанного изображения
         this.lastFeatures = null;
     }
     
     processImageData(imageData, width, height) {
-        // 1. Конвертируем в grayscale и ресайзим до 84x84
-        const gray = this.rgbToGrayscale(imageData, width, height);
-        const resized = this.resize(gray, width, height, this.inputWidth, this.inputHeight);
+        if (!imageData || !imageData.length) {
+            return new Array(128).fill(0);
+        }
         
-        // 2. Нормализуем
-        const normalized = this.normalize(resized);
-        
-        // 3. Conv1 + ReLU + MaxPool
-        let conv1_out = this.conv2d(normalized, this.inputWidth, this.inputHeight, 
-                                     this.conv1_weights, this.conv1_bias, 32, 3);
-        conv1_out = this.relu(conv1_out);
-        conv1_out = this.maxpool2d(conv1_out, 42, 42, 32, 2); // 84/2=42
-        
-        // 4. Conv2 + ReLU + MaxPool
-        let conv2_out = this.conv2d(conv1_out, 42, 42, 
-                                     this.conv2_weights, this.conv2_bias, 64, 3, 32);
-        conv2_out = this.relu(conv2_out);
-        conv2_out = this.maxpool2d(conv2_out, 21, 21, 64, 2); // 42/2=21
-        
-        // 5. Flatten
-        const flattened = this.flatten(conv2_out, 21, 21, 64);
-        
-        // 6. FC1 + ReLU
-        let fc1_out = this.linear(flattened, this.fc1_weights, this.fc1_bias);
-        fc1_out = fc1_out.map(v => relu(v));
-        
-        // 7. FC2 (выходные фичи)
-        const features = this.linear(fc1_out, this.fc2_weights, this.fc2_bias);
-        
-        this.lastFeatures = features;
-        return features;
+        try {
+            const gray = this.rgbToGrayscale(imageData, width, height);
+            const resized = this.resize(gray, width, height, this.inputWidth, this.inputHeight);
+            const normalized = this.normalize(resized);
+            
+            let conv1_out = this.conv2d(normalized, this.inputWidth, this.inputHeight, 
+                                         this.conv1_weights, this.conv1_bias, 32, 3);
+            conv1_out = this.relu(conv1_out);
+            conv1_out = this.maxpool2d(conv1_out, 42, 42, 32, 2);
+            
+            let conv2_out = this.conv2d(conv1_out, 42, 42, 
+                                         this.conv2_weights, this.conv2_bias, 64, 3, 32);
+            conv2_out = this.relu(conv2_out);
+            conv2_out = this.maxpool2d(conv2_out, 21, 21, 64, 2);
+            
+            const flattened = conv2_out;
+            
+            let fc1_out = this.linear(flattened, this.fc1_weights, this.fc1_bias);
+            fc1_out = fc1_out.map(v => relu(v));
+            
+            const features = this.linear(fc1_out, this.fc2_weights, this.fc2_bias);
+            
+            this.lastFeatures = features;
+            return features.map(v => tanh(v) * 0.3);
+        } catch (e) {
+            return new Array(128).fill(0);
+        }
     }
     
     rgbToGrayscale(imageData, width, height) {
@@ -154,10 +151,7 @@ class VisionCNN {
         const gray = new Array(width * height);
         
         for (let i = 0; i < data.length; i += 4) {
-            // Y = 0.299R + 0.587G + 0.114B
-            gray[i/4] = (0.299 * data[i] + 
-                         0.587 * data[i+1] + 
-                         0.114 * data[i+2]) / 255;
+            gray[i/4] = (0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]) / 255;
         }
         
         return gray;
@@ -180,10 +174,8 @@ class VisionCNN {
     }
     
     normalize(image) {
-        // Z-score normalization
         const mean = image.reduce((a, b) => a + b, 0) / image.length;
         const std = Math.sqrt(image.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / image.length);
-        
         return image.map(v => (v - mean) / (std + 1e-8));
     }
     
@@ -203,7 +195,9 @@ class VisionCNN {
                                 const inY = y + ky;
                                 const inX = x + kx;
                                 const inIdx = ic * inWidth * inHeight + inY * inWidth + inX;
-                                sum += input[inIdx] * kernels[c][ic][ky][kx];
+                                if (inIdx < input.length) {
+                                    sum += input[inIdx] * kernels[c][ic][ky][kx];
+                                }
                             }
                         }
                     }
@@ -232,7 +226,9 @@ class VisionCNN {
                             const inY = y * poolSize + py;
                             const inX = x * poolSize + px;
                             const inIdx = c * width * height + inY * width + inX;
-                            maxVal = Math.max(maxVal, input[inIdx]);
+                            if (inIdx < input.length) {
+                                maxVal = Math.max(maxVal, input[inIdx]);
+                            }
                         }
                     }
                     
@@ -249,16 +245,12 @@ class VisionCNN {
         return input.map(v => Math.max(0, v));
     }
     
-    flatten(input, width, height, channels) {
-        return input; // Уже плоский массив
-    }
-    
     linear(input, weights, bias) {
         const output = new Array(bias.length);
         
         for (let i = 0; i < bias.length; i++) {
             let sum = bias[i];
-            for (let j = 0; j < input.length; j++) {
+            for (let j = 0; j < input.length && j < weights[i].length; j++) {
                 sum += input[j] * weights[i][j];
             }
             output[i] = sum;
@@ -269,7 +261,7 @@ class VisionCNN {
 }
 
 // ============================================================================
-// 16-HEAD SELF-ATTENTION (Full Implementation)
+// 16-HEAD SELF-ATTENTION
 // ============================================================================
 class SixteenHeadAttention {
     constructor(dim, password) {
@@ -337,7 +329,7 @@ class SixteenHeadAttention {
 }
 
 // ============================================================================
-// REVERSIBLE COUPLING BLOCK (INN) — Jacobian det = 1
+// REVERSIBLE COUPLING BLOCK (INN)
 // ============================================================================
 class ReversibleBlock {
     constructor(dim, password, blockId, memoryRatio = 0.3) {
@@ -465,11 +457,12 @@ class ReversibleBlock {
 }
 
 // ============================================================================
-// HC AGENT v18.0 — С ИНТЕГРИРОВАННЫМ КОМПЬЮТЕРНЫМ ЗРЕНИЕМ
+// HC AGENT v18.1 — WITH BASE MOVEMENT
 // ============================================================================
 class HCAgent {
     constructor(password, id) {
         this.password = password + id;
+        this.id = id;
         this.dim = 338;
         this.workingDim = 236;
         this.memoryDim = 102;
@@ -478,7 +471,6 @@ class HCAgent {
         this.maxTrajectory = 50;
         this.maxReverseSteps = 10;
 
-        // Инициализируем компьютерное зрение
         this.vision = new VisionCNN(password + id);
 
         this.blocks_data = [];
@@ -488,7 +480,6 @@ class HCAgent {
 
         const rng = new SeededRandom(this.password + "_INPUT");
         
-        // Увеличиваем входную размерность: 32 (позиция) + 128 (зрение) = 160
         this.inputSize = 160;
         this.W_input = [];
         for (let i = 0; i < this.workingDim; i++) {
@@ -520,6 +511,9 @@ class HCAgent {
         this.learningRate = 0.005;
         this.explorationNoise = 0.15;
         this.episodeWithoutImprovement = 0;
+        
+        // Для базового движения
+        this.startTime = Date.now();
     }
 
     encodeInput(positionData, visionFeatures) {
@@ -531,8 +525,10 @@ class HCAgent {
             visionFeatures = new Array(128).fill(0);
         }
 
-        // Объединяем позиционные данные и визуальные фичи
-        const combinedInput = [...positionData, ...visionFeatures];
+        const normPosition = positionData.map(v => clamp(v, -1, 1));
+        const normVision = visionFeatures.map(v => clamp(v, -1, 1));
+        
+        const combinedInput = [...normPosition, ...normVision];
         
         let state = [];
         for (let i = 0; i < this.workingDim; i++) {
@@ -587,26 +583,61 @@ class HCAgent {
         return this.stuckCounter > 10 ? -0.5 : 0;
     }
 
+    getBaseMovement() {
+        const time = (Date.now() - this.startTime) / 1000;
+        
+        // Разные паттерны для синего и красного
+        if (this.id === 'BLUE') {
+            return {
+                fx: Math.sin(time * 1.5) * 0.4,
+                fy: Math.cos(time * 1.2) * 0.4,
+                aggression: 0.5 + Math.sin(time * 0.5) * 0.2,
+                dodge: Math.sin(time * 2) * 0.3
+            };
+        } else {
+            return {
+                fx: Math.cos(time * 1.3) * 0.4,
+                fy: Math.sin(time * 1.4) * 0.4,
+                aggression: 0.5 + Math.cos(time * 0.6) * 0.2,
+                dodge: Math.cos(time * 1.8) * 0.3
+            };
+        }
+    }
+
     decide(positionData, canvasData, step, prevReward = 0, explorationNoise = null, position = null) {
+        // ====================================================================
+        // 1. БАЗОВОЕ ДВИЖЕНИЕ (ВСЕГДА ЕСТЬ!)
+        // ====================================================================
+        const base = this.getBaseMovement();
+
+        // ====================================================================
+        // 2. ПОЛУЧАЕМ ДАННЫЕ (если есть)
+        // ====================================================================
         if (!positionData || !Array.isArray(positionData)) {
             positionData = new Array(32).fill(0);
         }
 
-        // Обрабатываем изображение через CNN
         let visionFeatures;
-        if (canvasData && canvasData.data) {
-            visionFeatures = this.vision.processImageData(canvasData.data, 800, 600);
+        if (canvasData && canvasData.data && canvasData.data.length > 0) {
+            try {
+                visionFeatures = this.vision.processImageData(canvasData.data, 800, 600);
+            } catch (e) {
+                visionFeatures = new Array(128).fill(0);
+            }
         } else {
             visionFeatures = new Array(128).fill(0);
         }
 
+        // ====================================================================
+        // 3. КОМБИНИРУЕМ ДАННЫЕ ДЛЯ КОРРЕКЦИИ
+        // ====================================================================
         let state = this.encodeInput(positionData, visionFeatures);
 
+        // Hindsight learning
         let stuckPenalty = 0;
         if (position) {
             stuckPenalty = this.checkStuck(position.x, position.y);
         }
-
         const totalReward = prevReward + stuckPenalty;
 
         if (this.trajectory.length > 0 && totalReward !== 0) {
@@ -630,24 +661,33 @@ class HCAgent {
             this.trajectory.shift();
         }
 
+        // ====================================================================
+        // 4. ПОЛУЧАЕМ КОРРЕКЦИЮ ОТ НЕЙРОСЕТИ
+        // ====================================================================
         let result = this.forward(state, step);
 
-        let output = [];
+        let correction = [];
         for (let i = 0; i < 4; i++) {
             let sum = 0;
             for (let j = 0; j < this.workingDim; j++) {
                 sum += result.state[j] * this.W_output[i][j];
             }
-            output.push(tanh(sum));
+            correction.push(tanh(sum));
         }
 
+        // ====================================================================
+        // 5. КОМБИНИРУЕМ БАЗОВОЕ ДВИЖЕНИЕ + КОРРЕКЦИЯ
+        // ====================================================================
         const noise = explorationNoise !== null ? explorationNoise : this.explorationNoise;
+        
         const action = {
-            fx: clamp(output[0] + (Math.random() * 2 - 1) * noise, -1, 1),
-            fy: clamp(output[1] + (Math.random() * 2 - 1) * noise, -1, 1),
-            aggression: clamp(Math.abs(output[2]), 0, 1),
-            dodge: clamp(output[3], -1, 1),
-            attention: result.attention
+            fx: clamp(base.fx + correction[0] * 0.5 + (Math.random() * 2 - 1) * noise * 0.2, -1, 1),
+            fy: clamp(base.fy + correction[1] * 0.5 + (Math.random() * 2 - 1) * noise * 0.2, -1, 1),
+            aggression: clamp(base.aggression + correction[2] * 0.3, 0, 1),
+            dodge: clamp(base.dodge + correction[3] * 0.3, -1, 1),
+            attention: result.attention,
+            base: { fx: base.fx, fy: base.fy },
+            corr: { fx: correction[0], fy: correction[1] }
         };
 
         if (this.trajectory.length > 0) {
@@ -664,13 +704,12 @@ class HCAgent {
         this.hindsightCount++;
         const lr = this.learningRate * Math.abs(reward);
 
-        // Корректируем веса на основе ошибки
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < this.workingDim && j < 50; j++) {
                 let adjustment = 0;
-                if (i === 0) adjustment = lr * prevAction.fx * Math.sign(reward);
-                if (i === 1) adjustment = lr * prevAction.fy * Math.sign(reward);
-                if (i === 2) adjustment = lr * prevAction.aggression * Math.sign(reward);
+                if (i === 0) adjustment = lr * prevAction.corr.fx * Math.sign(reward);
+                if (i === 1) adjustment = lr * prevAction.corr.fy * Math.sign(reward);
+                if (i === 2) adjustment = lr * (prevAction.aggression - 0.5) * Math.sign(reward);
                 if (i === 3) adjustment = lr * prevAction.dodge * Math.sign(reward);
 
                 this.W_output[i][j] -= adjustment;
@@ -678,7 +717,6 @@ class HCAgent {
             }
         }
 
-        // Корректируем входные веса (и для позиции, и для зрения)
         for (let i = 0; i < this.workingDim && i < 50; i++) {
             for (let j = 0; j < 32 && j < prevPositionData.length; j++) {
                 let adjustment = lr * prevPositionData[j] * Math.sign(reward) * 0.5;
@@ -805,6 +843,7 @@ class HCAgent {
         this.totalDamage = 0;
         this.lastPosition = { x: 0, y: 0 };
         this.episodeWithoutImprovement = 0;
+        this.startTime = Date.now();
     }
 
     getStats() {
@@ -838,7 +877,7 @@ let workerStartTime = Date.now();
 let watchdogTimer = null;
 
 // ============================================================================
-// WATCHDOG TIMER (prevent infinite loops)
+// WATCHDOG TIMER
 // ============================================================================
 function startWatchdog() {
     stopWatchdog();
@@ -878,9 +917,7 @@ function sendLog(msg, type = 'info') {
                 timestamp: Date.now()
             }
         });
-    } catch (e) {
-        // Silent fail
-    }
+    } catch (e) {}
 }
 
 // ============================================================================
@@ -903,9 +940,9 @@ self.onmessage = function(e) {
             prevDist2 = 500;
             workerStartTime = Date.now();
 
-            hc1 = new HCAgent('ARENA_V18', '_BLUE_' + generation);
-            hc2 = new HCAgent('ARENA_V18', '_RED_' + generation);
-            sendLog('HC v18.0 initialized | CNN Vision | 16-head | 12 blocks', 'success');
+            hc1 = new HCAgent('ARENA_V18', 'BLUE');
+            hc2 = new HCAgent('ARENA_V18', 'RED');
+            sendLog('HC v18.1 initialized | Base Movement + CNN Vision', 'success');
 
             self.postMessage({
                 type: 'INIT',
@@ -935,11 +972,11 @@ self.onmessage = function(e) {
                 return;
             }
 
-            if (!data || !data.input1 || !data.input2 || !data.canvas1 || !data.canvas2) {
+            if (!data || !data.input1 || !data.input2) {
                 self.postMessage({
                     type: 'ERR',
                     data: {
-                        msg: 'Missing input data or canvas data',
+                        msg: 'Missing input data',
                         step: episode,
                         timestamp: Date.now()
                     }
@@ -964,7 +1001,6 @@ self.onmessage = function(e) {
             const totalReward1 = reward1 + damageReward1;
             const totalReward2 = reward2 + damageReward2;
 
-            // Агенты получают и позиционные данные, и изображение с canvas
             const action1 = hc1.decide(data.input1, data.canvas1, episode, totalReward1, null, pos1);
             const action2 = hc2.decide(data.input2, data.canvas2, episode, totalReward2, null, pos2);
 
@@ -1002,14 +1038,8 @@ self.onmessage = function(e) {
         }
         
         else if (msgType === 'TRAIN') {
-            if (!training || !hc1 || !hc2) {
-                return;
-            }
-
-            if (!data || !data.winner) {
-                sendLog('TRAIN called without winner data', 'warning');
-                return;
-            }
+            if (!training || !hc1 || !hc2) return;
+            if (!data || !data.winner) return;
 
             const winner = data.winner === 'BLUE' ? hc1 : hc2;
             const loser = data.winner === 'BLUE' ? hc2 : hc1;
@@ -1023,7 +1053,6 @@ self.onmessage = function(e) {
             }
 
             winner.recordReward(10.0);
-
             const weights = winner.getWeights();
             loser.setWeights(weights);
             winner.mutate(0.12);
@@ -1031,7 +1060,6 @@ self.onmessage = function(e) {
 
             hc1.learningRate = Math.max(0.001, hc1.learningRate * 0.99);
             hc2.learningRate = Math.max(0.001, hc2.learningRate * 0.99);
-
             generation++;
 
             sendLog(`Gen ${generation} | ${data.winner} wins (${blueWins}-${redWins})`, 'train');
@@ -1167,8 +1195,8 @@ self.onmessage = function(e) {
                 return;
             }
             
-            hc1 = new HCAgent('ARENA_V18', '_BLUE_' + generation);
-            hc2 = new HCAgent('ARENA_V18', '_RED_' + generation);
+            hc1 = new HCAgent('ARENA_V18', 'BLUE');
+            hc2 = new HCAgent('ARENA_V18', 'RED');
             hc1.setWeights(data.blue);
             hc2.setWeights(data.red);
             
@@ -1214,13 +1242,13 @@ try {
     self.postMessage({
         type: 'WORKER_READY',
         data: {
-            version: '18.0',
-            architecture: 'Full HC with CNN Vision and Hindsight Learning',
+            version: '18.1',
+            architecture: 'HC with Base Movement + CNN Vision + Hindsight',
             timestamp: Date.now()
         }
     });
 
-    sendLog('Worker v18.0 loaded with Computer Vision', 'info');
+    sendLog('Worker v18.1 loaded with Base Movement', 'info');
 } catch (e) {
     console.error('[Worker] Failed to send ready message:', e);
-                                }
+}
