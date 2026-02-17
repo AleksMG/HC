@@ -1251,4 +1251,4 @@ try {
     sendLog('Worker v18.1 loaded with Base Movement', 'info');
 } catch (e) {
     console.error('[Worker] Failed to send ready message:', e);
-}
+        }
