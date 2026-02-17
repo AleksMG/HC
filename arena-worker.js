@@ -1,7 +1,7 @@
 // ============================================================================
-// HC ARENA WORKER — v18.1 WITH BASE MOVEMENT
+// HC ARENA WORKER — v18.1 FULL LEARNING EVOLUTION
 // 338 dim State | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
-// CNN Vision | Hindsight Learning | Full Reversibility | ALWAYS MOVING
+// CNN Vision | Online Learning | Hindsight | Evolution | Base Movement
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
@@ -233,7 +233,7 @@ class VisionCNN {
                     }
                     
                     const outIdx = c * outWidth * outHeight + y * outWidth + x;
-                    output[outIdx] = maxVal;
+                    output[outIdx] = maxVal !== -Infinity ? maxVal : 0;
                 }
             }
         }
@@ -250,8 +250,9 @@ class VisionCNN {
         
         for (let i = 0; i < bias.length; i++) {
             let sum = bias[i];
-            for (let j = 0; j < input.length && j < weights[i].length; j++) {
-                sum += input[j] * weights[i][j];
+            const row = weights[i];
+            for (let j = 0; j < input.length && j < row.length; j++) {
+                sum += input[j] * row[j];
             }
             output[i] = sum;
         }
@@ -457,7 +458,7 @@ class ReversibleBlock {
 }
 
 // ============================================================================
-// HC AGENT v18.1 — WITH BASE MOVEMENT
+// HC AGENT v18.1 — FULL LEARNING EVOLUTION
 // ============================================================================
 class HCAgent {
     constructor(password, id) {
@@ -480,7 +481,7 @@ class HCAgent {
 
         const rng = new SeededRandom(this.password + "_INPUT");
         
-        this.inputSize = 160;
+        this.inputSize = 160; // 32 position + 128 vision
         this.W_input = [];
         for (let i = 0; i < this.workingDim; i++) {
             let row = [];
@@ -512,7 +513,6 @@ class HCAgent {
         this.explorationNoise = 0.15;
         this.episodeWithoutImprovement = 0;
         
-        // Для базового движения
         this.startTime = Date.now();
     }
 
@@ -586,7 +586,6 @@ class HCAgent {
     getBaseMovement() {
         const time = (Date.now() - this.startTime) / 1000;
         
-        // Разные паттерны для синего и красного
         if (this.id === 'BLUE') {
             return {
                 fx: Math.sin(time * 1.5) * 0.4,
@@ -605,14 +604,10 @@ class HCAgent {
     }
 
     decide(positionData, canvasData, step, prevReward = 0, explorationNoise = null, position = null) {
-        // ====================================================================
-        // 1. БАЗОВОЕ ДВИЖЕНИЕ (ВСЕГДА ЕСТЬ!)
-        // ====================================================================
+        // Базовое движение (всегда есть)
         const base = this.getBaseMovement();
 
-        // ====================================================================
-        // 2. ПОЛУЧАЕМ ДАННЫЕ (если есть)
-        // ====================================================================
+        // Получаем данные
         if (!positionData || !Array.isArray(positionData)) {
             positionData = new Array(32).fill(0);
         }
@@ -628,9 +623,7 @@ class HCAgent {
             visionFeatures = new Array(128).fill(0);
         }
 
-        // ====================================================================
-        // 3. КОМБИНИРУЕМ ДАННЫЕ ДЛЯ КОРРЕКЦИИ
-        // ====================================================================
+        // Комбинируем для коррекции
         let state = this.encodeInput(positionData, visionFeatures);
 
         // Hindsight learning
@@ -661,9 +654,7 @@ class HCAgent {
             this.trajectory.shift();
         }
 
-        // ====================================================================
-        // 4. ПОЛУЧАЕМ КОРРЕКЦИЮ ОТ НЕЙРОСЕТИ
-        // ====================================================================
+        // Получаем коррекцию от нейросети
         let result = this.forward(state, step);
 
         let correction = [];
@@ -675,9 +666,7 @@ class HCAgent {
             correction.push(tanh(sum));
         }
 
-        // ====================================================================
-        // 5. КОМБИНИРУЕМ БАЗОВОЕ ДВИЖЕНИЕ + КОРРЕКЦИЯ
-        // ====================================================================
+        // Комбинируем базовое движение + коррекция
         const noise = explorationNoise !== null ? explorationNoise : this.explorationNoise;
         
         const action = {
@@ -704,6 +693,7 @@ class HCAgent {
         this.hindsightCount++;
         const lr = this.learningRate * Math.abs(reward);
 
+        // Корректируем выходные веса
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < this.workingDim && j < 50; j++) {
                 let adjustment = 0;
@@ -717,6 +707,7 @@ class HCAgent {
             }
         }
 
+        // Корректируем входные веса
         for (let i = 0; i < this.workingDim && i < 50; i++) {
             for (let j = 0; j < 32 && j < prevPositionData.length; j++) {
                 let adjustment = lr * prevPositionData[j] * Math.sign(reward) * 0.5;
@@ -921,7 +912,7 @@ function sendLog(msg, type = 'info') {
 }
 
 // ============================================================================
-// MESSAGE HANDLER
+// MESSAGE HANDLER — FULL LEARNING EVOLUTION
 // ============================================================================
 self.onmessage = function(e) {
     resetWatchdog();
@@ -933,7 +924,7 @@ self.onmessage = function(e) {
         if (msgType === 'START') {
             training = (data && data.training) ? data.training : false;
             episode = (data && data.episode) ? data.episode : 0;
-            generation = 0;
+            generation = (data && data.generation) ? data.generation : 0;
             blueWins = 0;
             redWins = 0;
             prevDist1 = 500;
@@ -942,7 +933,12 @@ self.onmessage = function(e) {
 
             hc1 = new HCAgent('ARENA_V18', 'BLUE');
             hc2 = new HCAgent('ARENA_V18', 'RED');
-            sendLog('HC v18.1 initialized | Base Movement + CNN Vision', 'success');
+            
+            // Устанавливаем начальные поколения
+            hc1.wins = 0;
+            hc2.wins = 0;
+            
+            sendLog(`HC v18.1 initialized | Gen ${generation} | Training: ${training}`, 'success');
 
             self.postMessage({
                 type: 'INIT',
@@ -954,6 +950,7 @@ self.onmessage = function(e) {
                     memory: 102,
                     vision: 'CNN 84x84x128',
                     training: training,
+                    generation: generation,
                     timestamp: Date.now()
                 }
             });
@@ -990,6 +987,8 @@ self.onmessage = function(e) {
             const damage2 = (data.damage2 !== undefined && typeof data.damage2 === 'number') ? data.damage2 : 0;
             const pos1 = (data.pos1 && typeof data.pos1 === 'object') ? data.pos1 : { x: 0, y: 0 };
             const pos2 = (data.pos2 && typeof data.pos2 === 'object') ? data.pos2 : { x: 0, y: 0 };
+            
+            if (data.generation !== undefined) generation = data.generation;
 
             const reward1 = (prevDist1 - dist1) * 0.01;
             const reward2 = (prevDist2 - dist2) * 0.01;
@@ -1038,31 +1037,49 @@ self.onmessage = function(e) {
         }
         
         else if (msgType === 'TRAIN') {
-            if (!training || !hc1 || !hc2) return;
-            if (!data || !data.winner) return;
+            if (!training || !hc1 || !hc2) {
+                sendLog('Training disabled or agents missing', 'warning');
+                return;
+            }
+            
+            if (!data || !data.winner) {
+                sendLog('TRAIN called without winner data', 'warning');
+                return;
+            }
 
             const winner = data.winner === 'BLUE' ? hc1 : hc2;
             const loser = data.winner === 'BLUE' ? hc2 : hc1;
 
+            // Победителю бонус
+            winner.recordReward(10.0);
+            winner.wins++;
+            
             if (data.winner === 'BLUE') {
                 blueWins++;
-                hc1.wins++;
-            } else if (data.winner === 'RED') {
+            } else {
                 redWins++;
-                hc2.wins++;
             }
 
-            winner.recordReward(10.0);
+            // КЛЮЧЕВОЕ: ЭВОЛЮЦИЯ - копируем веса победителя проигравшему
             const weights = winner.getWeights();
             loser.setWeights(weights);
-            winner.mutate(0.12);
-            loser.mutate(0.12);
+            
+            // Оба мутируют для разнообразия
+            winner.mutate(0.15);
+            loser.mutate(0.15);
+            
+            // Проигравший учится на своих ошибках
+            if (loser.trajectory.length > 5) {
+                loser.reverse(5);
+            }
 
+            // Уменьшаем learning rate со временем
             hc1.learningRate = Math.max(0.001, hc1.learningRate * 0.99);
             hc2.learningRate = Math.max(0.001, hc2.learningRate * 0.99);
+
             generation++;
 
-            sendLog(`Gen ${generation} | ${data.winner} wins (${blueWins}-${redWins})`, 'train');
+            sendLog(`🧬 Gen ${generation}: ${data.winner} wins! (B:${blueWins} R:${redWins}) | Mutations: B:${hc1.mutations} R:${hc2.mutations} | Hindsight: B:${hc1.hindsightCount} R:${hc2.hindsightCount}`, 'train');
 
             self.postMessage({
                 type: 'TRAIN_COMPLETE',
@@ -1071,6 +1088,10 @@ self.onmessage = function(e) {
                     blueWins: blueWins,
                     redWins: redWins,
                     winner: data.winner,
+                    blueMutations: hc1.mutations,
+                    redMutations: hc2.mutations,
+                    blueHindsight: hc1.hindsightCount,
+                    redHindsight: hc2.hindsightCount,
                     timestamp: Date.now()
                 }
             });
@@ -1092,7 +1113,7 @@ self.onmessage = function(e) {
             const r1 = hc1.reverse(steps);
             const r2 = hc2.reverse(steps);
 
-            sendLog(`Reversed ${steps} steps | Hindsight: B=${hc1.hindsightCount} R=${hc2.hindsightCount}`, 'train');
+            sendLog(`🔄 Reversed ${steps} steps | Hindsight: B=${hc1.hindsightCount} R=${hc2.hindsightCount}`, 'train');
 
             self.postMessage({
                 type: 'REVERSE_RESULT',
@@ -1177,6 +1198,9 @@ self.onmessage = function(e) {
                 data: {
                     blue: hc1.getWeights(),
                     red: hc2.getWeights(),
+                    generation: generation,
+                    blueWins: blueWins,
+                    redWins: redWins,
                     timestamp: Date.now()
                 }
             });
@@ -1200,12 +1224,19 @@ self.onmessage = function(e) {
             hc1.setWeights(data.blue);
             hc2.setWeights(data.red);
             
-            sendLog('Weights imported', 'success');
+            if (data.generation) generation = data.generation;
+            if (data.blueWins) blueWins = data.blueWins;
+            if (data.redWins) redWins = data.redWins;
+            
+            sendLog(`Weights imported | Gen ${generation} | B:${blueWins} R:${redWins}`, 'success');
             
             self.postMessage({
                 type: 'INIT',
                 data: {
                     status: 'loaded',
+                    generation: generation,
+                    blueWins: blueWins,
+                    redWins: redWins,
                     timestamp: Date.now()
                 }
             });
@@ -1243,12 +1274,12 @@ try {
         type: 'WORKER_READY',
         data: {
             version: '18.1',
-            architecture: 'HC with Base Movement + CNN Vision + Hindsight',
+            architecture: 'HC with Learning Evolution + CNN Vision + Hindsight',
             timestamp: Date.now()
         }
     });
 
-    sendLog('Worker v18.1 loaded with Base Movement', 'info');
+    sendLog('Worker v18.1 loaded with FULL LEARNING EVOLUTION', 'info');
 } catch (e) {
     console.error('[Worker] Failed to send ready message:', e);
-        }
+            }
