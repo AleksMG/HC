@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ HC Arena v18.1 — ПЛАВНОЕ ДВИЖЕНИЕ</title>
+    <title>⚡ HC Arena v18.1 — ПЛАВНОЕ ДВИЖЕНИЕ 40пкс/сек</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
         body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
@@ -49,7 +49,7 @@
     </style>
 </head>
 <body>
-    <h1>⚡ HC ARENA v18.1 <span class="vision-badge">👁️ ПЛАВНОЕ ДВИЖЕНИЕ</span></h1>
+    <h1>⚡ HC ARENA v18.1 <span class="vision-badge">👁️ 40px/сек ПЛАВНО</span></h1>
     <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 Memory | CNN Vision | Online Learning | Hindsight</div>
     
     <canvas id="arena" width="800" height="600"></canvas>
@@ -95,7 +95,7 @@
 
 <script>
 // ============================================================================
-// HC ARENA v18.1 — ПЛАВНОЕ ДВИЖЕНИЕ
+// HC ARENA v18.1 — ИДЕАЛЬНОЕ ПЛАВНОЕ ДВИЖЕНИЕ
 // ============================================================================
 
 const canvas = document.getElementById('arena');
@@ -386,7 +386,7 @@ function captureCanvasForAgent(agentX, agentY, targetX, targetY) {
 }
 
 // ============================================================================
-// ФИЗИКА И ДВИЖЕНИЕ — ПЛАВНОЕ
+// ФИЗИКА — ПЛАВНОЕ ДВИЖЕНИЕ 40 ПИКС/СЕК (БЕЗ УСКОРЕНИЯ)
 // ============================================================================
 function applyActions(actions) {
     if (!running || !actions) return;
@@ -394,39 +394,33 @@ function applyActions(actions) {
     const { blue: a1, red: a2 } = actions;
 
     // ========================================================================
-    // ПАРАМЕТРЫ ДВИЖЕНИЯ (как в оригинале)
+    // ПАРАМЕТРЫ ДВИЖЕНИЯ
     // ========================================================================
-    const MOVE_FORCE = 60;         // ← сила движения
-    const BOUNCE_FORCE = 4;        // сила отскока
-    const FRICTION = 0.90;          // трение (важно для плавности!)
+    const TARGET_SPEED = 40;           // ← 40 пикселей в секунду
+    const PIXELS_PER_FRAME = TARGET_SPEED / 60;  // = 0.67 пикс/кадр
     
-    // Базовая агрессия (оригинал)
+    // Базовая агрессия (0.4-1.0)
     const sp1 = 0.4 + a1.aggression * 0.6;
     const sp2 = 0.4 + a2.aggression * 0.6;
     
     // ========================================================================
-    // ПЛАВНОЕ ДВИЖЕНИЕ
+    // УСТАНАВЛИВАЕМ СКОРОСТЬ (БЕЗ УСКОРЕНИЯ!)
     // ========================================================================
-    // Небольшой плавный толчок каждый кадр
-    blue.vx += a1.fx * sp1 * MOVE_FORCE;
-    blue.vy += a1.fy * sp1 * MOVE_FORCE;
-    red.vx += a2.fx * sp2 * MOVE_FORCE;
-    red.vy += a2.fy * sp2 * MOVE_FORCE;
+    blue.vx = a1.fx * sp1 * PIXELS_PER_FRAME;
+    blue.vy = a1.fy * sp1 * PIXELS_PER_FRAME;
+    red.vx = a2.fx * sp2 * PIXELS_PER_FRAME;
+    red.vy = a2.fy * sp2 * PIXELS_PER_FRAME;
 
-    // Плавное затухание (оригинальное трение)
-    blue.vx *= FRICTION;
-    blue.vy *= FRICTION;
-    red.vx *= FRICTION;
-    red.vy *= FRICTION;
-
-    // Движение
-    blue.x += blue.vx;
+    // ========================================================================
+    // ДВИЖЕНИЕ (с дробной позицией для плавности)
+    // ========================================================================
+    blue.x += blue.vx;  // ← 200.67, 201.34, 202.01...
     blue.y += blue.vy;
     red.x += red.vx;
     red.y += red.vy;
 
     // ========================================================================
-    // ФИЗИКА
+    // ФИЗИКА (стены, препятствия, бой)
     // ========================================================================
     
     // Стены
@@ -482,10 +476,10 @@ function applyActions(actions) {
         }
 
         const ang = Math.atan2(blue.y - red.y, blue.x - red.x);
-        blue.vx += Math.cos(ang) * BOUNCE_FORCE;
-        blue.vy += Math.sin(ang) * BOUNCE_FORCE;
-        red.vx -= Math.cos(ang) * BOUNCE_FORCE;
-        red.vy -= Math.sin(ang) * BOUNCE_FORCE;
+        blue.vx += Math.cos(ang) * 4;
+        blue.vy += Math.sin(ang) * 4;
+        red.vx -= Math.cos(ang) * 4;
+        red.vy -= Math.sin(ang) * 4;
     }
 
     // Проверка смерти
@@ -512,16 +506,14 @@ function applyActions(actions) {
 }
 
 // ============================================================================
-// RENDER — ПЛАВНАЯ ОТРИСОВКА (60 FPS)
+// ОТРИСОВКА — с округлением до целых пикселей
 // ============================================================================
 function render() {
     if (!running) {
-        // Если игра не запущена, всё равно продолжаем отрисовку
         requestAnimationFrame(render);
         return;
     }
 
-    // Очистка и отрисовка
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Препятствия
@@ -530,17 +522,17 @@ function render() {
         ctx.fillRect(obs.x - obs.w / 2, obs.y - obs.h / 2, obs.w, obs.h);
     }
 
-    // Синий агент
+    // Синий агент (округляем позицию до целого пикселя)
     ctx.fillStyle = '#00f2ff';
     ctx.shadowColor = '#00f2ff';
     ctx.shadowBlur = blue.hp < 30 ? 30 : 20;
-    ctx.fillRect(blue.x - 20, blue.y - 20, 40, 40);
+    ctx.fillRect(Math.round(blue.x) - 20, Math.round(blue.y) - 20, 40, 40);
 
     // Красный агент
     ctx.fillStyle = '#ff0055';
     ctx.shadowColor = '#ff0055';
     ctx.shadowBlur = red.hp < 30 ? 30 : 20;
-    ctx.fillRect(red.x - 20, red.y - 20, 40, 40);
+    ctx.fillRect(Math.round(red.x) - 20, Math.round(red.y) - 20, 40, 40);
 
     ctx.shadowBlur = 0;
 
@@ -554,7 +546,6 @@ function render() {
         document.getElementById('fps').innerText = fps;
     }
 
-    // Следующий кадр
     requestAnimationFrame(render);
 }
 
@@ -622,7 +613,7 @@ function startGame() {
     // Запускаем цикл действий
     requestActions();
     
-    // Запускаем отрисовку (если ещё не запущена)
+    // Запускаем отрисовку
     if (!animFrame) {
         render();
     }
@@ -673,7 +664,6 @@ function requestActions() {
         });
     }
 
-    // Следующий запрос через 16мс (~60 FPS)
     setTimeout(requestActions, 16);
 }
 
@@ -847,11 +837,11 @@ window.onload = function() {
     initWorker();
     initGame();
     
-    // Запускаем отрисовку сразу
+    // Запускаем отрисовку
     animFrame = requestAnimationFrame(render);
     
     requestStats();
-    log('⚡ HC v18.1 Ready | Press ▶️ START', 'info');
+    log('⚡ HC v18.1 Ready | 40px/сек плавно | Press ▶️ START', 'info');
     updateUI();
 };
 
