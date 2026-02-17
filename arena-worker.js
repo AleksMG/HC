@@ -345,16 +345,13 @@ class HCAgent {
 
         let state = this.encodeInput(input);
 
-        // Anti-stuck penalty
         let stuckPenalty = 0;
         if (position) {
             stuckPenalty = this.checkStuck(position.x, position.y);
         }
 
-        // Combined reward
         const totalReward = prevReward + stuckPenalty;
 
-        // Hindsight learning from previous step
         if (this.trajectory.length > 0 && totalReward !== 0) {
             const prev = this.trajectory[this.trajectory.length - 1];
             if (totalReward < -0.3 && prev.action) {
@@ -362,7 +359,6 @@ class HCAgent {
             }
         }
 
-        // Store trajectory (limited to maxTrajectory)
         this.trajectory.push({
             state: state.slice(),
             input: input.slice(),
@@ -387,15 +383,14 @@ class HCAgent {
             output.push(tanh(sum));
         }
 
-        // Exploration noise with decay
         const noise = explorationNoise !== null ? explorationNoise : this.explorationNoise;
         const action = {
-            fx: clamp(output[0] + (Math.random() * 2 - 1) * noise, -1, 1),            fy: clamp(output[1] + (Math.random() * 2 - 1) * noise, -1, 1),
+            fx: clamp(output[0] + (Math.random() * 2 - 1) * noise, -1, 1),
+            fy: clamp(output[1] + (Math.random() * 2 - 1) * noise, -1, 1),
             aggression: clamp(Math.abs(output[2]), 0, 1),
             dodge: clamp(output[3], -1, 1),
             attention: result.attention
         };
-
         if (this.trajectory.length > 0) {
             this.trajectory[this.trajectory.length - 1].action = action;
             this.trajectory[this.trajectory.length - 1].reward = totalReward;
@@ -410,7 +405,6 @@ class HCAgent {
         this.hindsightCount++;
         const lr = this.learningRate * Math.abs(reward);
 
-        // Adjust OUTPUT weights (all 4 outputs)
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < this.workingDim && j < 50; j++) {
                 let adjustment = 0;
@@ -424,7 +418,6 @@ class HCAgent {
             }
         }
 
-        // Adjust INPUT weights (for better feature detection)
         for (let i = 0; i < this.workingDim && i < 50; i++) {
             for (let j = 0; j < 32 && j < prevInput.length; j++) {
                 let adjustment = lr * prevInput[j] * Math.sign(reward) * 0.5;
@@ -440,13 +433,13 @@ class HCAgent {
 
         const start = this.trajectory.length - steps;
         let state = this.trajectory[this.trajectory.length - 1].state.slice();
+
         for (let i = this.trajectory.length - 1; i >= start; i--) {
             state = this.inverse(state, this.trajectory[i].step);
         }
 
         this.trajectory.splice(-steps);
         this.mutations++;
-
         return {
             state: state,
             trajectoryLength: this.trajectory.length
@@ -488,14 +481,14 @@ class HCAgent {
             }
         };
     }
+
     setWeights(weights) {
         if (!weights || !weights.input || !weights.output) {
             return false;
         }
         this.W_input = deepClone(weights.input);
         this.W_output = deepClone(weights.output);
-        if (weights.metadata) {
-            this.mutations = weights.metadata.mutations || 0;
+        if (weights.metadata) {            this.mutations = weights.metadata.mutations || 0;
             this.wins = weights.metadata.wins || 0;
             this.hindsightCount = weights.metadata.hindsightCount || 0;
             this.learningRate = weights.metadata.learningRate || 0.005;
@@ -516,14 +509,12 @@ class HCAgent {
         }
         this.cumulativeReward += reward;
 
-        // Track improvement
         if (reward < 0) {
             this.episodeWithoutImprovement++;
         } else {
             this.episodeWithoutImprovement = 0;
         }
 
-        // Decay exploration if no improvement
         if (this.episodeWithoutImprovement > 10) {
             this.explorationNoise = Math.max(0.01, this.explorationNoise * 0.95);
             this.episodeWithoutImprovement = 0;
@@ -537,7 +528,8 @@ class HCAgent {
 
     reset() {
         this.trajectory = [];
-        this.cumulativeReward = 0;        this.stuckCounter = 0;
+        this.cumulativeReward = 0;
+        this.stuckCounter = 0;
         this.memory = new Array(this.memoryDim).fill(0);
         this.damageDealt = 0;
         this.totalDamage = 0;
@@ -545,8 +537,7 @@ class HCAgent {
         this.episodeWithoutImprovement = 0;
     }
 
-    getStats() {
-        return {
+    getStats() {        return {
             trajectory: this.trajectory.length,
             mutations: this.mutations,
             hindsightCount: this.hindsightCount,
@@ -576,7 +567,7 @@ let workerStartTime = Date.now();
 let watchdogTimer = null;
 
 // ============================================================================
-// WATCHDOG TIMER (prevent infinite loops)
+// WATCHDOG TIMER
 // ============================================================================
 function startWatchdog() {
     stopWatchdog();
@@ -586,16 +577,16 @@ function startWatchdog() {
             data: {
                 msg: 'Watchdog timeout — worker stuck',
                 timestamp: Date.now()
-            }        });
-    }, 30000); // 30 second timeout
+            }
+        });
+    }, 30000);
 }
 
 function stopWatchdog() {
     if (watchdogTimer) {
         clearTimeout(watchdogTimer);
         watchdogTimer = null;
-    }
-}
+    }}
 
 function resetWatchdog() {
     stopWatchdog();
@@ -617,7 +608,7 @@ function sendLog(msg, type = 'info') {
 }
 
 // ============================================================================
-// MESSAGE HANDLER — ALL postMessage HAVE CORRECT data: SYNTAX
+// MESSAGE HANDLER — FULLY FIXED
 // ============================================================================
 self.onmessage = function(e) {
     resetWatchdog();
@@ -628,14 +619,15 @@ self.onmessage = function(e) {
     try {
         switch (msgType) {
             case 'START': {
-                training = data && data.training ? data.training : false;
-                episode = data && data.episode ? data.episode : 0;
+                training = (data && data.training) ? data.training : false;
+                episode = (data && data.episode) ? data.episode : 0;
                 generation = 0;
                 blueWins = 0;
                 redWins = 0;
                 prevDist1 = 500;
                 prevDist2 = 500;
                 workerStartTime = Date.now();
+
                 hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
                 hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
 
@@ -643,8 +635,7 @@ self.onmessage = function(e) {
 
                 self.postMessage({
                     type: 'INIT',
-                    data: {
-                        status: 'ready',
+                    data: {                        status: 'ready',
                         dim: 338,
                         blocks: 12,
                         heads: 16,
@@ -669,8 +660,8 @@ self.onmessage = function(e) {
                     return;
                 }
 
-                episode = data && data.episode ? data.episode : episode;
-                training = data && data.training !== undefined ? data.training : training;
+                episode = (data && data.episode) ? data.episode : episode;
+                training = (data && data.training !== undefined) ? data.training : training;
 
                 if (!data || !data.input1 || !data.input2) {
                     self.postMessage({
@@ -684,24 +675,24 @@ self.onmessage = function(e) {
                     return;
                 }
 
-                // Distance-based reward                const dist1 = typeof (data && data.dist1) === 'number' ? data.dist1 : 500;
-                const dist2 = typeof (data && data.dist2) === 'number' ? data.dist2 : 500;
+                // FIXED: Proper dist1/dist2 checking
+                const dist1 = (data.dist1 !== undefined && typeof data.dist1 === 'number') ? data.dist1 : 500;
+                const dist2 = (data.dist2 !== undefined && typeof data.dist2 === 'number') ? data.dist2 : 500;
 
                 const reward1 = (prevDist1 - dist1) * 0.01;
                 const reward2 = (prevDist2 - dist2) * 0.01;
 
                 prevDist1 = dist1;
                 prevDist2 = dist2;
-
-                // Damage-based reward
-                const damage1 = data && data.damage1 ? data.damage1 : 0;
-                const damage2 = data && data.damage2 ? data.damage2 : 0;
+                // FIXED: Proper damage checking
+                const damage1 = (data.damage1 !== undefined && typeof data.damage1 === 'number') ? data.damage1 : 0;
+                const damage2 = (data.damage2 !== undefined && typeof data.damage2 === 'number') ? data.damage2 : 0;
                 const damageReward1 = damage1 * 0.1;
                 const damageReward2 = damage2 * 0.1;
 
-                // Position for anti-stuck
-                const pos1 = data && data.pos1 ? data.pos1 : { x: 0, y: 0 };
-                const pos2 = data && data.pos2 ? data.pos2 : { x: 0, y: 0 };
+                // FIXED: Proper pos checking
+                const pos1 = (data.pos1 && typeof data.pos1 === 'object') ? data.pos1 : { x: 0, y: 0 };
+                const pos2 = (data.pos2 && typeof data.pos2 === 'object') ? data.pos2 : { x: 0, y: 0 };
 
                 const action1 = hc1.decide(data.input1, episode, reward1 + damageReward1, null, pos1);
                 const action2 = hc2.decide(data.input2, episode, reward2 + damageReward2, null, pos2);
@@ -729,11 +720,11 @@ self.onmessage = function(e) {
                     }
                 });
 
-                // Send reward stats to main
                 self.postMessage({
                     type: 'REWARD',
                     data: {
-                        blue: reward1 + damageReward1,                        red: reward2 + damageReward2,
+                        blue: reward1 + damageReward1,
+                        red: reward2 + damageReward2,
                         timestamp: Date.now()
                     }
                 });
@@ -742,11 +733,10 @@ self.onmessage = function(e) {
 
             case 'TRAIN': {
                 if (!training || !hc1 || !hc2) {
-                    return;
-                }
+                    return;                }
 
-                const winner = data && data.winner === 'BLUE' ? hc1 : hc2;
-                const loser = data && data.winner === 'BLUE' ? hc2 : hc1;
+                const winner = (data && data.winner === 'BLUE') ? hc1 : hc2;
+                const loser = (data && data.winner === 'BLUE') ? hc2 : hc1;
 
                 if (data && data.winner === 'BLUE') {
                     blueWins++;
@@ -756,17 +746,14 @@ self.onmessage = function(e) {
                     hc2.wins++;
                 }
 
-                // Win bonus reward
                 const winReward = 10.0;
                 winner.recordReward(winReward);
 
-                // Copy winner weights to loser, both mutate
                 const weights = winner.getWeights();
                 loser.setWeights(weights);
                 winner.mutate(0.12);
                 loser.mutate(0.12);
 
-                // Learning rate decay
                 hc1.learningRate = Math.max(0.001, hc1.learningRate * 0.99);
                 hc2.learningRate = Math.max(0.001, hc2.learningRate * 0.99);
 
@@ -782,7 +769,8 @@ self.onmessage = function(e) {
                         redWins: redWins,
                         winner: data ? data.winner : 'UNKNOWN',
                         timestamp: Date.now()
-                    }                });
+                    }
+                });
                 break;
             }
 
@@ -794,11 +782,10 @@ self.onmessage = function(e) {
                             msg: 'Agents not initialized',
                             timestamp: Date.now()
                         }
-                    });
-                    return;
+                    });                    return;
                 }
 
-                const steps = data && data.steps ? data.steps : 5;
+                const steps = (data && data.steps) ? data.steps : 5;
                 const r1 = hc1.reverse(steps);
                 const r2 = hc2.reverse(steps);
 
@@ -819,7 +806,7 @@ self.onmessage = function(e) {
             }
 
             case 'SET_TRAINING': {
-                training = data && data.training ? data.training : false;
+                training = (data && data.training) ? data.training : false;
                 sendLog('Training: ' + (training ? 'ON' : 'OFF'), 'info');
                 break;
             }
@@ -831,7 +818,8 @@ self.onmessage = function(e) {
                         generation: generation,
                         episode: episode,
                         blueWins: blueWins,
-                        redWins: redWins,                        t1: hc1 ? hc1.trajectory.length : 0,
+                        redWins: redWins,
+                        t1: hc1 ? hc1.trajectory.length : 0,
                         t2: hc2 ? hc2.trajectory.length : 0,
                         m1: hc1 ? hc1.mutations : 0,
                         m2: hc2 ? hc2.mutations : 0,
@@ -844,12 +832,10 @@ self.onmessage = function(e) {
                 });
                 break;
             }
-
             case 'RESET': {
                 if (hc1) hc1.reset();
                 if (hc2) hc2.reset();
 
-                // Free blocks_data memory
                 hc1 = null;
                 hc2 = null;
 
@@ -880,7 +866,8 @@ self.onmessage = function(e) {
                         type: 'ERR',
                         data: {
                             msg: 'Agents not initialized',
-                            timestamp: Date.now()                        }
+                            timestamp: Date.now()
+                        }
                     });
                     return;
                 }
@@ -893,8 +880,7 @@ self.onmessage = function(e) {
                     }
                 });
                 sendLog('Weights exported', 'info');
-                break;
-            }
+                break;            }
 
             case 'IMPORT_WEIGHTS': {
                 if (!data || !data.blue || !data.red) {
@@ -929,7 +915,8 @@ self.onmessage = function(e) {
 
         resetWatchdog();
 
-    } catch (err) {        stopWatchdog();
+    } catch (err) {
+        stopWatchdog();
         self.postMessage({
             type: 'ERR',
             data: {
@@ -942,8 +929,7 @@ self.onmessage = function(e) {
 };
 
 // Initial ready message
-self.postMessage({
-    type: 'WORKER_READY',
+self.postMessage({    type: 'WORKER_READY',
     data: {
         version: '17.3',
         architecture: 'Full HC with Hindsight Learning',
