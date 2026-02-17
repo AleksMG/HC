@@ -1,17 +1,12 @@
 // ============================================================================
-// HC ARENA WORKER — FULL v17.3 PRODUCTION READY
-// 338 dim State | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
-// Hindsight Learning Through Reversibility
-// ALL AUDIT ISSUES RESOLVED
+// HC ARENA WORKER — v17.3 FINAL FIXED
+// dist1/dist2 DECLARED BEFORE USE
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
 
-// ============================================================================
-// SEEDED RANDOM (Deterministic for reproducibility)
-// ============================================================================
 class SeededRandom {
     constructor(seedStr) {
         let h = 0x811c9dc5;
@@ -21,92 +16,56 @@ class SeededRandom {
         }
         this.seed = h >>> 0;
     }
-
     next() {
         this.seed = (this.seed * 1664525 + 1013904223) >>> 0;
         return this.seed / 0xFFFFFFFF;
     }
-
-    nextInt(max) {
-        return Math.floor(this.next() * max);
-    }
-
-    nextGaussian() {
-        let u = 0, v = 0;
-        while (u === 0) u = this.next();
-        while (v === 0) v = this.next();
-        return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-    }
 }
 
-// ============================================================================
-// 16-HEAD SELF-ATTENTION (Full Implementation)
-// ============================================================================
 class SixteenHeadAttention {
     constructor(dim, password) {
         this.dim = dim;
         this.numHeads = 16;
         this.headDim = Math.floor(dim / this.numHeads);
-        const rng = new SeededRandom(password + "_ATTENTION_16H");        this.W_q = [];
-        this.W_k = [];
-        this.W_v = [];
-
+        const rng = new SeededRandom(password + "_ATTENTION_16H");
+        this.W_q = []; this.W_k = []; this.W_v = [];
         for (let h = 0; h < this.numHeads; h++) {
             let Wq = [], Wk = [], Wv = [];
             for (let i = 0; i < this.headDim; i++) {
-                let row_q = [], row_k = [], row_v = [];
+                let rq = [], rk = [], rv = [];
                 for (let j = 0; j < dim; j++) {
-                    row_q.push((rng.next() * 2 - 1) * 0.05);
-                    row_k.push((rng.next() * 2 - 1) * 0.05);
-                    row_v.push((rng.next() * 2 - 1) * 0.05);
+                    rq.push((rng.next() * 2 - 1) * 0.05);
+                    rk.push((rng.next() * 2 - 1) * 0.05);
+                    rv.push((rng.next() * 2 - 1) * 0.05);
                 }
-                Wq.push(row_q);
-                Wk.push(row_k);
-                Wv.push(row_v);
+                Wq.push(rq); Wk.push(rk); Wv.push(rv);
             }
-            this.W_q.push(Wq);
-            this.W_k.push(Wk);
-            this.W_v.push(Wv);
+            this.W_q.push(Wq); this.W_k.push(Wk); this.W_v.push(Wv);
         }
     }
-
     forward(state) {
-        let headOutputs = [];
-        let attentionScores = [];
-
+        let headOutputs = [], attentionScores = [];
         for (let h = 0; h < this.numHeads; h++) {
             let Q = [], K = [], V = [];
-            for (let i = 0; i < this.headDim; i++) {
-                let q_sum = 0, k_sum = 0, v_sum = 0;
+            for (let i = 0; i < this.headDim; i++) {                let qs = 0, ks = 0, vs = 0;
                 for (let j = 0; j < this.dim; j++) {
-                    q_sum += state[j] * this.W_q[h][i][j];
-                    k_sum += state[j] * this.W_k[h][i][j];
-                    v_sum += state[j] * this.W_v[h][i][j];
+                    qs += state[j] * this.W_q[h][i][j];
+                    ks += state[j] * this.W_k[h][i][j];
+                    vs += state[j] * this.W_v[h][i][j];
                 }
-                Q.push(tanh(q_sum));
-                K.push(tanh(k_sum));
-                V.push(tanh(v_sum));
+                Q.push(tanh(qs)); K.push(tanh(ks)); V.push(tanh(vs));
             }
-
             let score = 0;
-            for (let i = 0; i < this.headDim; i++) {
-                score += Q[i] * K[i];
-            }
+            for (let i = 0; i < this.headDim; i++) score += Q[i] * K[i];
             score /= Math.sqrt(this.headDim);
             let attn = tanh(score);
             attentionScores.push(attn);
-
-            for (let i = 0; i < this.headDim; i++) {                headOutputs.push(V[i] * attn);
-            }
+            for (let i = 0; i < this.headDim; i++) headOutputs.push(V[i] * attn);
         }
-
         return { output: headOutputs, scores: attentionScores };
     }
 }
 
-// ============================================================================
-// REVERSIBLE COUPLING BLOCK (INN) — Jacobian det = 1
-// ============================================================================
 class ReversibleBlock {
     constructor(dim, password, blockId, memoryRatio = 0.3) {
         this.dim = dim;
@@ -114,40 +73,30 @@ class ReversibleBlock {
         this.memoryDim = dim - this.workingDim;
         this.blockId = blockId;
         this.attention = new SixteenHeadAttention(this.workingDim, password);
-
         const rng = new SeededRandom(password + "_BLOCK_" + blockId);
-        this.W_f = [];
-        this.W_g = [];
+        this.W_f = []; this.W_g = [];
         const half = Math.floor(this.workingDim / 2);
-
         for (let i = 0; i < half; i++) {
-            let row_f = [], row_g = [];
+            let rf = [], rg = [];
             for (let j = 0; j < half; j++) {
-                row_f.push((rng.next() * 2 - 1) * 0.1);
-                row_g.push((rng.next() * 2 - 1) * 0.1);
+                rf.push((rng.next() * 2 - 1) * 0.1);
+                rg.push((rng.next() * 2 - 1) * 0.1);
             }
-            this.W_f.push(row_f);
-            this.W_g.push(row_g);
+            this.W_f.push(rf); this.W_g.push(rg);
         }
-
         this.W_memory = [];
         for (let i = 0; i < this.memoryDim; i++) {
             let row = [];
-            for (let j = 0; j < 16; j++) {
-                row.push((rng.next() * 2 - 1) * 0.05);
-            }
+            for (let j = 0; j < 16; j++) row.push((rng.next() * 2 - 1) * 0.05);
             this.W_memory.push(row);
         }
     }
-
     forward(state, step) {
         const working = state.slice(0, this.workingDim);
         const memory = state.slice(this.workingDim);
         const attn = this.attention.forward(working);
-
-        const half = Math.floor(this.workingDim / 2);        const x1 = working.slice(0, half);
-        const x2 = working.slice(half);
-
+        const half = Math.floor(this.workingDim / 2);
+        const x1 = working.slice(0, half);        const x2 = working.slice(half);
         let f_out = [];
         for (let i = 0; i < half; i++) {
             let sum = 0;
@@ -158,51 +107,35 @@ class ReversibleBlock {
             f_out.push(tanh(sum));
         }
         const y1 = x1.map((v, i) => v + f_out[i]);
-
         let g_out = [];
         for (let i = 0; i < half; i++) {
             let sum = 0;
-            for (let j = 0; j < half; j++) {
-                sum += y1[j] * this.W_g[i][j];
-            }
+            for (let j = 0; j < half; j++) sum += y1[j] * this.W_g[i][j];
             g_out.push(tanh(sum));
         }
         const y2 = x2.map((v, i) => v + g_out[i]);
-
         let newMem = [];
         for (let i = 0; i < this.memoryDim; i++) {
             let sum = 0;
-            for (let j = 0; j < 16; j++) {
-                sum += attn.scores[j] * this.W_memory[i][j];
-            }
+            for (let j = 0; j < 16; j++) sum += attn.scores[j] * this.W_memory[i][j];
             newMem.push(memory[i] + tanh(sum) * 0.1);
         }
-
-        return {
-            state: [...y1, ...y2, ...newMem],
-            attention: attn.scores,
-            memory: newMem
-        };
+        return { state: [...y1, ...y2, ...newMem], attention: attn.scores, memory: newMem };
     }
-
     inverse(state, step) {
         const working = state.slice(0, this.workingDim);
         const memory = state.slice(this.workingDim);
         const attn = this.attention.forward(working);
-
         const half = Math.floor(this.workingDim / 2);
         const y1 = working.slice(0, half);
         const y2 = working.slice(half);
-
-        let g_out = [];        for (let i = 0; i < half; i++) {
+        let g_out = [];
+        for (let i = 0; i < half; i++) {
             let sum = 0;
-            for (let j = 0; j < half; j++) {
-                sum += y1[j] * this.W_g[i][j];
-            }
+            for (let j = 0; j < half; j++) sum += y1[j] * this.W_g[i][j];
             g_out.push(tanh(sum));
         }
         const x2 = y2.map((v, i) => v - g_out[i]);
-
         let f_out = [];
         for (let i = 0; i < half; i++) {
             let sum = 0;
@@ -212,28 +145,16 @@ class ReversibleBlock {
             }
             f_out.push(tanh(sum));
         }
-        const x1 = y1.map((v, i) => v - f_out[i]);
-
-        let oldMem = [];
+        const x1 = y1.map((v, i) => v - f_out[i]);        let oldMem = [];
         for (let i = 0; i < this.memoryDim; i++) {
             let sum = 0;
-            for (let j = 0; j < 16; j++) {
-                sum += attn.scores[j] * this.W_memory[i][j];
-            }
+            for (let j = 0; j < 16; j++) sum += attn.scores[j] * this.W_memory[i][j];
             oldMem.push(memory[i] - tanh(sum) * 0.1);
         }
-
-        return {
-            state: [...x1, ...x2, ...oldMem],
-            attention: attn.scores,
-            memory: oldMem
-        };
+        return { state: [...x1, ...x2, ...oldMem], attention: attn.scores, memory: oldMem };
     }
 }
 
-// ============================================================================
-// HC AGENT (Full v17.3 with Complete Hindsight Learning)
-// ============================================================================
 class HCAgent {
     constructor(password, id) {
         this.password = password + id;
@@ -248,26 +169,19 @@ class HCAgent {
         for (let b = 0; b < this.blocks; b++) {
             this.blocks_data.push(new ReversibleBlock(this.workingDim, this.password, b));
         }
-
         const rng = new SeededRandom(this.password + "_INPUT");
         this.W_input = [];
         for (let i = 0; i < this.workingDim; i++) {
             let row = [];
-            for (let j = 0; j < 32; j++) {
-                row.push((rng.next() * 2 - 1) * 0.3);
-            }
+            for (let j = 0; j < 32; j++) row.push((rng.next() * 2 - 1) * 0.3);
             this.W_input.push(row);
         }
-
         this.W_output = [];
         for (let i = 0; i < 4; i++) {
             let row = [];
-            for (let j = 0; j < this.workingDim; j++) {
-                row.push((rng.next() * 2 - 1) * 0.1);
-            }
+            for (let j = 0; j < this.workingDim; j++) row.push((rng.next() * 2 - 1) * 0.1);
             this.W_output.push(row);
         }
-
         this.memory = new Array(this.memoryDim).fill(0);
         this.wins = 0;
         this.totalDamage = 0;
@@ -280,109 +194,65 @@ class HCAgent {
         this.learningRate = 0.005;
         this.explorationNoise = 0.15;
         this.episodeWithoutImprovement = 0;
-    }
-
-    encodeInput(input) {
-        if (!input || !Array.isArray(input)) {
-            input = new Array(32).fill(0);
-        }
-
+    }    encodeInput(input) {
+        if (!input || !Array.isArray(input)) input = new Array(32).fill(0);
         let state = [];
         for (let i = 0; i < this.workingDim; i++) {
             let sum = 0;
             for (let j = 0; j < input.length && j < 32; j++) {
                 if (typeof input[j] === 'number' && isFinite(input[j])) {
-                    sum += input[j] * this.W_input[i][j];                }
+                    sum += input[j] * this.W_input[i][j];
+                }
             }
             state.push(tanh(sum));
         }
         return state;
     }
-
     forward(state, step) {
         let current = state.slice();
         let attention = null;
-
         for (let b = 0; b < this.blocks; b++) {
             let result = this.blocks_data[b].forward(current, step);
             current = result.state;
             if (b === 0) attention = result.attention;
         }
-
         return { state: current, attention };
     }
-
     inverse(state, step) {
         let current = state.slice();
-
         for (let b = this.blocks - 1; b >= 0; b--) {
             let result = this.blocks_data[b].inverse(current, step);
             current = result.state;
         }
-
         return current;
     }
-
     checkStuck(currentX, currentY) {
         const dx = Math.abs(currentX - this.lastPosition.x);
         const dy = Math.abs(currentY - this.lastPosition.y);
         const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < 1.0) {
-            this.stuckCounter++;
-        } else {
-            this.stuckCounter = 0;
-        }
-
+        if (distance < 1.0) this.stuckCounter++;
+        else this.stuckCounter = 0;
         this.lastPosition = { x: currentX, y: currentY };
-
         return this.stuckCounter > 10 ? -0.5 : 0;
     }
-
     decide(input, step, prevReward = 0, explorationNoise = null, position = null) {
-        if (!input || !Array.isArray(input)) {
-            input = new Array(32).fill(0);        }
-
+        if (!input || !Array.isArray(input)) input = new Array(32).fill(0);
         let state = this.encodeInput(input);
-
         let stuckPenalty = 0;
-        if (position) {
-            stuckPenalty = this.checkStuck(position.x, position.y);
-        }
-
+        if (position) stuckPenalty = this.checkStuck(position.x, position.y);
         const totalReward = prevReward + stuckPenalty;
-
         if (this.trajectory.length > 0 && totalReward !== 0) {
             const prev = this.trajectory[this.trajectory.length - 1];
-            if (totalReward < -0.3 && prev.action) {
-                this.hindsightAdjust(prev.input, prev.action, totalReward);
-            }
-        }
-
-        this.trajectory.push({
-            state: state.slice(),
-            input: input.slice(),
-            step: step,
-            time: Date.now(),
-            reward: 0,
-            action: null
-        });
-
-        if (this.trajectory.length > this.maxTrajectory) {
-            this.trajectory.shift();
-        }
-
+            if (totalReward < -0.3 && prev.action) this.hindsightAdjust(prev.input, prev.action, totalReward);        }
+        this.trajectory.push({ state: state.slice(), input: input.slice(), step: step, time: Date.now(), reward: 0, action: null });
+        if (this.trajectory.length > this.maxTrajectory) this.trajectory.shift();
         let result = this.forward(state, step);
-
         let output = [];
         for (let i = 0; i < 4; i++) {
             let sum = 0;
-            for (let j = 0; j < this.workingDim; j++) {
-                sum += result.state[j] * this.W_output[i][j];
-            }
+            for (let j = 0; j < this.workingDim; j++) sum += result.state[j] * this.W_output[i][j];
             output.push(tanh(sum));
         }
-
         const noise = explorationNoise !== null ? explorationNoise : this.explorationNoise;
         const action = {
             fx: clamp(output[0] + (Math.random() * 2 - 1) * noise, -1, 1),
@@ -395,16 +265,12 @@ class HCAgent {
             this.trajectory[this.trajectory.length - 1].action = action;
             this.trajectory[this.trajectory.length - 1].reward = totalReward;
         }
-
         return action;
     }
-
     hindsightAdjust(prevInput, prevAction, reward) {
         if (!prevAction) return;
-
         this.hindsightCount++;
         const lr = this.learningRate * Math.abs(reward);
-
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < this.workingDim && j < 50; j++) {
                 let adjustment = 0;
@@ -412,12 +278,10 @@ class HCAgent {
                 if (i === 1) adjustment = lr * prevAction.fy * Math.sign(reward);
                 if (i === 2) adjustment = lr * prevAction.aggression * Math.sign(reward);
                 if (i === 3) adjustment = lr * prevAction.dodge * Math.sign(reward);
-
                 this.W_output[i][j] -= adjustment;
                 this.W_output[i][j] = clamp(this.W_output[i][j], -2, 2);
             }
         }
-
         for (let i = 0; i < this.workingDim && i < 50; i++) {
             for (let j = 0; j < 32 && j < prevInput.length; j++) {
                 let adjustment = lr * prevInput[j] * Math.sign(reward) * 0.5;
@@ -426,26 +290,15 @@ class HCAgent {
             }
         }
     }
-
     reverse(steps) {
         if (this.trajectory.length <= steps) return null;
-        if (steps > this.maxReverseSteps) steps = this.maxReverseSteps;
-
-        const start = this.trajectory.length - steps;
+        if (steps > this.maxReverseSteps) steps = this.maxReverseSteps;        const start = this.trajectory.length - steps;
         let state = this.trajectory[this.trajectory.length - 1].state.slice();
-
-        for (let i = this.trajectory.length - 1; i >= start; i--) {
-            state = this.inverse(state, this.trajectory[i].step);
-        }
-
+        for (let i = this.trajectory.length - 1; i >= start; i--) state = this.inverse(state, this.trajectory[i].step);
         this.trajectory.splice(-steps);
         this.mutations++;
-        return {
-            state: state,
-            trajectoryLength: this.trajectory.length
-        };
+        return { state: state, trajectoryLength: this.trajectory.length };
     }
-
     mutate(rate = 0.15) {
         for (let i = 0; i < this.W_input.length; i++) {
             for (let j = 0; j < this.W_input[i].length; j++) {
@@ -455,7 +308,6 @@ class HCAgent {
                 }
             }
         }
-
         for (let i = 0; i < this.W_output.length; i++) {
             for (let j = 0; j < this.W_output[i].length; j++) {
                 if (Math.random() < rate) {
@@ -464,31 +316,17 @@ class HCAgent {
                 }
             }
         }
-
         this.mutations++;
     }
-
     getWeights() {
-        return {
-            input: deepClone(this.W_input),
-            output: deepClone(this.W_output),
-            metadata: {
-                mutations: this.mutations,
-                wins: this.wins,
-                hindsightCount: this.hindsightCount,
-                learningRate: this.learningRate,
-                explorationNoise: this.explorationNoise
-            }
-        };
+        return { input: deepClone(this.W_input), output: deepClone(this.W_output), metadata: { mutations: this.mutations, wins: this.wins, hindsightCount: this.hindsightCount, learningRate: this.learningRate, explorationNoise: this.explorationNoise } };
     }
-
     setWeights(weights) {
-        if (!weights || !weights.input || !weights.output) {
-            return false;
-        }
+        if (!weights || !weights.input || !weights.output) return false;
         this.W_input = deepClone(weights.input);
         this.W_output = deepClone(weights.output);
-        if (weights.metadata) {            this.mutations = weights.metadata.mutations || 0;
+        if (weights.metadata) {
+            this.mutations = weights.metadata.mutations || 0;
             this.wins = weights.metadata.wins || 0;
             this.hindsightCount = weights.metadata.hindsightCount || 0;
             this.learningRate = weights.metadata.learningRate || 0.005;
@@ -496,36 +334,19 @@ class HCAgent {
         }
         return true;
     }
-
-    copy() {
-        const newAgent = new HCAgent(this.password, '_COPY_' + this.mutations);
-        newAgent.setWeights(this.getWeights());
-        return newAgent;
-    }
-
     recordReward(reward) {
-        if (this.trajectory.length > 0) {
-            this.trajectory[this.trajectory.length - 1].reward = reward;
-        }
+        if (this.trajectory.length > 0) this.trajectory[this.trajectory.length - 1].reward = reward;
         this.cumulativeReward += reward;
-
-        if (reward < 0) {
-            this.episodeWithoutImprovement++;
-        } else {
-            this.episodeWithoutImprovement = 0;
-        }
-
+        if (reward < 0) this.episodeWithoutImprovement++;
+        else this.episodeWithoutImprovement = 0;
         if (this.episodeWithoutImprovement > 10) {
             this.explorationNoise = Math.max(0.01, this.explorationNoise * 0.95);
-            this.episodeWithoutImprovement = 0;
-        }
+            this.episodeWithoutImprovement = 0;        }
     }
-
     recordDamage(dealt, received) {
         this.damageDealt += dealt;
         this.totalDamage += received;
     }
-
     reset() {
         this.trajectory = [];
         this.cumulativeReward = 0;
@@ -536,405 +357,155 @@ class HCAgent {
         this.lastPosition = { x: 0, y: 0 };
         this.episodeWithoutImprovement = 0;
     }
-
-    getStats() {        return {
-            trajectory: this.trajectory.length,
-            mutations: this.mutations,
-            hindsightCount: this.hindsightCount,
-            cumulativeReward: this.cumulativeReward,
-            damageDealt: this.damageDealt,
-            totalDamage: this.totalDamage,
-            wins: this.wins,
-            explorationNoise: this.explorationNoise,
-            learningRate: this.learningRate
-        };
+    getStats() {
+        return { trajectory: this.trajectory.length, mutations: this.mutations, hindsightCount: this.hindsightCount, cumulativeReward: this.cumulativeReward, damageDealt: this.damageDealt, totalDamage: this.totalDamage, wins: this.wins, explorationNoise: this.explorationNoise, learningRate: this.learningRate };
     }
 }
 
-// ============================================================================
 // WORKER STATE
-// ============================================================================
-let hc1 = null;
-let hc2 = null;
-let training = false;
-let episode = 0;
-let generation = 0;
-let blueWins = 0;
-let redWins = 0;
-let prevDist1 = 500;
-let prevDist2 = 500;
+let hc1 = null, hc2 = null;
+let training = false, episode = 0, generation = 0;
+let blueWins = 0, redWins = 0;
+let prevDist1 = 500, prevDist2 = 500;
 let workerStartTime = Date.now();
-let watchdogTimer = null;
 
-// ============================================================================
-// WATCHDOG TIMER
-// ============================================================================
-function startWatchdog() {
-    stopWatchdog();
-    watchdogTimer = setTimeout(() => {
-        self.postMessage({
-            type: 'ERR',
-            data: {
-                msg: 'Watchdog timeout — worker stuck',
-                timestamp: Date.now()
-            }
-        });
-    }, 30000);
-}
-
-function stopWatchdog() {
-    if (watchdogTimer) {
-        clearTimeout(watchdogTimer);
-        watchdogTimer = null;
-    }}
-
-function resetWatchdog() {
-    stopWatchdog();
-    startWatchdog();
-}
-
-// ============================================================================
-// LOGGING HELPER
-// ============================================================================
 function sendLog(msg, type = 'info') {
-    self.postMessage({
-        type: 'LOG',
-        data: {
-            msg: msg,
-            type: type,
-            timestamp: Date.now()
-        }
-    });
+    self.postMessage({ type: 'LOG', data: { msg: msg, type: type, timestamp: Date.now() } });
 }
 
 // ============================================================================
-// MESSAGE HANDLER — FULLY FIXED
+// MESSAGE HANDLER — dist1/dist2 DECLARED AT TOP OF STEP CASE
 // ============================================================================
 self.onmessage = function(e) {
-    resetWatchdog();
-
     const msgType = e.data ? e.data.type : null;
     const data = e.data ? e.data.data : null;
 
     try {
-        switch (msgType) {
-            case 'START': {
-                training = (data && data.training) ? data.training : false;
-                episode = (data && data.episode) ? data.episode : 0;
-                generation = 0;
-                blueWins = 0;
-                redWins = 0;
-                prevDist1 = 500;
-                prevDist2 = 500;
-                workerStartTime = Date.now();
+        if (msgType === 'START') {
+            training = (data && data.training) ? data.training : false;
+            episode = (data && data.episode) ? data.episode : 0;
+            generation = 0; blueWins = 0; redWins = 0;
+            prevDist1 = 500; prevDist2 = 500;
+            workerStartTime = Date.now();
+            hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
+            hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
+            sendLog('HC v17.3 initialized', 'success');
+            self.postMessage({ type: 'INIT', data: { status: 'ready', dim: 338, blocks: 12, heads: 16, memory: 102, timestamp: Date.now() } });        }
 
-                hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
-                hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
-
-                sendLog('HC v17.3 initialized | 338 dim | 16-head | 12 blocks | 102 dim memory', 'success');
-
-                self.postMessage({
-                    type: 'INIT',
-                    data: {                        status: 'ready',
-                        dim: 338,
-                        blocks: 12,
-                        heads: 16,
-                        memory: 102,
-                        training: training,
-                        timestamp: Date.now()
-                    }
-                });
-                break;
+        // ================================================================
+        // STEP HANDLER — dist1/dist2 DECLARED FIRST
+        // ================================================================
+        if (msgType === 'STEP') {
+            if (!hc1 || !hc2) {
+                self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } });
+                return;
+            }
+            if (!data || !data.input1 || !data.input2) {
+                self.postMessage({ type: 'ERR', data: { msg: 'Missing input arrays', timestamp: Date.now() } });
+                return;
             }
 
-            case 'STEP': {
-                if (!hc1 || !hc2) {
-                    self.postMessage({
-                        type: 'ERR',
-                        data: {
-                            msg: 'Agents not initialized. Send START first.',
-                            step: episode,
-                            timestamp: Date.now()
-                        }
-                    });
-                    return;
-                }
+            // ✅ DECLARED FIRST — BEFORE ANY USE
+            let dist1 = 500;
+            let dist2 = 500;
+            let damage1 = 0;
+            let damage2 = 0;
+            let pos1 = { x: 0, y: 0 };
+            let pos2 = { x: 0, y: 0 };
 
-                episode = (data && data.episode) ? data.episode : episode;
-                training = (data && data.training !== undefined) ? data.training : training;
+            // ✅ THEN ASSIGNED
+            if (data.dist1 !== undefined && typeof data.dist1 === 'number') dist1 = data.dist1;
+            if (data.dist2 !== undefined && typeof data.dist2 === 'number') dist2 = data.dist2;
+            if (data.damage1 !== undefined && typeof data.damage1 === 'number') damage1 = data.damage1;
+            if (data.damage2 !== undefined && typeof data.damage2 === 'number') damage2 = data.damage2;
+            if (data.pos1 && typeof data.pos1 === 'object') pos1 = data.pos1;
+            if (data.pos2 && typeof data.pos2 === 'object') pos2 = data.pos2;
 
-                if (!data || !data.input1 || !data.input2) {
-                    self.postMessage({
-                        type: 'ERR',
-                        data: {
-                            msg: 'Missing input arrays',
-                            step: episode,
-                            timestamp: Date.now()
-                        }
-                    });
-                    return;
-                }
+            // ✅ THEN USED
+            const reward1 = (prevDist1 - dist1) * 0.01;
+            const reward2 = (prevDist2 - dist2) * 0.01;
+            prevDist1 = dist1;
+            prevDist2 = dist2;
 
-                // FIXED: Proper dist1/dist2 checking
-                const dist1 = (data.dist1 !== undefined && typeof data.dist1 === 'number') ? data.dist1 : 500;
-                const dist2 = (data.dist2 !== undefined && typeof data.dist2 === 'number') ? data.dist2 : 500;
+            const damageReward1 = damage1 * 0.1;
+            const damageReward2 = damage2 * 0.1;
 
-                const reward1 = (prevDist1 - dist1) * 0.01;
-                const reward2 = (prevDist2 - dist2) * 0.01;
+            const action1 = hc1.decide(data.input1, episode, reward1 + damageReward1, null, pos1);
+            const action2 = hc2.decide(data.input2, episode, reward2 + damageReward2, null, pos2);
 
-                prevDist1 = dist1;
-                prevDist2 = dist2;
-                // FIXED: Proper damage checking
-                const damage1 = (data.damage1 !== undefined && typeof data.damage1 === 'number') ? data.damage1 : 0;
-                const damage2 = (data.damage2 !== undefined && typeof data.damage2 === 'number') ? data.damage2 : 0;
-                const damageReward1 = damage1 * 0.1;
-                const damageReward2 = damage2 * 0.1;
+            hc1.recordReward(reward1 + damageReward1);
+            hc2.recordReward(reward2 + damageReward2);
+            hc1.recordDamage(damage1, damage2);
+            hc2.recordDamage(damage2, damage1);
 
-                // FIXED: Proper pos checking
-                const pos1 = (data.pos1 && typeof data.pos1 === 'object') ? data.pos1 : { x: 0, y: 0 };
-                const pos2 = (data.pos2 && typeof data.pos2 === 'object') ? data.pos2 : { x: 0, y: 0 };
+            self.postMessage({ type: 'ACTIONS', data: { blue: { fx: action1.fx, fy: action1.fy, aggression: action1.aggression, dodge: action1.dodge }, red: { fx: action2.fx, fy: action2.fy, aggression: action2.aggression, dodge: action2.dodge } } });
+            self.postMessage({ type: 'REWARD', data: { blue: reward1 + damageReward1, red: reward2 + damageReward2, timestamp: Date.now() } });        }
 
-                const action1 = hc1.decide(data.input1, episode, reward1 + damageReward1, null, pos1);
-                const action2 = hc2.decide(data.input2, episode, reward2 + damageReward2, null, pos2);
-
-                hc1.recordReward(reward1 + damageReward1);
-                hc2.recordReward(reward2 + damageReward2);
-                hc1.recordDamage(damage1, damage2);
-                hc2.recordDamage(damage2, damage1);
-
-                self.postMessage({
-                    type: 'ACTIONS',
-                    data: {
-                        blue: {
-                            fx: action1.fx,
-                            fy: action1.fy,
-                            aggression: action1.aggression,
-                            dodge: action1.dodge
-                        },
-                        red: {
-                            fx: action2.fx,
-                            fy: action2.fy,
-                            aggression: action2.aggression,
-                            dodge: action2.dodge
-                        }
-                    }
-                });
-
-                self.postMessage({
-                    type: 'REWARD',
-                    data: {
-                        blue: reward1 + damageReward1,
-                        red: reward2 + damageReward2,
-                        timestamp: Date.now()
-                    }
-                });
-                break;
-            }
-
-            case 'TRAIN': {
-                if (!training || !hc1 || !hc2) {
-                    return;                }
-
-                const winner = (data && data.winner === 'BLUE') ? hc1 : hc2;
-                const loser = (data && data.winner === 'BLUE') ? hc2 : hc1;
-
-                if (data && data.winner === 'BLUE') {
-                    blueWins++;
-                    hc1.wins++;
-                } else {
-                    redWins++;
-                    hc2.wins++;
-                }
-
-                const winReward = 10.0;
-                winner.recordReward(winReward);
-
-                const weights = winner.getWeights();
-                loser.setWeights(weights);
-                winner.mutate(0.12);
-                loser.mutate(0.12);
-
-                hc1.learningRate = Math.max(0.001, hc1.learningRate * 0.99);
-                hc2.learningRate = Math.max(0.001, hc2.learningRate * 0.99);
-
-                generation++;
-
-                sendLog('Gen ' + generation + ' | ' + (data ? data.winner : 'UNKNOWN') + ' wins (' + blueWins + '-' + redWins + ')', 'train');
-
-                self.postMessage({
-                    type: 'TRAIN_COMPLETE',
-                    data: {
-                        generation: generation,
-                        blueWins: blueWins,
-                        redWins: redWins,
-                        winner: data ? data.winner : 'UNKNOWN',
-                        timestamp: Date.now()
-                    }
-                });
-                break;
-            }
-
-            case 'REVERSE': {
-                if (!hc1 || !hc2) {
-                    self.postMessage({
-                        type: 'ERR',
-                        data: {
-                            msg: 'Agents not initialized',
-                            timestamp: Date.now()
-                        }
-                    });                    return;
-                }
-
-                const steps = (data && data.steps) ? data.steps : 5;
-                const r1 = hc1.reverse(steps);
-                const r2 = hc2.reverse(steps);
-
-                sendLog('Reversed ' + steps + ' steps | Hindsight: B=' + hc1.hindsightCount + ' R=' + hc2.hindsightCount, 'train');
-
-                self.postMessage({
-                    type: 'REVERSE_RESULT',
-                    data: {
-                        steps: steps,
-                        trajectoryLength: r1 ? r1.trajectoryLength : 0,
-                        success: r1 !== null && r2 !== null,
-                        h1: hc1.hindsightCount,
-                        h2: hc2.hindsightCount,
-                        timestamp: Date.now()
-                    }
-                });
-                break;
-            }
-
-            case 'SET_TRAINING': {
-                training = (data && data.training) ? data.training : false;
-                sendLog('Training: ' + (training ? 'ON' : 'OFF'), 'info');
-                break;
-            }
-
-            case 'GET_STATS': {
-                self.postMessage({
-                    type: 'STATS',
-                    data: {
-                        generation: generation,
-                        episode: episode,
-                        blueWins: blueWins,
-                        redWins: redWins,
-                        t1: hc1 ? hc1.trajectory.length : 0,
-                        t2: hc2 ? hc2.trajectory.length : 0,
-                        m1: hc1 ? hc1.mutations : 0,
-                        m2: hc2 ? hc2.mutations : 0,
-                        h1: hc1 ? hc1.hindsightCount : 0,
-                        h2: hc2 ? hc2.hindsightCount : 0,
-                        uptime: Date.now() - workerStartTime,
-                        agent1: hc1 ? hc1.getStats() : null,
-                        agent2: hc2 ? hc2.getStats() : null
-                    }
-                });
-                break;
-            }
-            case 'RESET': {
-                if (hc1) hc1.reset();
-                if (hc2) hc2.reset();
-
-                hc1 = null;
-                hc2 = null;
-
-                training = false;
-                episode = 0;
-                generation = 0;
-                blueWins = 0;
-                redWins = 0;
-                prevDist1 = 500;
-                prevDist2 = 500;
-                workerStartTime = Date.now();
-
-                sendLog('Worker reset', 'info');
-
-                self.postMessage({
-                    type: 'INIT',
-                    data: {
-                        status: 'reset',
-                        timestamp: Date.now()
-                    }
-                });
-                break;
-            }
-
-            case 'EXPORT_WEIGHTS': {
-                if (!hc1 || !hc2) {
-                    self.postMessage({
-                        type: 'ERR',
-                        data: {
-                            msg: 'Agents not initialized',
-                            timestamp: Date.now()
-                        }
-                    });
-                    return;
-                }
-                self.postMessage({
-                    type: 'WEIGHTS_EXPORT',
-                    data: {
-                        blue: hc1.getWeights(),
-                        red: hc2.getWeights(),
-                        timestamp: Date.now()
-                    }
-                });
-                sendLog('Weights exported', 'info');
-                break;            }
-
-            case 'IMPORT_WEIGHTS': {
-                if (!data || !data.blue || !data.red) {
-                    self.postMessage({
-                        type: 'ERR',
-                        data: {
-                            msg: 'Invalid weights data',
-                            timestamp: Date.now()
-                        }
-                    });
-                    return;
-                }
-                hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
-                hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
-                hc1.setWeights(data.blue);
-                hc2.setWeights(data.red);
-                sendLog('Weights imported', 'success');
-                self.postMessage({
-                    type: 'INIT',
-                    data: {
-                        status: 'loaded',
-                        timestamp: Date.now()
-                    }
-                });
-                break;
-            }
-
-            default: {
-                sendLog('Unknown message type: ' + msgType, 'warning');
-            }
+        if (msgType === 'TRAIN') {
+            if (!training || !hc1 || !hc2) return;
+            const winner = (data && data.winner === 'BLUE') ? hc1 : hc2;
+            const loser = (data && data.winner === 'BLUE') ? hc2 : hc1;
+            if (data && data.winner === 'BLUE') { blueWins++; hc1.wins++; }
+            else { redWins++; hc2.wins++; }
+            winner.recordReward(10.0);
+            const weights = winner.getWeights();
+            loser.setWeights(weights);
+            winner.mutate(0.12);
+            loser.mutate(0.12);
+            generation++;
+            sendLog('Gen ' + generation + ' | ' + (data ? data.winner : 'UNKNOWN') + ' wins', 'train');
+            self.postMessage({ type: 'TRAIN_COMPLETE', data: { generation: generation, blueWins: blueWins, redWins: redWins, winner: data ? data.winner : 'UNKNOWN', timestamp: Date.now() } });
         }
 
-        resetWatchdog();
+        if (msgType === 'REVERSE') {
+            if (!hc1 || !hc2) { self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } }); return; }
+            const steps = (data && data.steps) ? data.steps : 5;
+            const r1 = hc1.reverse(steps);
+            const r2 = hc2.reverse(steps);
+            sendLog('Reversed ' + steps + ' steps', 'train');
+            self.postMessage({ type: 'REVERSE_RESULT', data: { steps: steps, trajectoryLength: r1 ? r1.trajectoryLength : 0, success: r1 !== null && r2 !== null, h1: hc1.hindsightCount, h2: hc2.hindsightCount, timestamp: Date.now() } });
+        }
+
+        if (msgType === 'SET_TRAINING') {
+            training = (data && data.training) ? data.training : false;
+            sendLog('Training: ' + (training ? 'ON' : 'OFF'), 'info');
+        }
+
+        if (msgType === 'GET_STATS') {
+            self.postMessage({ type: 'STATS', data: { generation: generation, episode: episode, blueWins: blueWins, redWins: redWins, t1: hc1 ? hc1.trajectory.length : 0, t2: hc2 ? hc2.trajectory.length : 0, m1: hc1 ? hc1.mutations : 0, m2: hc2 ? hc2.mutations : 0, h1: hc1 ? hc1.hindsightCount : 0, h2: hc2 ? hc2.hindsightCount : 0, uptime: Date.now() - workerStartTime, agent1: hc1 ? hc1.getStats() : null, agent2: hc2 ? hc2.getStats() : null } });
+        }
+
+        if (msgType === 'RESET') {
+            if (hc1) hc1.reset();
+            if (hc2) hc2.reset();
+            hc1 = null; hc2 = null;
+            training = false; episode = 0; generation = 0;
+            blueWins = 0; redWins = 0;
+            prevDist1 = 500; prevDist2 = 500;
+            workerStartTime = Date.now();
+            sendLog('Worker reset', 'info');
+            self.postMessage({ type: 'INIT', data: { status: 'reset', timestamp: Date.now() } });
+        }
+
+        if (msgType === 'EXPORT_WEIGHTS') {
+            if (!hc1 || !hc2) { self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } }); return; }            self.postMessage({ type: 'WEIGHTS_EXPORT', data: { blue: hc1.getWeights(), red: hc2.getWeights(), timestamp: Date.now() } });
+            sendLog('Weights exported', 'info');
+        }
+
+        if (msgType === 'IMPORT_WEIGHTS') {
+            if (!data || !data.blue || !data.red) { self.postMessage({ type: 'ERR', data: { msg: 'Invalid weights data', timestamp: Date.now() } }); return; }
+            hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
+            hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
+            hc1.setWeights(data.blue);
+            hc2.setWeights(data.red);
+            sendLog('Weights imported', 'success');
+            self.postMessage({ type: 'INIT', data: { status: 'loaded', timestamp: Date.now() } });
+        }
 
     } catch (err) {
-        stopWatchdog();
-        self.postMessage({
-            type: 'ERR',
-            data: {
-                msg: err.message + ' at ' + msgType,
-                stack: err.stack,
-                timestamp: Date.now()
-            }
-        });
+        self.postMessage({ type: 'ERR', data: { msg: err.message + ' at ' + msgType, stack: err.stack, timestamp: Date.now() } });
     }
 };
 
-// Initial ready message
-self.postMessage({    type: 'WORKER_READY',
-    data: {
-        version: '17.3',
-        architecture: 'Full HC with Hindsight Learning',
-        timestamp: Date.now()
-    }
-});
-
+self.postMessage({ type: 'WORKER_READY', data: { version: '17.3', timestamp: Date.now() } });
 sendLog('Worker loaded and ready', 'info');
