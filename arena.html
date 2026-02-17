@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ HC Arena v18.1 — Full Learning Evolution</title>
+    <title>⚡ HC Arena v18.1 — ПЛАВНОЕ ДВИЖЕНИЕ</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
         body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
@@ -49,7 +49,7 @@
     </style>
 </head>
 <body>
-    <h1>⚡ HC ARENA v18.1 <span class="vision-badge">👁️ Learning Evolution</span></h1>
+    <h1>⚡ HC ARENA v18.1 <span class="vision-badge">👁️ ПЛАВНОЕ ДВИЖЕНИЕ</span></h1>
     <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 Memory | CNN Vision | Online Learning | Hindsight</div>
     
     <canvas id="arena" width="800" height="600"></canvas>
@@ -95,7 +95,7 @@
 
 <script>
 // ============================================================================
-// HC ARENA v18.1 — FULL LEARNING EVOLUTION
+// HC ARENA v18.1 — ПЛАВНОЕ ДВИЖЕНИЕ
 // ============================================================================
 
 const canvas = document.getElementById('arena');
@@ -111,6 +111,7 @@ let frameCount = 0;
 let fps = 0;
 let blueReward = 0, redReward = 0;
 let blueDamage = 0, redDamage = 0;
+let animFrame = null;
 
 // ============================================================================
 // WORKER INITIALIZATION
@@ -178,7 +179,7 @@ function initWorker() {
 function handleWorkerReady(data) {
     document.getElementById('workerState').innerText = 'READY';
     document.getElementById('workerStatus').className = 'worker-status worker-ready';
-    log('✅ Worker v' + (data ? data.version : '18.1') + ' ready with Learning Evolution', 'success');
+    log('✅ Worker v' + (data ? data.version : '18.1') + ' ready', 'success');
 }
 
 function handleInit(data) {
@@ -220,7 +221,7 @@ function handleTrainComplete(data) {
             document.getElementById('redWins').innerText = data.redWins;
             redWins = data.redWins;
         }
-        log(`🧬 Generation ${data.generation} | ${data.winner} wins and evolves!`, 'train');
+        log(`🧬 Generation ${data.generation} | ${data.winner} wins`, 'train');
     }
 }
 
@@ -228,7 +229,7 @@ function handleReverseResult(data) {
     if (data && data.success) {
         totalReverse++;
         document.getElementById('reversed').innerText = totalReverse;
-        log(`🔄 Reversed ${data.steps} steps | Hindsight learning`, 'train');
+        log(`🔄 Reversed ${data.steps} steps`, 'train');
     }
 }
 
@@ -385,7 +386,7 @@ function captureCanvasForAgent(agentX, agentY, targetX, targetY) {
 }
 
 // ============================================================================
-// ФИЗИКА И ДВИЖЕНИЕ — ПРАВИЛЬНЫЕ СКОРОСТИ (С МНОЖИТЕЛЕМ 6)
+// ФИЗИКА И ДВИЖЕНИЕ — ПЛАВНОЕ
 // ============================================================================
 function applyActions(actions) {
     if (!running || !actions) return;
@@ -393,41 +394,42 @@ function applyActions(actions) {
     const { blue: a1, red: a2 } = actions;
 
     // ========================================================================
-    // ОРИГИНАЛЬНЫЕ СКОРОСТИ (как в рабочих версиях)
+    // ПАРАМЕТРЫ ДВИЖЕНИЯ (как в оригинале)
     // ========================================================================
-    const MOVE_FORCE = 30;        // ← 6, а не 0.6! (главный множитель)
-    const BOUNCE_FORCE = 20;      // сила отскока при ударе
-    const FRICTION = 0.90;       // трение
+    const MOVE_FORCE = 60;         // ← сила движения
+    const BOUNCE_FORCE = 4;        // сила отскока
+    const FRICTION = 0.90;          // трение (важно для плавности!)
     
-    // Базовая агрессия влияет на скорость (0.4-1.0)
-    const sp1 = 0.4 + a1.aggression * 6;
-    const sp2 = 0.4 + a2.aggression * 6;
+    // Базовая агрессия (оригинал)
+    const sp1 = 0.4 + a1.aggression * 0.6;
+    const sp2 = 0.4 + a2.aggression * 0.6;
     
     // ========================================================================
-    // ПРИМЕНЯЕМ СИЛУ (теперь с правильным множителем 6!)
+    // ПЛАВНОЕ ДВИЖЕНИЕ
     // ========================================================================
-    blue.vx += a1.fx * sp1 * MOVE_FORCE;  // ← 6× даёт нормальную скорость
+    // Небольшой плавный толчок каждый кадр
+    blue.vx += a1.fx * sp1 * MOVE_FORCE;
     blue.vy += a1.fy * sp1 * MOVE_FORCE;
     red.vx += a2.fx * sp2 * MOVE_FORCE;
     red.vy += a2.fy * sp2 * MOVE_FORCE;
 
-    // ТРЕНИЕ
+    // Плавное затухание (оригинальное трение)
     blue.vx *= FRICTION;
     blue.vy *= FRICTION;
     red.vx *= FRICTION;
     red.vy *= FRICTION;
 
-    // ДВИЖЕНИЕ
+    // Движение
     blue.x += blue.vx;
     blue.y += blue.vy;
     red.x += red.vx;
     red.y += red.vy;
 
     // ========================================================================
-    // ФИЗИКА (стены, препятствия, бой)
+    // ФИЗИКА
     // ========================================================================
     
-    // Стены с отскоком
+    // Стены
     if (blue.x < 20 || blue.x > canvas.width - 20) {
         blue.vx *= -1.5;
         blue.x = Math.max(20, Math.min(canvas.width - 20, blue.x));
@@ -510,24 +512,31 @@ function applyActions(actions) {
 }
 
 // ============================================================================
-// RENDER
+// RENDER — ПЛАВНАЯ ОТРИСОВКА (60 FPS)
 // ============================================================================
 function render() {
+    if (!running) {
+        // Если игра не запущена, всё равно продолжаем отрисовку
+        requestAnimationFrame(render);
+        return;
+    }
+
+    // Очистка и отрисовка
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Obstacles
+    // Препятствия
     ctx.fillStyle = '#2a2a40';
     for (let obs of obstacles) {
         ctx.fillRect(obs.x - obs.w / 2, obs.y - obs.h / 2, obs.w, obs.h);
     }
 
-    // Blue agent
+    // Синий агент
     ctx.fillStyle = '#00f2ff';
     ctx.shadowColor = '#00f2ff';
     ctx.shadowBlur = blue.hp < 30 ? 30 : 20;
     ctx.fillRect(blue.x - 20, blue.y - 20, 40, 40);
 
-    // Red agent
+    // Красный агент
     ctx.fillStyle = '#ff0055';
     ctx.shadowColor = '#ff0055';
     ctx.shadowBlur = red.hp < 30 ? 30 : 20;
@@ -535,7 +544,7 @@ function render() {
 
     ctx.shadowBlur = 0;
 
-    // FPS counter
+    // FPS счетчик
     frameCount++;
     const now = performance.now();
     if (now - lastFrameTime >= 1000) {
@@ -545,6 +554,7 @@ function render() {
         document.getElementById('fps').innerText = fps;
     }
 
+    // Следующий кадр
     requestAnimationFrame(render);
 }
 
@@ -595,7 +605,7 @@ function startGame() {
     running = true;
     initGame();
 
-    log('▶️ Game STARTED with ' + (visionEnabled ? 'CNN Vision' : 'Raycast Vision'), 'success');
+    log('▶️ Game STARTED', 'success');
     updateUI();
 
     if (worker) {
@@ -609,7 +619,13 @@ function startGame() {
         });
     }
 
+    // Запускаем цикл действий
     requestActions();
+    
+    // Запускаем отрисовку (если ещё не запущена)
+    if (!animFrame) {
+        render();
+    }
 }
 
 function requestActions() {
@@ -657,7 +673,8 @@ function requestActions() {
         });
     }
 
-    setTimeout(requestActions, 1000 / 60);
+    // Следующий запрос через 16мс (~60 FPS)
+    setTimeout(requestActions, 16);
 }
 
 function stopGame() {
@@ -668,7 +685,7 @@ function stopGame() {
 
 function toggleTrain() {
     training = !training;
-    log(training ? '🧠 Training ON - Agents will evolve!' : '🧠 Training OFF', 'train');
+    log(training ? '🧠 Training ON' : '🧠 Training OFF', 'train');
 
     if (worker) {
         worker.postMessage({
@@ -829,15 +846,21 @@ function requestStats() {
 window.onload = function() {
     initWorker();
     initGame();
-    render();
+    
+    // Запускаем отрисовку сразу
+    animFrame = requestAnimationFrame(render);
+    
     requestStats();
-    log('⚡ HC v18.1 Ready with Learning Evolution | Press ▶️ START', 'info');
+    log('⚡ HC v18.1 Ready | Press ▶️ START', 'info');
     updateUI();
 };
 
 window.onbeforeunload = function() {
     if (worker) {
         worker.terminate();
+    }
+    if (animFrame) {
+        cancelAnimationFrame(animFrame);
     }
 };
 </script>
