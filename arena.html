@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ HC Arena v17.3 — Production Ready</title>
+    <title>⚡ HC Arena v18.0 — With Computer Vision</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
         body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
         h1 { color: #00f2ff; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0,242,255,0.5); }
-        .badge { background: linear-gradient(90deg, #00f2ff, #00ff9d); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
+        .badge { background: linear-gradient(90deg, #00f2ff, #00ff9d, #ff0055); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
         #arena { border: 2px solid #00f2ff; background: #050510; border-radius: 8px; }
         .controls { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: all 0.3s; }
@@ -21,6 +21,7 @@
         .btn-reset { background: #333; color: #fff; }
         .btn-export { background: #6600ff; color: #fff; }
         .btn-import { background: #ff00ff; color: #fff; }
+        .btn-vision { background: #ffaa00; color: #000; }
         .stats { margin-top: 15px; color: #888; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
         .stat { background: #121225; padding: 8px 15px; border-radius: 6px; border: 1px solid #2a2a40; }
         .stat-value { color: #00f2ff; font-weight: bold; }
@@ -44,10 +45,12 @@
         .reward-blue { color: #00f2ff; }
         .reward-red { color: #ff0055; }
         .file-input { display: none; }
+        .vision-badge { font-size: 0.7rem; color: #ffaa00; margin-left: 10px; }
     </style>
 </head>
 <body>
-    <h1>⚡ HC ARENA v17.3</h1>    <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 dim Memory | Hindsight Learning</div>
+    <h1>⚡ HC ARENA v18.0 <span class="vision-badge">👁️ CNN Vision</span></h1>
+    <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 Memory | CNN Vision | Hindsight Learning</div>
     
     <canvas id="arena" width="800" height="600"></canvas>
     
@@ -74,6 +77,7 @@
         <button class="btn-reset" id="btnReset" onclick="resetGame()">↺ Reset</button>
         <button class="btn-export" id="btnExport" onclick="exportWeights()">💾 Export</button>
         <button class="btn-import" id="btnImport" onclick="document.getElementById('fileInput').click()">📂 Import</button>
+        <button class="btn-vision" id="btnVision" onclick="toggleVision()">👁️ Vision: ON</button>
         <input type="file" id="fileInput" class="file-input" accept=".json" onchange="importWeights(event)">
     </div>
     
@@ -91,15 +95,14 @@
 
 <script>
 // ============================================================================
-// MAIN THREAD — UI + RENDER + WORKER COMMUNICATION
-// All 10 message types handled
+// HC ARENA v18.0 — WITH COMPUTER VISION SUPPORT
 // ============================================================================
 
 const canvas = document.getElementById('arena');
 const ctx = canvas.getContext('2d');
 // Game state
 let blue, red, obstacles;
-let running = false, training = false, gameStarted = false;
+let running = false, training = false, gameStarted = false, visionEnabled = true;
 let episode = 0, blueWins = 0, redWins = 0, totalReverse = 0;
 let worker = null;
 let lastFrameTime = performance.now();
@@ -109,7 +112,7 @@ let blueReward = 0, redReward = 0;
 let blueDamage = 0, redDamage = 0;
 
 // ============================================================================
-// WORKER INITIALIZATION
+// WORKER INITIALIZATION (v18.0)
 // ============================================================================
 function initWorker() {
     if (worker) {
@@ -127,42 +130,33 @@ function initWorker() {
             case 'WORKER_READY':
                 handleWorkerReady(data);
                 break;
-
             case 'INIT':
                 handleInit(data);
                 break;
-
             case 'LOG':
                 handleLog(data);
                 break;
-
             case 'ACTIONS':
                 handleActions(data);
                 break;
-
             case 'TRAIN_COMPLETE':
                 handleTrainComplete(data);
                 break;
-
             case 'REVERSE_RESULT':
-                handleReverseResult(data);                break;
-
+                handleReverseResult(data);
+                break;
             case 'ERR':
                 handleError(data);
                 break;
-
             case 'STATS':
                 handleStats(data);
                 break;
-
             case 'REWARD':
                 handleReward(data);
                 break;
-
             case 'WEIGHTS_EXPORT':
                 handleWeightsExport(data);
                 break;
-
             default:
                 console.warn('[Main] Unknown message type:', type);
         }
@@ -174,128 +168,64 @@ function initWorker() {
         document.getElementById('workerStatus').className = 'worker-status worker-err';
     };
 
-    log('🔧 Worker initialized', 'info');
+    log('🔧 Worker v18.0 initialized', 'info');
 }
 
 // ============================================================================
-// MESSAGE HANDLERS — ALL 10 TYPES
+// CANVAS DATA CAPTURE (для компьютерного зрения)
 // ============================================================================
-function handleWorkerReady(data) {
-    document.getElementById('workerState').innerText = 'READY';
-    document.getElementById('workerStatus').className = 'worker-status worker-ready';
-    log('✅ Worker v' + (data ? data.version : '17.3') + ' ready', 'success');
-}
-
-function handleInit(data) {
-    if (data && data.status) {
-        document.getElementById('workerState').innerText = data.status.toUpperCase();
-        if (data.status === 'ready') {
-            document.getElementById('workerStatus').className = 'worker-status worker-ok';
-        } else if (data.status === 'reset') {
-            document.getElementById('workerStatus').className = 'worker-status worker-ready';
-        } else if (data.status === 'loaded') {
-            document.getElementById('workerStatus').className = 'worker-status worker-ok';            log('✅ Weights loaded successfully', 'success');
+function captureCanvasForAgent(agentX, agentY, targetX, targetY) {
+    // Создаем временный canvas 84x84 (размер для CNN)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 84;
+    tempCanvas.height = 84;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (visionEnabled) {
+        // Вариант 1: Вид от первого лица (агент смотрит на врага)
+        const angle = Math.atan2(targetY - agentY, targetX - agentX);
+        const distance = Math.hypot(targetX - agentX, targetY - agentY);
+        
+        // Рисуем сцену с поворотом камеры
+        tempCtx.translate(42, 42);
+        tempCtx.rotate(-angle);
+        tempCtx.translate(-42, -42);
+        
+        // Рисуем упрощенную сцену
+        tempCtx.fillStyle = '#050510';
+        tempCtx.fillRect(0, 0, 84, 84);
+        
+        // Препятствия (упрощенно)
+        tempCtx.fillStyle = '#2a2a40';
+        obstacles.forEach(obs => {
+            const sx = (obs.x - agentX) / 10 + 42;
+            const sy = (obs.y - agentY) / 10 + 42;
+            const sw = obs.w / 10;
+            const sh = obs.h / 10;
+            if (sx > -20 && sx < 104 && sy > -20 && sy < 104) {
+                tempCtx.fillRect(sx - sw/2, sy - sh/2, sw, sh);
+            }
+        });
+        
+        // Враг (красный)
+        const ex = (targetX - agentX) / 10 + 42;
+        const ey = (targetY - agentY) / 10 + 42;
+        if (ex > 0 && ex < 84 && ey > 0 && ey < 84) {
+            tempCtx.fillStyle = '#ff0055';
+            tempCtx.fillRect(ex - 4, ey - 4, 8, 8);
         }
+        
+        // Сам агент (синий) - в центре
+        tempCtx.fillStyle = '#00f2ff';
+        tempCtx.fillRect(38, 38, 8, 8);
+        
+    } else {
+        // Вариант 2: Если vision выключен - просто черный экран
+        tempCtx.fillStyle = '#000';
+        tempCtx.fillRect(0, 0, 84, 84);
     }
-}
-
-function handleLog(data) {
-    if (data && data.msg) {
-        log(data.msg, data.type || 'info');
-    }
-}
-
-function handleActions(data) {
-    if (!running || !data) return;
-    applyActions(data);
-}
-
-function handleTrainComplete(data) {
-    if (data) {
-        if (data.generation !== undefined) {
-            document.getElementById('gen').innerText = data.generation;
-        }
-        if (data.blueWins !== undefined) {
-            document.getElementById('blueWins').innerText = data.blueWins;
-            blueWins = data.blueWins;
-        }
-        if (data.redWins !== undefined) {
-            document.getElementById('redWins').innerText = data.redWins;
-            redWins = data.redWins;
-        }
-    }
-}
-
-function handleReverseResult(data) {
-    if (data && data.success) {
-        totalReverse++;
-        document.getElementById('reversed').innerText = totalReverse;
-    }
-}
-
-function handleError(data) {
-    if (data && data.msg) {
-        log('❌ ' + data.msg, 'err');
-        if (data.stack) {
-            console.error('[Worker]', data.stack);
-        }
-    }
-    document.getElementById('workerState').innerText = 'ERROR';
-    document.getElementById('workerStatus').className = 'worker-status worker-err';
-}
-function handleStats(data) {
-    if (!data) return;
-
-    if (data.generation !== undefined) document.getElementById('gen').innerText = data.generation;
-    if (data.episode !== undefined) document.getElementById('ep').innerText = data.episode;
-    if (data.blueWins !== undefined) document.getElementById('blueWins').innerText = data.blueWins;
-    if (data.redWins !== undefined) document.getElementById('redWins').innerText = data.redWins;
-
-    if (data.agent1) {
-        document.getElementById('blueStats').innerText = 
-            'DMG: ' + (data.agent1.damageDealt || 0).toFixed(0) + 
-            ' | Hindsight: ' + (data.agent1.hindsightCount || 0);
-    }
-    if (data.agent2) {
-        document.getElementById('redStats').innerText = 
-            'DMG: ' + (data.agent2.damageDealt || 0).toFixed(0) + 
-            ' | Hindsight: ' + (data.agent2.hindsightCount || 0);
-    }
-}
-
-function handleReward(data) {
-    if (!data) return;
-
-    if (data.blue !== undefined) {
-        blueReward = data.blue;
-        document.getElementById('blueReward').innerText = 'Reward: ' + blueReward.toFixed(3);
-    }
-    if (data.red !== undefined) {
-        redReward = data.red;
-        document.getElementById('redReward').innerText = 'Reward: ' + redReward.toFixed(3);
-    }
-}
-
-function handleWeightsExport(data) {
-    if (!data || !data.blue || !data.red) return;
-
-    const exportData = {
-        version: '17.3',
-        timestamp: Date.now(),
-        blue: data.blue,
-        red: data.red
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'hc_weights_' + Date.now() + '.json';
-    document.body.appendChild(a);
-    a.click();    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    log('💾 Weights exported', 'success');
+    
+    return tempCtx.getImageData(0, 0, 84, 84);
 }
 
 // ============================================================================
@@ -332,7 +262,128 @@ function initGame() {
 }
 
 // ============================================================================
-// PHYSICS & ACTIONS
+// MESSAGE HANDLERS
+// ============================================================================
+function handleWorkerReady(data) {
+    document.getElementById('workerState').innerText = 'READY';
+    document.getElementById('workerStatus').className = 'worker-status worker-ready';
+    log('✅ Worker v' + (data ? data.version : '18.0') + ' ready with CNN Vision', 'success');
+}
+
+function handleInit(data) {
+    if (data && data.status) {
+        document.getElementById('workerState').innerText = data.status.toUpperCase();
+        if (data.status === 'ready') {
+            document.getElementById('workerStatus').className = 'worker-status worker-ok';
+        } else if (data.status === 'reset') {
+            document.getElementById('workerStatus').className = 'worker-status worker-ready';
+        } else if (data.status === 'loaded') {
+            document.getElementById('workerStatus').className = 'worker-status worker-ok';
+            log('✅ Weights loaded successfully', 'success');
+        }
+    }
+}
+
+function handleLog(data) {
+    if (data && data.msg) {
+        log(data.msg, data.type || 'info');
+    }
+}
+
+function handleActions(data) {
+    if (!running || !data) return;
+    applyActions(data);
+}
+
+function handleTrainComplete(data) {
+    if (data) {
+        if (data.generation !== undefined) document.getElementById('gen').innerText = data.generation;
+        if (data.blueWins !== undefined) {
+            document.getElementById('blueWins').innerText = data.blueWins;
+            blueWins = data.blueWins;
+        }
+        if (data.redWins !== undefined) {
+            document.getElementById('redWins').innerText = data.redWins;
+            redWins = data.redWins;
+        }
+    }
+}
+
+function handleReverseResult(data) {
+    if (data && data.success) {
+        totalReverse++;
+        document.getElementById('reversed').innerText = totalReverse;
+        log(`🔄 Reversed ${data.steps} steps | Hindsight: B=${data.h1} R=${data.h2}`, 'train');
+    }
+}
+
+function handleError(data) {
+    if (data && data.msg) {
+        log('❌ ' + data.msg, 'err');
+        if (data.stack) console.error('[Worker]', data.stack);
+    }
+    document.getElementById('workerState').innerText = 'ERROR';
+    document.getElementById('workerStatus').className = 'worker-status worker-err';
+}
+
+function handleStats(data) {
+    if (!data) return;
+
+    if (data.generation !== undefined) document.getElementById('gen').innerText = data.generation;
+    if (data.episode !== undefined) document.getElementById('ep').innerText = data.episode;
+    if (data.blueWins !== undefined) document.getElementById('blueWins').innerText = data.blueWins;
+    if (data.redWins !== undefined) document.getElementById('redWins').innerText = data.redWins;
+
+    if (data.agent1) {
+        document.getElementById('blueStats').innerText = 
+            'DMG: ' + (data.agent1.damageDealt || 0).toFixed(0) + 
+            ' | Hindsight: ' + (data.agent1.hindsightCount || 0);
+    }
+    if (data.agent2) {
+        document.getElementById('redStats').innerText = 
+            'DMG: ' + (data.agent2.damageDealt || 0).toFixed(0) + 
+            ' | Hindsight: ' + (data.agent2.hindsightCount || 0);
+    }
+}
+
+function handleReward(data) {
+    if (!data) return;
+    if (data.blue !== undefined) {
+        blueReward = data.blue;
+        document.getElementById('blueReward').innerText = 'Reward: ' + blueReward.toFixed(3);
+    }
+    if (data.red !== undefined) {
+        redReward = data.red;
+        document.getElementById('redReward').innerText = 'Reward: ' + redReward.toFixed(3);
+    }
+}
+
+function handleWeightsExport(data) {
+    if (!data || !data.blue || !data.red) return;
+
+    const exportData = {
+        version: '18.0',
+        timestamp: Date.now(),
+        vision: visionEnabled,
+        blue: data.blue,
+        red: data.red
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hc_weights_v18_' + Date.now() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    log('💾 Weights exported (v18.0)', 'success');
+}
+
+// ============================================================================
+// PHYSICS & ACTIONS (без изменений)
 // ============================================================================
 function applyActions(actions) {
     if (!running || !actions) return;
@@ -390,7 +441,6 @@ function applyActions(actions) {
 
     // Combat
     const dist = Math.hypot(blue.x - red.x, blue.y - red.y);
-    let damageDealt1 = 0, damageDealt2 = 0;
     if (dist < 40) {
         const bSp = Math.hypot(blue.vx, blue.vy);
         const rSp = Math.hypot(red.vx, red.vy);
@@ -407,9 +457,6 @@ function applyActions(actions) {
             red.damageTaken += rDmg;
             blue.damageDealt += rDmg;
             red.damageDealt += bDmg;
-
-            damageDealt1 = rDmg;
-            damageDealt2 = bDmg;
         }
 
         const ang = Math.atan2(blue.y - red.y, blue.x - red.x);
@@ -439,7 +486,8 @@ function applyActions(actions) {
     updateUI();
 }
 
-// ============================================================================// RENDER
+// ============================================================================
+// RENDER
 // ============================================================================
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -488,9 +536,11 @@ function updateUI() {
     document.getElementById('redWins').innerText = redWins;
 
     document.getElementById('btnStart').disabled = running;
-    document.getElementById('btnStop').disabled = !running;    document.getElementById('btnTrain').disabled = !gameStarted;
+    document.getElementById('btnStop').disabled = !running;
+    document.getElementById('btnTrain').disabled = !gameStarted;
     document.getElementById('btnReverse').disabled = !gameStarted;
     document.getElementById('btnExport').disabled = !gameStarted;
+    document.getElementById('btnVision').innerText = visionEnabled ? '👁️ Vision: ON' : '👁️ Vision: OFF';
 }
 
 function log(msg, type) {
@@ -522,7 +572,7 @@ function startGame() {
     running = true;
     initGame();
 
-    log('▶️ Game STARTED', 'success');
+    log('▶️ Game STARTED with ' + (visionEnabled ? 'CNN Vision' : 'Raycast Vision'), 'success');
     updateUI();
 
     if (worker) {
@@ -537,6 +587,7 @@ function startGame() {
 
     requestActions();
 }
+
 function requestActions() {
     if (!running || !worker) return;
 
@@ -545,6 +596,10 @@ function requestActions() {
 
     const input1 = getInput(blue, red);
     const input2 = getInput(red, blue);
+    
+    // 📸 ЗАХВАТЫВАЕМ ИЗОБРАЖЕНИЕ ДЛЯ КОМПЬЮТЕРНОГО ЗРЕНИЯ
+    const canvasData1 = captureCanvasForAgent(blue.x, blue.y, red.x, red.y);
+    const canvasData2 = captureCanvasForAgent(red.x, red.y, blue.x, blue.y);
 
     if (worker) {
         worker.postMessage({
@@ -552,6 +607,16 @@ function requestActions() {
             data: {
                 input1: input1,
                 input2: input2,
+                canvas1: {  // ← КЛЮЧЕВОЕ ДОБАВЛЕНИЕ!
+                    width: canvasData1.width,
+                    height: canvasData1.height,
+                    data: Array.from(canvasData1.data)  // Преобразуем в обычный массив
+                },
+                canvas2: {
+                    width: canvasData2.width,
+                    height: canvasData2.height,
+                    data: Array.from(canvasData2.data)
+                },
                 episode: episode,
                 training: training,
                 dist1: dist1,
@@ -585,8 +650,15 @@ function toggleTrain() {
     }
 }
 
+function toggleVision() {
+    visionEnabled = !visionEnabled;
+    document.getElementById('btnVision').innerText = visionEnabled ? '👁️ Vision: ON' : '👁️ Vision: OFF';
+    log(visionEnabled ? '👁️ CNN Vision enabled' : '👁️ CNN Vision disabled', 'info');
+}
+
 function doReverse() {
-    if (!worker || !gameStarted) {        log('❌ Start game first!', 'err');
+    if (!worker || !gameStarted) {
+        log('❌ Start game first!', 'err');
         return;
     }
 
@@ -635,7 +707,8 @@ function importWeights(event) {
             if (worker && weights.blue && weights.red) {
                 worker.postMessage({
                     type: 'IMPORT_WEIGHTS',
-                    data: {                        blue: weights.blue,
+                    data: {
+                        blue: weights.blue,
                         red: weights.red
                     }
                 });
@@ -652,7 +725,7 @@ function importWeights(event) {
 }
 
 // ============================================================================
-// RAYCASTING (32 rays for full vision)
+// RAYCASTING (для совместимости, но теперь используется vision)
 // ============================================================================
 function raycast(x, y, angle, maxDist) {
     for (let i = 0; i < maxDist; i += 15) {
@@ -684,7 +757,8 @@ function getInput(me, enemy) {
     input.push(me.vx * 0.5);
     input.push(me.vy * 0.5);
 
-    // Enemy relative position    input.push((enemy.x - me.x) / canvas.width);
+    // Enemy relative position
+    input.push((enemy.x - me.x) / canvas.width);
     input.push((enemy.y - me.y) / canvas.height);
     input.push(enemy.vx * 0.5);
     input.push(enemy.vy * 0.5);
@@ -696,13 +770,12 @@ function getInput(me, enemy) {
     input.push(me.hp / me.maxHp);
     input.push(enemy.hp / enemy.maxHp);
 
-    // 32-ray vision (full circle)
+    // 32-ray vision (full circle) - теперь это дополнительно к CNN
     for (let i = 0; i < 32; i++) {
         const angle = (i / 32) * Math.PI * 2;
         input.push(raycast(me.x, me.y, angle, 400));
     }
 
-    // Pad to 32 inputs if needed
     while (input.length < 32) {
         input.push(0);
     }
@@ -728,12 +801,12 @@ window.onload = function() {
     initGame();
     render();
     requestStats();
-    log('⚡ HC v17.3 Ready | Press ▶️ START', 'info');
+    log('⚡ HC v18.0 Ready with CNN Vision | Press ▶️ START', 'info');
     updateUI();
 };
 
-// Cleanup on page unload
-window.onbeforeunload = function() {    if (worker) {
+window.onbeforeunload = function() {
+    if (worker) {
         worker.terminate();
     }
 };
