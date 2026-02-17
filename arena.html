@@ -3,42 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ HC Arena v17.3 — Web Worker</title>
+    <title>⚡ HC Arena v17.3 — Production Ready</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; }
-        body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
+        body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
         h1 { color: #00f2ff; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0,242,255,0.5); }
         .badge { background: linear-gradient(90deg, #00f2ff, #00ff9d); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
         #arena { border: 2px solid #00f2ff; background: #050510; border-radius: 8px; }
         .controls { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: all 0.3s; }
+        button:hover { transform: scale(1.05); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .btn-start { background: #00f2ff; color: #000; }
         .btn-stop { background: #ff6600; color: #fff; }
         .btn-train { background: #ff0055; color: #fff; }
         .btn-reverse { background: #00ff9d; color: #000; }
         .btn-reset { background: #333; color: #fff; }
-        .stats { margin-top: 15px; color: #888; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .btn-export { background: #6600ff; color: #fff; }
+        .btn-import { background: #ff00ff; color: #fff; }
+        .stats { margin-top: 15px; color: #888; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
         .stat { background: #121225; padding: 8px 15px; border-radius: 6px; border: 1px solid #2a2a40; }
         .stat-value { color: #00f2ff; font-weight: bold; }
-        .log { margin-top: 15px; background: #000; border: 1px solid #333; padding: 10px; max-height: 150px; overflow-y: auto; font-size: 0.75rem; width: 800px; border-radius: 6px; }
-        .health { margin-top: 10px; display: flex; gap: 40px; }
+        .stat-value.ok { color: #00ff9d; }
+        .stat-value.err { color: #ff0055; }
+        .stat-value.warn { color: #ffaa00; }
+        .log { margin-top: 15px; background: #000; border: 1px solid #333; padding: 10px; max-height: 180px; overflow-y: auto; font-size: 0.75rem; width: 800px; border-radius: 6px; }
+        .log-entry { margin-bottom: 5px; padding: 3px 0; border-bottom: 1px solid #1a1a1a; }
+        .health { margin-top: 15px; display: flex; gap: 40px; }
         .hp-box { width: 200px; }
         .bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
         .fill { height: 100%; transition: width 0.3s; }
         .blue { background: linear-gradient(90deg, #0066ff, #00f2ff); }
         .red { background: linear-gradient(90deg, #ff0055, #ff6688); }
-        .arch-info { margin-top: 15px; background: #121225; padding: 15px; border-radius: 8px; border: 1px solid #2a2a40; max-width: 800px; font-size: 0.8rem; }
-        .arch-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #2a2a40; }
-        .arch-row:last-child { border-bottom: none; }
         .worker-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
         .worker-ok { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
         .worker-err { background: #ff0055; }
-        .disabled { opacity: 0.5; pointer-events: none; }
+        .worker-ready { background: #00f2ff; }
+        .agent-stats { margin-top: 10px; font-size: 0.75rem; color: #666; }
+        .reward-display { margin-top: 5px; font-size: 0.7rem; }
+        .reward-blue { color: #00f2ff; }
+        .reward-red { color: #ff0055; }
+        .file-input { display: none; }
     </style>
 </head>
 <body>
-    <h1>⚡ HC ARENA v17.3</h1>
-    <div class="badge">🔄 Web Worker | 338 dim | 16-Head | 12 Reversible Blocks</div>
+    <h1>⚡ HC ARENA v17.3</h1>    <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 dim Memory | Hindsight Learning</div>
     
     <canvas id="arena" width="800" height="600"></canvas>
     
@@ -46,12 +55,14 @@
         <div class="hp-box">
             <div style="color:#00f2ff">🟦 BLUE AGENT</div>
             <div class="bar"><div class="fill blue" id="blueBar" style="width:100%"></div></div>
-            <div style="font-size:0.75rem;color:#666;margin-top:5px;">DMG: <span id="blueDmg">0</span></div>
+            <div class="reward-display reward-blue" id="blueReward">Reward: 0.00</div>
+            <div class="agent-stats" id="blueStats">DMG: 0 | Hindsight: 0</div>
         </div>
         <div class="hp-box">
             <div style="color:#ff0055">🟥 RED AGENT</div>
             <div class="bar"><div class="fill red" id="redBar" style="width:100%"></div></div>
-            <div style="font-size:0.75rem;color:#666;margin-top:5px;">DMG: <span id="redDmg">0</span></div>
+            <div class="reward-display reward-red" id="redReward">Reward: 0.00</div>
+            <div class="agent-stats" id="redStats">DMG: 0 | Hindsight: 0</div>
         </div>
     </div>
     
@@ -61,10 +72,13 @@
         <button class="btn-train" id="btnTrain" onclick="toggleTrain()">🧠 Train</button>
         <button class="btn-reverse" id="btnReverse" onclick="doReverse()">🔄 Reverse</button>
         <button class="btn-reset" id="btnReset" onclick="resetGame()">↺ Reset</button>
+        <button class="btn-export" id="btnExport" onclick="exportWeights()">💾 Export</button>
+        <button class="btn-import" id="btnImport" onclick="document.getElementById('fileInput').click()">📂 Import</button>
+        <input type="file" id="fileInput" class="file-input" accept=".json" onchange="importWeights(event)">
     </div>
     
     <div class="stats">
-        <span class="stat"><span class="worker-status worker-ok" id="workerStatus"></span>Worker: <span class="stat-value" id="workerState">READY</span></span>
+        <span class="stat"><span class="worker-status worker-ready" id="workerStatus"></span>Worker: <span class="stat-value" id="workerState">READY</span></span>
         <span class="stat">Gen: <span class="stat-value" id="gen">0</span></span>
         <span class="stat">Episode: <span class="stat-value" id="ep">0</span></span>
         <span class="stat">Blue: <span class="stat-value" id="blueWins">0</span></span>
@@ -73,242 +87,484 @@
         <span class="stat">FPS: <span class="stat-value" id="fps">0</span></span>
     </div>
     
-    <div class="arch-info">
-        <div style="color:#00f2ff;font-weight:bold;margin-bottom:10px;">🏗️ HC ARCHITECTURE (per agent)</div>
-        <div class="arch-row"><span>State Dimensions:</span><span style="color:#00ff9d">338</span></div>
-        <div class="arch-row"><span>Working State:</span><span style="color:#00ff9d">236 dim (70%)</span></div>
-        <div class="arch-row"><span>Memory Channel:</span><span style="color:#00ff9d">102 dim (30%)</span></div>
-        <div class="arch-row"><span>Attention Heads:</span><span style="color:#00ff9d">16</span></div>
-        <div class="arch-row"><span>Reversible Blocks:</span><span style="color:#00ff9d">12 (Coupling Layers)</span></div>
-        <div class="arch-row"><span>Processing:</span><span style="color:#00ff9d">Web Worker (separate thread)</span></div>
-    </div>
-    
     <div class="log" id="log"></div>
 
 <script>
+// ============================================================================
+// MAIN THREAD — UI + RENDER + WORKER COMMUNICATION
+// All 10 message types handled
+// ============================================================================
+
 const canvas = document.getElementById('arena');
 const ctx = canvas.getContext('2d');
-
+// Game state
 let blue, red, obstacles;
 let running = false, training = false, gameStarted = false;
-let generation = 0, episode = 0, blueWins = 0, redWins = 0, totalReverse = 0;
+let episode = 0, blueWins = 0, redWins = 0, totalReverse = 0;
 let worker = null;
 let lastFrameTime = performance.now();
 let frameCount = 0;
 let fps = 0;
+let blueReward = 0, redReward = 0;
+let blueDamage = 0, redDamage = 0;
 
+// ============================================================================
+// WORKER INITIALIZATION
+// ============================================================================
 function initWorker() {
+    if (worker) {
+        worker.terminate();
+    }
+
     worker = new Worker('arena-worker.js');
-    
+
     worker.onmessage = function(e) {
-        const { type, data } = e.data;
-        
-        if(type === 'AGENT_INIT') {
-            log('✅ Worker: Agents initialized', 'info');
-            document.getElementById('workerState').innerText = 'READY';
-            document.getElementById('workerStatus').className = 'worker-status worker-ok';
-        }
-        
-        if(type === 'ACTIONS') {
-            applyActions(data.actions);
-        }
-        
-        if(type === 'TRAIN_COMPLETE') {
-            generation++;
-            log('🧠 Generation ' + generation + ' complete', 'train');
-            document.getElementById('gen').innerText = generation;
-        }
-        
-        if(type === 'REVERSE_RESULT') {
-            totalReverse++;
-            document.getElementById('reversed').innerText = totalReverse;
-            log('🔄 Reversed ' + data.steps + ' steps | Trajectory: ' + data.trajectoryLength, 'train');
-        }
-        
-        if(type === 'ERROR') {
-            log('❌ Worker Error: ' + data.message, 'err');
-            document.getElementById('workerState').innerText = 'ERROR';
-            document.getElementById('workerStatus').className = 'worker-status worker-err';
+        const msg = e.data || {};
+        const type = msg.type;
+        const data = msg.data;
+
+        switch (type) {
+            case 'WORKER_READY':
+                handleWorkerReady(data);
+                break;
+
+            case 'INIT':
+                handleInit(data);
+                break;
+
+            case 'LOG':
+                handleLog(data);
+                break;
+
+            case 'ACTIONS':
+                handleActions(data);
+                break;
+
+            case 'TRAIN_COMPLETE':
+                handleTrainComplete(data);
+                break;
+
+            case 'REVERSE_RESULT':
+                handleReverseResult(data);                break;
+
+            case 'ERR':
+                handleError(data);
+                break;
+
+            case 'STATS':
+                handleStats(data);
+                break;
+
+            case 'REWARD':
+                handleReward(data);
+                break;
+
+            case 'WEIGHTS_EXPORT':
+                handleWeightsExport(data);
+                break;
+
+            default:
+                console.warn('[Main] Unknown message type:', type);
         }
     };
-    
+
     worker.onerror = function(e) {
         log('❌ Worker Error: ' + e.message, 'err');
         document.getElementById('workerState').innerText = 'ERROR';
         document.getElementById('workerStatus').className = 'worker-status worker-err';
     };
-    
+
     log('🔧 Worker initialized', 'info');
 }
 
+// ============================================================================
+// MESSAGE HANDLERS — ALL 10 TYPES
+// ============================================================================
+function handleWorkerReady(data) {
+    document.getElementById('workerState').innerText = 'READY';
+    document.getElementById('workerStatus').className = 'worker-status worker-ready';
+    log('✅ Worker v' + (data ? data.version : '17.3') + ' ready', 'success');
+}
+
+function handleInit(data) {
+    if (data && data.status) {
+        document.getElementById('workerState').innerText = data.status.toUpperCase();
+        if (data.status === 'ready') {
+            document.getElementById('workerStatus').className = 'worker-status worker-ok';
+        } else if (data.status === 'reset') {
+            document.getElementById('workerStatus').className = 'worker-status worker-ready';
+        } else if (data.status === 'loaded') {
+            document.getElementById('workerStatus').className = 'worker-status worker-ok';            log('✅ Weights loaded successfully', 'success');
+        }
+    }
+}
+
+function handleLog(data) {
+    if (data && data.msg) {
+        log(data.msg, data.type || 'info');
+    }
+}
+
+function handleActions(data) {
+    if (!running || !data) return;
+    applyActions(data);
+}
+
+function handleTrainComplete(data) {
+    if (data) {
+        if (data.generation !== undefined) {
+            document.getElementById('gen').innerText = data.generation;
+        }
+        if (data.blueWins !== undefined) {
+            document.getElementById('blueWins').innerText = data.blueWins;
+            blueWins = data.blueWins;
+        }
+        if (data.redWins !== undefined) {
+            document.getElementById('redWins').innerText = data.redWins;
+            redWins = data.redWins;
+        }
+    }
+}
+
+function handleReverseResult(data) {
+    if (data && data.success) {
+        totalReverse++;
+        document.getElementById('reversed').innerText = totalReverse;
+    }
+}
+
+function handleError(data) {
+    if (data && data.msg) {
+        log('❌ ' + data.msg, 'err');
+        if (data.stack) {
+            console.error('[Worker]', data.stack);
+        }
+    }
+    document.getElementById('workerState').innerText = 'ERROR';
+    document.getElementById('workerStatus').className = 'worker-status worker-err';
+}
+function handleStats(data) {
+    if (!data) return;
+
+    if (data.generation !== undefined) document.getElementById('gen').innerText = data.generation;
+    if (data.episode !== undefined) document.getElementById('ep').innerText = data.episode;
+    if (data.blueWins !== undefined) document.getElementById('blueWins').innerText = data.blueWins;
+    if (data.redWins !== undefined) document.getElementById('redWins').innerText = data.redWins;
+
+    if (data.agent1) {
+        document.getElementById('blueStats').innerText = 
+            'DMG: ' + (data.agent1.damageDealt || 0).toFixed(0) + 
+            ' | Hindsight: ' + (data.agent1.hindsightCount || 0);
+    }
+    if (data.agent2) {
+        document.getElementById('redStats').innerText = 
+            'DMG: ' + (data.agent2.damageDealt || 0).toFixed(0) + 
+            ' | Hindsight: ' + (data.agent2.hindsightCount || 0);
+    }
+}
+
+function handleReward(data) {
+    if (!data) return;
+
+    if (data.blue !== undefined) {
+        blueReward = data.blue;
+        document.getElementById('blueReward').innerText = 'Reward: ' + blueReward.toFixed(3);
+    }
+    if (data.red !== undefined) {
+        redReward = data.red;
+        document.getElementById('redReward').innerText = 'Reward: ' + redReward.toFixed(3);
+    }
+}
+
+function handleWeightsExport(data) {
+    if (!data || !data.blue || !data.red) return;
+
+    const exportData = {
+        version: '17.3',
+        timestamp: Date.now(),
+        blue: data.blue,
+        red: data.red
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hc_weights_' + Date.now() + '.json';
+    document.body.appendChild(a);
+    a.click();    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    log('💾 Weights exported', 'success');
+}
+
+// ============================================================================
+// GAME INITIALIZATION
+// ============================================================================
 function initGame() {
-    blue = { x: 200, y: 300, vx: 0, vy: 0, hp: 100, size: 40, damageDealt: 0 };
-    red = { x: 600, y: 300, vx: 0, vy: 0, hp: 100, size: 40, damageDealt: 0 };
-    
+    blue = { 
+        x: 200, y: 300, vx: 0, vy: 0, 
+        hp: 100, maxHp: 100, 
+        size: 40, 
+        damageDealt: 0, damageTaken: 0 
+    };
+    red = { 
+        x: 600, y: 300, vx: 0, vy: 0, 
+        hp: 100, maxHp: 100, 
+        size: 40, 
+        damageDealt: 0, damageTaken: 0 
+    };
+
     obstacles = [
         { x: 400, y: 150, w: 200, h: 20 },
         { x: 400, y: 450, w: 200, h: 20 },
         { x: 250, y: 300, w: 20, h: 200 },
         { x: 550, y: 300, w: 20, h: 200 }
     ];
-    
+
     episode++;
+    blueReward = 0;
+    redReward = 0;
+    blueDamage = 0;
+    redDamage = 0;
+
     updateUI();
 }
 
+// ============================================================================
+// PHYSICS & ACTIONS
+// ============================================================================
 function applyActions(actions) {
-    if(!running) return;
-    
+    if (!running || !actions) return;
+
     const { blue: a1, red: a2 } = actions;
-    
+
     const sp1 = 0.4 + a1.aggression * 0.6;
     const sp2 = 0.4 + a2.aggression * 0.6;
-    
     blue.vx += a1.fx * sp1;
     blue.vy += a1.fy * sp1;
     red.vx += a2.fx * sp2;
     red.vy += a2.fy * sp2;
-    
+
     blue.vx *= 0.90;
     blue.vy *= 0.90;
     red.vx *= 0.90;
     red.vy *= 0.90;
-    
+
     blue.x += blue.vx;
     blue.y += blue.vy;
     red.x += red.vx;
     red.y += red.vy;
-    
-    if(blue.x < 20 || blue.x > canvas.width-20) { blue.vx *= -1.5; blue.x = Math.max(20, Math.min(canvas.width-20, blue.x)); }
-    if(blue.y < 20 || blue.y > canvas.height-20) { blue.vy *= -1.5; blue.y = Math.max(20, Math.min(canvas.height-20, blue.y)); }
-    if(red.x < 20 || red.x > canvas.width-20) { red.vx *= -1.5; red.x = Math.max(20, Math.min(canvas.width-20, red.x)); }
-    if(red.y < 20 || red.y > canvas.height-20) { red.vy *= -1.5; red.y = Math.max(20, Math.min(canvas.height-20, red.y)); }
-    
-    for(let obs of obstacles) {
-        if(blue.x > obs.x - obs.w/2 - 20 && blue.x < obs.x + obs.w/2 + 20 &&
-           blue.y > obs.y - obs.h/2 - 20 && blue.y < obs.y + obs.h/2 + 20) {
-            blue.vx *= -1.5; blue.vy *= -1.5;
+
+    // Bounds with bounce
+    if (blue.x < 20 || blue.x > canvas.width - 20) {
+        blue.vx *= -1.5;
+        blue.x = Math.max(20, Math.min(canvas.width - 20, blue.x));
+    }
+    if (blue.y < 20 || blue.y > canvas.height - 20) {
+        blue.vy *= -1.5;
+        blue.y = Math.max(20, Math.min(canvas.height - 20, blue.y));
+    }
+    if (red.x < 20 || red.x > canvas.width - 20) {
+        red.vx *= -1.5;
+        red.x = Math.max(20, Math.min(canvas.width - 20, red.x));
+    }
+    if (red.y < 20 || red.y > canvas.height - 20) {
+        red.vy *= -1.5;
+        red.y = Math.max(20, Math.min(canvas.height - 20, red.y));
+    }
+
+    // Obstacle collision
+    for (let obs of obstacles) {
+        if (blue.x > obs.x - obs.w / 2 - 20 && blue.x < obs.x + obs.w / 2 + 20 &&
+            blue.y > obs.y - obs.h / 2 - 20 && blue.y < obs.y + obs.h / 2 + 20) {
+            blue.vx *= -1.5;
+            blue.vy *= -1.5;
         }
-        if(red.x > obs.x - obs.w/2 - 20 && red.x < obs.x + obs.w/2 + 20 &&
-           red.y > obs.y - obs.h/2 - 20 && red.y < obs.y + obs.h/2 + 20) {
-            red.vx *= -1.5; red.vy *= -1.5;
+        if (red.x > obs.x - obs.w / 2 - 20 && red.x < obs.x + obs.w / 2 + 20 &&
+            red.y > obs.y - obs.h / 2 - 20 && red.y < obs.y + obs.h / 2 + 20) {
+            red.vx *= -1.5;
+            red.vy *= -1.5;
         }
     }
-    
+
+    // Combat
     const dist = Math.hypot(blue.x - red.x, blue.y - red.y);
-    if(dist < 40) {
+    let damageDealt1 = 0, damageDealt2 = 0;
+    if (dist < 40) {
         const bSp = Math.hypot(blue.vx, blue.vy);
         const rSp = Math.hypot(red.vx, red.vy);
         const tot = bSp + rSp;
-        if(tot > 0) {
+
+        if (tot > 0) {
             const bDmg = (rSp / tot) * 10 + 3;
             const rDmg = (bSp / tot) * 10 + 3;
+
             blue.hp -= bDmg;
             red.hp -= rDmg;
+
+            blue.damageTaken += bDmg;
+            red.damageTaken += rDmg;
             blue.damageDealt += rDmg;
             red.damageDealt += bDmg;
-            document.getElementById('blueDmg').innerText = blue.damageDealt.toFixed(0);
-            document.getElementById('redDmg').innerText = red.damageDealt.toFixed(0);
+
+            damageDealt1 = rDmg;
+            damageDealt2 = bDmg;
         }
+
         const ang = Math.atan2(blue.y - red.y, blue.x - red.x);
         blue.vx += Math.cos(ang) * 4;
         blue.vy += Math.sin(ang) * 4;
         red.vx -= Math.cos(ang) * 4;
         red.vy -= Math.sin(ang) * 4;
     }
-    
-    if(blue.hp <= 0 || red.hp <= 0) {
-        const w = blue.hp > 0 ? 'BLUE' : 'RED';
-        if(w === 'BLUE') blueWins++; else redWins++;
-        log('🏆 ' + w + ' WINS! (DMG: B=' + blue.damageDealt.toFixed(0) + ' R=' + red.damageDealt.toFixed(0) + ')', 'battle');
-        if(training) {
-            worker.postMessage({ type: 'TRAIN_STEP', data: { winner: w } });
+
+    // Check death
+    if (blue.hp <= 0 || red.hp <= 0) {
+        const winner = blue.hp > 0 ? 'BLUE' : 'RED';
+        if (winner === 'BLUE') blueWins++; else redWins++;
+
+        log('🏆 ' + winner + ' WINS! (DMG: B=' + blue.damageDealt.toFixed(0) + ' R=' + red.damageDealt.toFixed(0) + ')', 'battle');
+
+        if (training && worker) {
+            worker.postMessage({
+                type: 'TRAIN',
+                data: { winner: winner }
+            });
         }
+
         setTimeout(initGame, 2000);
     }
-    
+
     updateUI();
 }
 
+// ============================================================================// RENDER
+// ============================================================================
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
+    // Obstacles
     ctx.fillStyle = '#2a2a40';
-    for(let obs of obstacles) {
-        ctx.fillRect(obs.x - obs.w/2, obs.y - obs.h/2, obs.w, obs.h);
+    for (let obs of obstacles) {
+        ctx.fillRect(obs.x - obs.w / 2, obs.y - obs.h / 2, obs.w, obs.h);
     }
-    
+
+    // Blue agent
     ctx.fillStyle = '#00f2ff';
     ctx.shadowColor = '#00f2ff';
     ctx.shadowBlur = blue.hp < 30 ? 30 : 20;
     ctx.fillRect(blue.x - 20, blue.y - 20, 40, 40);
-    
+
+    // Red agent
     ctx.fillStyle = '#ff0055';
     ctx.shadowColor = '#ff0055';
     ctx.shadowBlur = red.hp < 30 ? 30 : 20;
     ctx.fillRect(red.x - 20, red.y - 20, 40, 40);
-    
+
     ctx.shadowBlur = 0;
-    
+
+    // FPS counter
     frameCount++;
     const now = performance.now();
-    if(now - lastFrameTime >= 1000) {
+    if (now - lastFrameTime >= 1000) {
         fps = frameCount;
         frameCount = 0;
         lastFrameTime = now;
         document.getElementById('fps').innerText = fps;
     }
-    
+
     requestAnimationFrame(render);
 }
 
+// ============================================================================
+// UI UPDATE
+// ============================================================================
 function updateUI() {
     document.getElementById('blueBar').style.width = Math.max(0, blue.hp) + '%';
     document.getElementById('redBar').style.width = Math.max(0, red.hp) + '%';
     document.getElementById('ep').innerText = episode;
     document.getElementById('blueWins').innerText = blueWins;
     document.getElementById('redWins').innerText = redWins;
+
     document.getElementById('btnStart').disabled = running;
-    document.getElementById('btnStop').disabled = !running;
-    document.getElementById('btnTrain').classList.toggle('disabled', !gameStarted);
-    document.getElementById('btnReverse').classList.toggle('disabled', !gameStarted);
+    document.getElementById('btnStop').disabled = !running;    document.getElementById('btnTrain').disabled = !gameStarted;
+    document.getElementById('btnReverse').disabled = !gameStarted;
+    document.getElementById('btnExport').disabled = !gameStarted;
 }
 
 function log(msg, type) {
     const l = document.getElementById('log');
     const d = document.createElement('div');
+    d.className = 'log-entry';
     d.innerText = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-    d.style.color = type === 'train' ? '#00ff9d' : type === 'battle' ? '#ffaa00' : type === 'err' ? '#ff0055' : '#00f2ff';
+
+    if (type === 'train') d.style.color = '#00ff9d';
+    else if (type === 'battle') d.style.color = '#ffaa00';
+    else if (type === 'err') d.style.color = '#ff0055';
+    else if (type === 'success') d.style.color = '#00ff9d';
+    else if (type === 'warning') d.style.color = '#ffaa00';
+    else d.style.color = '#00f2ff';
+
     l.insertBefore(d, l.firstChild);
-    if(l.children.length > 15) l.removeChild(l.lastChild);
+    if (l.children.length > 20) l.removeChild(l.lastChild);
 }
 
+// ============================================================================
+// BUTTON HANDLERS
+// ============================================================================
 function startGame() {
-    if(!worker) initWorker();
-    
+    if (!worker) {
+        initWorker();
+    }
+
     gameStarted = true;
     running = true;
     initGame();
-    log('▶️ Game STARTED | Worker active', 'info');
+
+    log('▶️ Game STARTED', 'success');
     updateUI();
-    
-    worker.postMessage({ type: 'START', data: { training: training, episode: episode } });
-    
+
+    if (worker) {
+        worker.postMessage({
+            type: 'START',
+            data: {
+                training: training,
+                episode: episode
+            }
+        });
+    }
+
     requestActions();
 }
-
 function requestActions() {
-    if(!running || !worker) return;
-    
+    if (!running || !worker) return;
+
+    const dist1 = Math.hypot(red.x - blue.x, red.y - blue.y);
+    const dist2 = dist1;
+
     const input1 = getInput(blue, red);
     const input2 = getInput(red, blue);
-    
-    worker.postMessage({
-        type: 'GET_ACTIONS',
-        data: { input1: input1, input2: input2, episode: episode, training: training }
-    });
-    
-    setTimeout(requestActions, 1000/60);
+
+    if (worker) {
+        worker.postMessage({
+            type: 'STEP',
+            data: {
+                input1: input1,
+                input2: input2,
+                episode: episode,
+                training: training,
+                dist1: dist1,
+                dist2: dist2,
+                damage1: blue.damageDealt,
+                damage2: red.damageDealt,
+                pos1: { x: blue.x, y: blue.y },
+                pos2: { x: red.x, y: red.y }
+            }
+        });
+    }
+
+    setTimeout(requestActions, 1000 / 60);
 }
 
 function stopGame() {
@@ -320,82 +576,167 @@ function stopGame() {
 function toggleTrain() {
     training = !training;
     log(training ? '🧠 Training ON' : '🧠 Training OFF', 'train');
-    if(worker) {
-        worker.postMessage({ type: 'SET_TRAINING', data: { training: training } });
+
+    if (worker) {
+        worker.postMessage({
+            type: 'SET_TRAINING',
+            data: { training: training }
+        });
     }
 }
 
 function doReverse() {
-    if(!worker || !gameStarted) { log('❌ Start game first!', 'err'); return; }
-    worker.postMessage({ type: 'REVERSE', data: { steps: 5 } });
+    if (!worker || !gameStarted) {        log('❌ Start game first!', 'err');
+        return;
+    }
+
+    worker.postMessage({
+        type: 'REVERSE',
+        data: { steps: 5 }
+    });
 }
 
 function resetGame() {
     running = false;
     gameStarted = false;
-    generation = 0;
     episode = 0;
     blueWins = 0;
     redWins = 0;
     totalReverse = 0;
-    
-    if(worker) {
-        worker.terminate();
-        worker = null;
+    blueReward = 0;
+    redReward = 0;
+
+    if (worker) {
+        worker.postMessage({ type: 'RESET' });
     }
-    
-    initWorker();
+
     initGame();
     log('↺ Reset complete', 'info');
     updateUI();
 }
 
+function exportWeights() {
+    if (!worker || !gameStarted) {
+        log('❌ Start game first!', 'err');
+        return;
+    }
+
+    worker.postMessage({ type: 'EXPORT_WEIGHTS' });
+}
+
+function importWeights(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const weights = JSON.parse(e.target.result);
+            if (worker && weights.blue && weights.red) {
+                worker.postMessage({
+                    type: 'IMPORT_WEIGHTS',
+                    data: {                        blue: weights.blue,
+                        red: weights.red
+                    }
+                });
+                log('📂 Weights imported: ' + file.name, 'success');
+            } else {
+                log('❌ Invalid weights file', 'err');
+            }
+        } catch (err) {
+            log('❌ Error loading weights: ' + err.message, 'err');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ============================================================================
+// RAYCASTING (32 rays for full vision)
+// ============================================================================
 function raycast(x, y, angle, maxDist) {
-    for(let i=0; i<maxDist; i+=15) {
+    for (let i = 0; i < maxDist; i += 15) {
         const tx = x + Math.cos(angle) * i;
         const ty = y + Math.sin(angle) * i;
-        for(let obs of obstacles) {
-            if(tx > obs.x - obs.w/2 && tx < obs.x + obs.w/2 &&
-               ty > obs.y - obs.h/2 && ty < obs.y + obs.h/2) {
+
+        for (let obs of obstacles) {
+            if (tx > obs.x - obs.w / 2 && tx < obs.x + obs.w / 2 &&
+                ty > obs.y - obs.h / 2 && ty < obs.y + obs.h / 2) {
                 return i / maxDist;
             }
         }
-        if(tx < 0 || tx > canvas.width || ty < 0 || ty > canvas.height) return i / maxDist;
+
+        if (tx < 0 || tx > canvas.width || ty < 0 || ty > canvas.height) {
+            return i / maxDist;
+        }
     }
     return 1;
 }
 
 function getInput(me, enemy) {
-    const distToEnemy = Math.hypot(enemy.x - me.x, enemy.y - me.y);
-    const angleToEnemy = Math.atan2(enemy.y - me.y, enemy.x - me.x);
-    const cornerPenalty = ((me.x < 100 ? 1 : 0) + (me.x > canvas.width-100 ? 1 : 0) + (me.y < 100 ? 1 : 0) + (me.y > canvas.height-100 ? 1 : 0)) / 4;
-    
-    return [
-        me.x / canvas.width, me.y / canvas.height,
-        me.vx * 0.5, me.vy * 0.5,
-        (enemy.x - me.x) / canvas.width, (enemy.y - me.y) / canvas.height,
-        enemy.vx * 0.5, enemy.vy * 0.5,
-        distToEnemy / canvas.width,
-        Math.cos(angleToEnemy), Math.sin(angleToEnemy),
-        me.hp / 100, enemy.hp / 100,
-        cornerPenalty,
-        raycast(me.x, me.y, 0, 300),
-        raycast(me.x, me.y, Math.PI/4, 300),
-        raycast(me.x, me.y, Math.PI/2, 300),
-        raycast(me.x, me.y, 3*Math.PI/4, 300),
-        raycast(me.x, me.y, Math.PI, 300),
-        raycast(me.x, me.y, 5*Math.PI/4, 300),
-    ];
+    const input = [];
+
+    // Position (normalized)
+    input.push(me.x / canvas.width);
+    input.push(me.y / canvas.height);
+
+    // Velocity
+    input.push(me.vx * 0.5);
+    input.push(me.vy * 0.5);
+
+    // Enemy relative position    input.push((enemy.x - me.x) / canvas.width);
+    input.push((enemy.y - me.y) / canvas.height);
+    input.push(enemy.vx * 0.5);
+    input.push(enemy.vy * 0.5);
+
+    // Distance to enemy
+    input.push(Math.hypot(enemy.x - me.x, enemy.y - me.y) / canvas.width);
+
+    // Health
+    input.push(me.hp / me.maxHp);
+    input.push(enemy.hp / enemy.maxHp);
+
+    // 32-ray vision (full circle)
+    for (let i = 0; i < 32; i++) {
+        const angle = (i / 32) * Math.PI * 2;
+        input.push(raycast(me.x, me.y, angle, 400));
+    }
+
+    // Pad to 32 inputs if needed
+    while (input.length < 32) {
+        input.push(0);
+    }
+
+    return input.slice(0, 32);
 }
 
+// ============================================================================
+// REQUEST STATS PERIODICALLY
+// ============================================================================
+function requestStats() {
+    if (worker && gameStarted) {
+        worker.postMessage({ type: 'GET_STATS' });
+    }
+    setTimeout(requestStats, 1000);
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 window.onload = function() {
     initWorker();
     initGame();
     render();
+    requestStats();
     log('⚡ HC v17.3 Ready | Press ▶️ START', 'info');
     updateUI();
+};
+
+// Cleanup on page unload
+window.onbeforeunload = function() {    if (worker) {
+        worker.terminate();
+    }
 };
 </script>
 </body>
 </html>
-
