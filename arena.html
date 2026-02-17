@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ HC Arena v18.0 — With Computer Vision</title>
+    <title>⚡ HC Arena v18.1 — Full Learning Evolution</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
         body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
@@ -49,8 +49,8 @@
     </style>
 </head>
 <body>
-    <h1>⚡ HC ARENA v18.0 <span class="vision-badge">👁️ CNN Vision</span></h1>
-    <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 Memory | CNN Vision | Hindsight Learning</div>
+    <h1>⚡ HC ARENA v18.1 <span class="vision-badge">👁️ Learning Evolution</span></h1>
+    <div class="badge">Web Worker | 338 dim | 16-Head | 12 Blocks | 102 Memory | CNN Vision | Online Learning | Hindsight</div>
     
     <canvas id="arena" width="800" height="600"></canvas>
     
@@ -59,13 +59,13 @@
             <div style="color:#00f2ff">🟦 BLUE AGENT</div>
             <div class="bar"><div class="fill blue" id="blueBar" style="width:100%"></div></div>
             <div class="reward-display reward-blue" id="blueReward">Reward: 0.00</div>
-            <div class="agent-stats" id="blueStats">DMG: 0 | Hindsight: 0</div>
+            <div class="agent-stats" id="blueStats">Wins: 0 | Mut: 0 | Hindsight: 0</div>
         </div>
         <div class="hp-box">
             <div style="color:#ff0055">🟥 RED AGENT</div>
             <div class="bar"><div class="fill red" id="redBar" style="width:100%"></div></div>
             <div class="reward-display reward-red" id="redReward">Reward: 0.00</div>
-            <div class="agent-stats" id="redStats">DMG: 0 | Hindsight: 0</div>
+            <div class="agent-stats" id="redStats">Wins: 0 | Mut: 0 | Hindsight: 0</div>
         </div>
     </div>
     
@@ -95,15 +95,16 @@
 
 <script>
 // ============================================================================
-// HC ARENA v18.0 — WITH COMPUTER VISION SUPPORT
+// HC ARENA v18.1 — FULL LEARNING EVOLUTION
 // ============================================================================
 
 const canvas = document.getElementById('arena');
 const ctx = canvas.getContext('2d');
+
 // Game state
 let blue, red, obstacles;
 let running = false, training = false, gameStarted = false, visionEnabled = true;
-let episode = 0, blueWins = 0, redWins = 0, totalReverse = 0;
+let episode = 0, blueWins = 0, redWins = 0, totalReverse = 0, generation = 0;
 let worker = null;
 let lastFrameTime = performance.now();
 let frameCount = 0;
@@ -112,7 +113,7 @@ let blueReward = 0, redReward = 0;
 let blueDamage = 0, redDamage = 0;
 
 // ============================================================================
-// WORKER INITIALIZATION (v18.0)
+// WORKER INITIALIZATION
 // ============================================================================
 function initWorker() {
     if (worker) {
@@ -168,97 +169,7 @@ function initWorker() {
         document.getElementById('workerStatus').className = 'worker-status worker-err';
     };
 
-    log('🔧 Worker v18.0 initialized', 'info');
-}
-
-// ============================================================================
-// CANVAS DATA CAPTURE (для компьютерного зрения)
-// ============================================================================
-function captureCanvasForAgent(agentX, agentY, targetX, targetY) {
-    // Создаем временный canvas 84x84 (размер для CNN)
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = 84;
-    tempCanvas.height = 84;
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    if (visionEnabled) {
-        // Вариант 1: Вид от первого лица (агент смотрит на врага)
-        const angle = Math.atan2(targetY - agentY, targetX - agentX);
-        const distance = Math.hypot(targetX - agentX, targetY - agentY);
-        
-        // Рисуем сцену с поворотом камеры
-        tempCtx.translate(42, 42);
-        tempCtx.rotate(-angle);
-        tempCtx.translate(-42, -42);
-        
-        // Рисуем упрощенную сцену
-        tempCtx.fillStyle = '#050510';
-        tempCtx.fillRect(0, 0, 84, 84);
-        
-        // Препятствия (упрощенно)
-        tempCtx.fillStyle = '#2a2a40';
-        obstacles.forEach(obs => {
-            const sx = (obs.x - agentX) / 10 + 42;
-            const sy = (obs.y - agentY) / 10 + 42;
-            const sw = obs.w / 10;
-            const sh = obs.h / 10;
-            if (sx > -20 && sx < 104 && sy > -20 && sy < 104) {
-                tempCtx.fillRect(sx - sw/2, sy - sh/2, sw, sh);
-            }
-        });
-        
-        // Враг (красный)
-        const ex = (targetX - agentX) / 10 + 42;
-        const ey = (targetY - agentY) / 10 + 42;
-        if (ex > 0 && ex < 84 && ey > 0 && ey < 84) {
-            tempCtx.fillStyle = '#ff0055';
-            tempCtx.fillRect(ex - 4, ey - 4, 8, 8);
-        }
-        
-        // Сам агент (синий) - в центре
-        tempCtx.fillStyle = '#00f2ff';
-        tempCtx.fillRect(38, 38, 8, 8);
-        
-    } else {
-        // Вариант 2: Если vision выключен - просто черный экран
-        tempCtx.fillStyle = '#000';
-        tempCtx.fillRect(0, 0, 84, 84);
-    }
-    
-    return tempCtx.getImageData(0, 0, 84, 84);
-}
-
-// ============================================================================
-// GAME INITIALIZATION
-// ============================================================================
-function initGame() {
-    blue = { 
-        x: 200, y: 300, vx: 0, vy: 0, 
-        hp: 100, maxHp: 100, 
-        size: 40, 
-        damageDealt: 0, damageTaken: 0 
-    };
-    red = { 
-        x: 600, y: 300, vx: 0, vy: 0, 
-        hp: 100, maxHp: 100, 
-        size: 40, 
-        damageDealt: 0, damageTaken: 0 
-    };
-
-    obstacles = [
-        { x: 400, y: 150, w: 200, h: 20 },
-        { x: 400, y: 450, w: 200, h: 20 },
-        { x: 250, y: 300, w: 20, h: 200 },
-        { x: 550, y: 300, w: 20, h: 200 }
-    ];
-
-    episode++;
-    blueReward = 0;
-    redReward = 0;
-    blueDamage = 0;
-    redDamage = 0;
-
-    updateUI();
+    log('🔧 Worker initialized', 'info');
 }
 
 // ============================================================================
@@ -267,7 +178,7 @@ function initGame() {
 function handleWorkerReady(data) {
     document.getElementById('workerState').innerText = 'READY';
     document.getElementById('workerStatus').className = 'worker-status worker-ready';
-    log('✅ Worker v' + (data ? data.version : '18.0') + ' ready with CNN Vision', 'success');
+    log('✅ Worker v' + (data ? data.version : '18.1') + ' ready with Learning Evolution', 'success');
 }
 
 function handleInit(data) {
@@ -297,7 +208,10 @@ function handleActions(data) {
 
 function handleTrainComplete(data) {
     if (data) {
-        if (data.generation !== undefined) document.getElementById('gen').innerText = data.generation;
+        if (data.generation !== undefined) {
+            document.getElementById('gen').innerText = data.generation;
+            generation = data.generation;
+        }
         if (data.blueWins !== undefined) {
             document.getElementById('blueWins').innerText = data.blueWins;
             blueWins = data.blueWins;
@@ -306,6 +220,7 @@ function handleTrainComplete(data) {
             document.getElementById('redWins').innerText = data.redWins;
             redWins = data.redWins;
         }
+        log(`🧬 Generation ${data.generation} | ${data.winner} wins and evolves!`, 'train');
     }
 }
 
@@ -313,7 +228,7 @@ function handleReverseResult(data) {
     if (data && data.success) {
         totalReverse++;
         document.getElementById('reversed').innerText = totalReverse;
-        log(`🔄 Reversed ${data.steps} steps | Hindsight: B=${data.h1} R=${data.h2}`, 'train');
+        log(`🔄 Reversed ${data.steps} steps | Hindsight learning`, 'train');
     }
 }
 
@@ -336,12 +251,14 @@ function handleStats(data) {
 
     if (data.agent1) {
         document.getElementById('blueStats').innerText = 
-            'DMG: ' + (data.agent1.damageDealt || 0).toFixed(0) + 
+            'Wins: ' + (data.agent1.wins || 0) + 
+            ' | Mut: ' + (data.agent1.mutations || 0) +
             ' | Hindsight: ' + (data.agent1.hindsightCount || 0);
     }
     if (data.agent2) {
         document.getElementById('redStats').innerText = 
-            'DMG: ' + (data.agent2.damageDealt || 0).toFixed(0) + 
+            'Wins: ' + (data.agent2.wins || 0) + 
+            ' | Mut: ' + (data.agent2.mutations || 0) +
             ' | Hindsight: ' + (data.agent2.hindsightCount || 0);
     }
 }
@@ -362,9 +279,11 @@ function handleWeightsExport(data) {
     if (!data || !data.blue || !data.red) return;
 
     const exportData = {
-        version: '18.0',
+        version: '18.1',
         timestamp: Date.now(),
-        vision: visionEnabled,
+        generation: generation,
+        blueWins: blueWins,
+        redWins: redWins,
         blue: data.blue,
         red: data.red
     };
@@ -373,30 +292,116 @@ function handleWeightsExport(data) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'hc_weights_v18_' + Date.now() + '.json';
+    a.download = 'hc_weights_gen' + generation + '_' + Date.now() + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    log('💾 Weights exported (v18.0)', 'success');
+    log('💾 Weights exported (Gen ' + generation + ')', 'success');
 }
 
 // ============================================================================
-// PHYSICS & ACTIONS (без изменений)
+// GAME INITIALIZATION
+// ============================================================================
+function initGame() {
+    blue = { 
+        x: 200, y: 300, vx: 0, vy: 0, 
+        hp: 100, maxHp: 100, 
+        size: 40, 
+        damageDealt: 0, damageTaken: 0,
+        wins: 0
+    };
+    red = { 
+        x: 600, y: 300, vx: 0, vy: 0, 
+        hp: 100, maxHp: 100, 
+        size: 40, 
+        damageDealt: 0, damageTaken: 0,
+        wins: 0
+    };
+
+    obstacles = [
+        { x: 400, y: 150, w: 200, h: 20 },
+        { x: 400, y: 450, w: 200, h: 20 },
+        { x: 250, y: 300, w: 20, h: 200 },
+        { x: 550, y: 300, w: 20, h: 200 }
+    ];
+
+    episode++;
+    blueReward = 0;
+    redReward = 0;
+    blueDamage = 0;
+    redDamage = 0;
+
+    updateUI();
+}
+
+// ============================================================================
+// CANVAS DATA CAPTURE
+// ============================================================================
+function captureCanvasForAgent(agentX, agentY, targetX, targetY) {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 84;
+    tempCanvas.height = 84;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (visionEnabled) {
+        const angle = Math.atan2(targetY - agentY, targetX - agentX);
+        
+        tempCtx.translate(42, 42);
+        tempCtx.rotate(-angle);
+        tempCtx.translate(-42, -42);
+        
+        tempCtx.fillStyle = '#050510';
+        tempCtx.fillRect(0, 0, 84, 84);
+        
+        tempCtx.fillStyle = '#2a2a40';
+        obstacles.forEach(obs => {
+            const sx = (obs.x - agentX) / 10 + 42;
+            const sy = (obs.y - agentY) / 10 + 42;
+            const sw = obs.w / 10;
+            const sh = obs.h / 10;
+            if (sx > -20 && sx < 104 && sy > -20 && sy < 104) {
+                tempCtx.fillRect(sx - sw/2, sy - sh/2, sw, sh);
+            }
+        });
+        
+        const ex = (targetX - agentX) / 10 + 42;
+        const ey = (targetY - agentY) / 10 + 42;
+        if (ex > 0 && ex < 84 && ey > 0 && ey < 84) {
+            tempCtx.fillStyle = agentX === blue.x ? '#ff0055' : '#00f2ff';
+            tempCtx.fillRect(ex - 4, ey - 4, 8, 8);
+        }
+        
+        tempCtx.fillStyle = agentX === blue.x ? '#00f2ff' : '#ff0055';
+        tempCtx.fillRect(38, 38, 8, 8);
+        
+    } else {
+        tempCtx.fillStyle = '#000';
+        tempCtx.fillRect(0, 0, 84, 84);
+    }
+    
+    return tempCtx.getImageData(0, 0, 84, 84);
+}
+
+// ============================================================================
+// PHYSICS & ACTIONS (оригинальные скорости сохранены!)
 // ============================================================================
 function applyActions(actions) {
     if (!running || !actions) return;
 
     const { blue: a1, red: a2 } = actions;
 
+    // ОРИГИНАЛЬНЫЕ СКОРОСТИ (как и было)
     const sp1 = 0.4 + a1.aggression * 0.6;
     const sp2 = 0.4 + a2.aggression * 0.6;
+    
     blue.vx += a1.fx * sp1;
     blue.vy += a1.fy * sp1;
     red.vx += a2.fx * sp2;
     red.vy += a2.fy * sp2;
 
+    // ОРИГИНАЛЬНОЕ ТРЕНИЕ
     blue.vx *= 0.90;
     blue.vy *= 0.90;
     red.vx *= 0.90;
@@ -407,7 +412,7 @@ function applyActions(actions) {
     red.x += red.vx;
     red.y += red.vy;
 
-    // Bounds with bounce
+    // Стены с отскоком
     if (blue.x < 20 || blue.x > canvas.width - 20) {
         blue.vx *= -1.5;
         blue.x = Math.max(20, Math.min(canvas.width - 20, blue.x));
@@ -425,21 +430,21 @@ function applyActions(actions) {
         red.y = Math.max(20, Math.min(canvas.height - 20, red.y));
     }
 
-    // Obstacle collision
+    // Препятствия
     for (let obs of obstacles) {
-        if (blue.x > obs.x - obs.w / 2 - 20 && blue.x < obs.x + obs.w / 2 + 20 &&
-            blue.y > obs.y - obs.h / 2 - 20 && blue.y < obs.y + obs.h / 2 + 20) {
+        if (blue.x > obs.x - obs.w/2 - 20 && blue.x < obs.x + obs.w/2 + 20 &&
+            blue.y > obs.y - obs.h/2 - 20 && blue.y < obs.y + obs.h/2 + 20) {
             blue.vx *= -1.5;
             blue.vy *= -1.5;
         }
-        if (red.x > obs.x - obs.w / 2 - 20 && red.x < obs.x + obs.w / 2 + 20 &&
-            red.y > obs.y - obs.h / 2 - 20 && red.y < obs.y + obs.h / 2 + 20) {
+        if (red.x > obs.x - obs.w/2 - 20 && red.x < obs.x + obs.w/2 + 20 &&
+            red.y > obs.y - obs.h/2 - 20 && red.y < obs.y + obs.h/2 + 20) {
             red.vx *= -1.5;
             red.vy *= -1.5;
         }
     }
 
-    // Combat
+    // Бой
     const dist = Math.hypot(blue.x - red.x, blue.y - red.y);
     if (dist < 40) {
         const bSp = Math.hypot(blue.vx, blue.vy);
@@ -466,17 +471,21 @@ function applyActions(actions) {
         red.vy -= Math.sin(ang) * 4;
     }
 
-    // Check death
+    // Проверка смерти с ОБУЧЕНИЕМ
     if (blue.hp <= 0 || red.hp <= 0) {
         const winner = blue.hp > 0 ? 'BLUE' : 'RED';
         if (winner === 'BLUE') blueWins++; else redWins++;
 
-        log('🏆 ' + winner + ' WINS! (DMG: B=' + blue.damageDealt.toFixed(0) + ' R=' + red.damageDealt.toFixed(0) + ')', 'battle');
+        log('🏆 ' + winner + ' WINS! (Gen ' + generation + ')', 'battle');
 
+        // 🧠 КЛЮЧЕВОЕ: ОНЛАЙН ОБУЧЕНИЕ ПРИ СМЕРТИ
         if (training && worker) {
             worker.postMessage({
                 type: 'TRAIN',
-                data: { winner: winner }
+                data: { 
+                    winner: winner,
+                    generation: generation
+                }
             });
         }
 
@@ -580,7 +589,8 @@ function startGame() {
             type: 'START',
             data: {
                 training: training,
-                episode: episode
+                episode: episode,
+                generation: generation
             }
         });
     }
@@ -597,9 +607,20 @@ function requestActions() {
     const input1 = getInput(blue, red);
     const input2 = getInput(red, blue);
     
-    // 📸 ЗАХВАТЫВАЕМ ИЗОБРАЖЕНИЕ ДЛЯ КОМПЬЮТЕРНОГО ЗРЕНИЯ
     const canvasData1 = captureCanvasForAgent(blue.x, blue.y, red.x, red.y);
     const canvasData2 = captureCanvasForAgent(red.x, red.y, blue.x, blue.y);
+
+    const canvas1 = {
+        width: canvasData1.width,
+        height: canvasData1.height,
+        data: Array.from(canvasData1.data)
+    };
+    
+    const canvas2 = {
+        width: canvasData2.width,
+        height: canvasData2.height,
+        data: Array.from(canvasData2.data)
+    };
 
     if (worker) {
         worker.postMessage({
@@ -607,18 +628,11 @@ function requestActions() {
             data: {
                 input1: input1,
                 input2: input2,
-                canvas1: {  // ← КЛЮЧЕВОЕ ДОБАВЛЕНИЕ!
-                    width: canvasData1.width,
-                    height: canvasData1.height,
-                    data: Array.from(canvasData1.data)  // Преобразуем в обычный массив
-                },
-                canvas2: {
-                    width: canvasData2.width,
-                    height: canvasData2.height,
-                    data: Array.from(canvasData2.data)
-                },
+                canvas1: canvas1,
+                canvas2: canvas2,
                 episode: episode,
                 training: training,
+                generation: generation,
                 dist1: dist1,
                 dist2: dist2,
                 damage1: blue.damageDealt,
@@ -640,7 +654,7 @@ function stopGame() {
 
 function toggleTrain() {
     training = !training;
-    log(training ? '🧠 Training ON' : '🧠 Training OFF', 'train');
+    log(training ? '🧠 Training ON - Agents will evolve!' : '🧠 Training OFF', 'train');
 
     if (worker) {
         worker.postMessage({
@@ -672,6 +686,7 @@ function resetGame() {
     running = false;
     gameStarted = false;
     episode = 0;
+    generation = 0;
     blueWins = 0;
     redWins = 0;
     totalReverse = 0;
@@ -679,7 +694,10 @@ function resetGame() {
     redReward = 0;
 
     if (worker) {
-        worker.postMessage({ type: 'RESET' });
+        worker.postMessage({ 
+            type: 'RESET',
+            data: { generation: 0 }
+        });
     }
 
     initGame();
@@ -712,7 +730,11 @@ function importWeights(event) {
                         red: weights.red
                     }
                 });
-                log('📂 Weights imported: ' + file.name, 'success');
+                if (weights.generation) generation = weights.generation;
+                if (weights.blueWins) blueWins = weights.blueWins;
+                if (weights.redWins) redWins = weights.redWins;
+                
+                log('📂 Weights imported: ' + file.name + ' (Gen ' + generation + ')', 'success');
             } else {
                 log('❌ Invalid weights file', 'err');
             }
@@ -725,7 +747,7 @@ function importWeights(event) {
 }
 
 // ============================================================================
-// RAYCASTING (для совместимости, но теперь используется vision)
+// RAYCASTING (оригинальный)
 // ============================================================================
 function raycast(x, y, angle, maxDist) {
     for (let i = 0; i < maxDist; i += 15) {
@@ -749,7 +771,7 @@ function raycast(x, y, angle, maxDist) {
 function getInput(me, enemy) {
     const input = [];
 
-    // Position (normalized)
+    // Position
     input.push(me.x / canvas.width);
     input.push(me.y / canvas.height);
 
@@ -757,34 +779,31 @@ function getInput(me, enemy) {
     input.push(me.vx * 0.5);
     input.push(me.vy * 0.5);
 
-    // Enemy relative position
+    // Enemy relative
     input.push((enemy.x - me.x) / canvas.width);
     input.push((enemy.y - me.y) / canvas.height);
     input.push(enemy.vx * 0.5);
     input.push(enemy.vy * 0.5);
 
-    // Distance to enemy
+    // Distance
     input.push(Math.hypot(enemy.x - me.x, enemy.y - me.y) / canvas.width);
 
     // Health
     input.push(me.hp / me.maxHp);
     input.push(enemy.hp / enemy.maxHp);
 
-    // 32-ray vision (full circle) - теперь это дополнительно к CNN
+    // 32 rays
     for (let i = 0; i < 32; i++) {
         const angle = (i / 32) * Math.PI * 2;
         input.push(raycast(me.x, me.y, angle, 400));
     }
 
-    while (input.length < 32) {
-        input.push(0);
-    }
-
+    while (input.length < 32) input.push(0);
     return input.slice(0, 32);
 }
 
 // ============================================================================
-// REQUEST STATS PERIODICALLY
+// STATS & INIT
 // ============================================================================
 function requestStats() {
     if (worker && gameStarted) {
@@ -793,15 +812,12 @@ function requestStats() {
     setTimeout(requestStats, 1000);
 }
 
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
 window.onload = function() {
     initWorker();
     initGame();
     render();
     requestStats();
-    log('⚡ HC v18.0 Ready with CNN Vision | Press ▶️ START', 'info');
+    log('⚡ HC v18.1 Ready with Learning Evolution | Press ▶️ START', 'info');
     updateUI();
 };
 
