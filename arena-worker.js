@@ -1,12 +1,16 @@
 // ============================================================================
-// HC ARENA WORKER — v17.3 FINAL FIXED
-// dist1/dist2 DECLARED BEFORE USE
+// HC ARENA WORKER — v17.3 COMPLETE PRODUCTION VERSION
+// 338 dim | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
+// dist1/dist2 FIXED — DECLARED BEFORE USE
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
 
+// ============================================================================
+// SEEDED RANDOM
+// ============================================================================
 class SeededRandom {
     constructor(seedStr) {
         let h = 0x811c9dc5;
@@ -22,13 +26,18 @@ class SeededRandom {
     }
 }
 
+// ============================================================================
+// 16-HEAD SELF-ATTENTION
+// ============================================================================
 class SixteenHeadAttention {
     constructor(dim, password) {
         this.dim = dim;
         this.numHeads = 16;
         this.headDim = Math.floor(dim / this.numHeads);
         const rng = new SeededRandom(password + "_ATTENTION_16H");
-        this.W_q = []; this.W_k = []; this.W_v = [];
+        this.W_q = [];
+        this.W_k = [];
+        this.W_v = [];
         for (let h = 0; h < this.numHeads; h++) {
             let Wq = [], Wk = [], Wv = [];
             for (let i = 0; i < this.headDim; i++) {
@@ -38,22 +47,28 @@ class SixteenHeadAttention {
                     rk.push((rng.next() * 2 - 1) * 0.05);
                     rv.push((rng.next() * 2 - 1) * 0.05);
                 }
-                Wq.push(rq); Wk.push(rk); Wv.push(rv);
+                Wq.push(rq);                Wk.push(rk);
+                Wv.push(rv);
             }
-            this.W_q.push(Wq); this.W_k.push(Wk); this.W_v.push(Wv);
+            this.W_q.push(Wq);
+            this.W_k.push(Wk);
+            this.W_v.push(Wv);
         }
     }
     forward(state) {
         let headOutputs = [], attentionScores = [];
         for (let h = 0; h < this.numHeads; h++) {
             let Q = [], K = [], V = [];
-            for (let i = 0; i < this.headDim; i++) {                let qs = 0, ks = 0, vs = 0;
+            for (let i = 0; i < this.headDim; i++) {
+                let qs = 0, ks = 0, vs = 0;
                 for (let j = 0; j < this.dim; j++) {
                     qs += state[j] * this.W_q[h][i][j];
                     ks += state[j] * this.W_k[h][i][j];
                     vs += state[j] * this.W_v[h][i][j];
                 }
-                Q.push(tanh(qs)); K.push(tanh(ks)); V.push(tanh(vs));
+                Q.push(tanh(qs));
+                K.push(tanh(ks));
+                V.push(tanh(vs));
             }
             let score = 0;
             for (let i = 0; i < this.headDim; i++) score += Q[i] * K[i];
@@ -66,6 +81,9 @@ class SixteenHeadAttention {
     }
 }
 
+// ============================================================================
+// REVERSIBLE COUPLING BLOCK (INN)
+// ============================================================================
 class ReversibleBlock {
     constructor(dim, password, blockId, memoryRatio = 0.3) {
         this.dim = dim;
@@ -74,15 +92,16 @@ class ReversibleBlock {
         this.blockId = blockId;
         this.attention = new SixteenHeadAttention(this.workingDim, password);
         const rng = new SeededRandom(password + "_BLOCK_" + blockId);
-        this.W_f = []; this.W_g = [];
+        this.W_f = [];
+        this.W_g = [];
         const half = Math.floor(this.workingDim / 2);
         for (let i = 0; i < half; i++) {
-            let rf = [], rg = [];
-            for (let j = 0; j < half; j++) {
+            let rf = [], rg = [];            for (let j = 0; j < half; j++) {
                 rf.push((rng.next() * 2 - 1) * 0.1);
                 rg.push((rng.next() * 2 - 1) * 0.1);
             }
-            this.W_f.push(rf); this.W_g.push(rg);
+            this.W_f.push(rf);
+            this.W_g.push(rg);
         }
         this.W_memory = [];
         for (let i = 0; i < this.memoryDim; i++) {
@@ -96,7 +115,8 @@ class ReversibleBlock {
         const memory = state.slice(this.workingDim);
         const attn = this.attention.forward(working);
         const half = Math.floor(this.workingDim / 2);
-        const x1 = working.slice(0, half);        const x2 = working.slice(half);
+        const x1 = working.slice(0, half);
+        const x2 = working.slice(half);
         let f_out = [];
         for (let i = 0; i < half; i++) {
             let sum = 0;
@@ -125,8 +145,7 @@ class ReversibleBlock {
     inverse(state, step) {
         const working = state.slice(0, this.workingDim);
         const memory = state.slice(this.workingDim);
-        const attn = this.attention.forward(working);
-        const half = Math.floor(this.workingDim / 2);
+        const attn = this.attention.forward(working);        const half = Math.floor(this.workingDim / 2);
         const y1 = working.slice(0, half);
         const y2 = working.slice(half);
         let g_out = [];
@@ -145,7 +164,8 @@ class ReversibleBlock {
             }
             f_out.push(tanh(sum));
         }
-        const x1 = y1.map((v, i) => v - f_out[i]);        let oldMem = [];
+        const x1 = y1.map((v, i) => v - f_out[i]);
+        let oldMem = [];
         for (let i = 0; i < this.memoryDim; i++) {
             let sum = 0;
             for (let j = 0; j < 16; j++) sum += attn.scores[j] * this.W_memory[i][j];
@@ -155,6 +175,9 @@ class ReversibleBlock {
     }
 }
 
+// ============================================================================
+// HC AGENT (Full v17.3)
+// ============================================================================
 class HCAgent {
     constructor(password, id) {
         this.password = password + id;
@@ -171,8 +194,7 @@ class HCAgent {
         }
         const rng = new SeededRandom(this.password + "_INPUT");
         this.W_input = [];
-        for (let i = 0; i < this.workingDim; i++) {
-            let row = [];
+        for (let i = 0; i < this.workingDim; i++) {            let row = [];
             for (let j = 0; j < 32; j++) row.push((rng.next() * 2 - 1) * 0.3);
             this.W_input.push(row);
         }
@@ -194,7 +216,8 @@ class HCAgent {
         this.learningRate = 0.005;
         this.explorationNoise = 0.15;
         this.episodeWithoutImprovement = 0;
-    }    encodeInput(input) {
+    }
+    encodeInput(input) {
         if (!input || !Array.isArray(input)) input = new Array(32).fill(0);
         let state = [];
         for (let i = 0; i < this.workingDim; i++) {
@@ -220,8 +243,7 @@ class HCAgent {
     }
     inverse(state, step) {
         let current = state.slice();
-        for (let b = this.blocks - 1; b >= 0; b--) {
-            let result = this.blocks_data[b].inverse(current, step);
+        for (let b = this.blocks - 1; b >= 0; b--) {            let result = this.blocks_data[b].inverse(current, step);
             current = result.state;
         }
         return current;
@@ -243,7 +265,8 @@ class HCAgent {
         const totalReward = prevReward + stuckPenalty;
         if (this.trajectory.length > 0 && totalReward !== 0) {
             const prev = this.trajectory[this.trajectory.length - 1];
-            if (totalReward < -0.3 && prev.action) this.hindsightAdjust(prev.input, prev.action, totalReward);        }
+            if (totalReward < -0.3 && prev.action) this.hindsightAdjust(prev.input, prev.action, totalReward);
+        }
         this.trajectory.push({ state: state.slice(), input: input.slice(), step: step, time: Date.now(), reward: 0, action: null });
         if (this.trajectory.length > this.maxTrajectory) this.trajectory.shift();
         let result = this.forward(state, step);
@@ -269,8 +292,7 @@ class HCAgent {
     }
     hindsightAdjust(prevInput, prevAction, reward) {
         if (!prevAction) return;
-        this.hindsightCount++;
-        const lr = this.learningRate * Math.abs(reward);
+        this.hindsightCount++;        const lr = this.learningRate * Math.abs(reward);
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < this.workingDim && j < 50; j++) {
                 let adjustment = 0;
@@ -292,7 +314,8 @@ class HCAgent {
     }
     reverse(steps) {
         if (this.trajectory.length <= steps) return null;
-        if (steps > this.maxReverseSteps) steps = this.maxReverseSteps;        const start = this.trajectory.length - steps;
+        if (steps > this.maxReverseSteps) steps = this.maxReverseSteps;
+        const start = this.trajectory.length - steps;
         let state = this.trajectory[this.trajectory.length - 1].state.slice();
         for (let i = this.trajectory.length - 1; i >= start; i--) state = this.inverse(state, this.trajectory[i].step);
         this.trajectory.splice(-steps);
@@ -318,8 +341,7 @@ class HCAgent {
         }
         this.mutations++;
     }
-    getWeights() {
-        return { input: deepClone(this.W_input), output: deepClone(this.W_output), metadata: { mutations: this.mutations, wins: this.wins, hindsightCount: this.hindsightCount, learningRate: this.learningRate, explorationNoise: this.explorationNoise } };
+    getWeights() {        return { input: deepClone(this.W_input), output: deepClone(this.W_output), metadata: { mutations: this.mutations, wins: this.wins, hindsightCount: this.hindsightCount, learningRate: this.learningRate, explorationNoise: this.explorationNoise } };
     }
     setWeights(weights) {
         if (!weights || !weights.input || !weights.output) return false;
@@ -341,7 +363,8 @@ class HCAgent {
         else this.episodeWithoutImprovement = 0;
         if (this.episodeWithoutImprovement > 10) {
             this.explorationNoise = Math.max(0.01, this.explorationNoise * 0.95);
-            this.episodeWithoutImprovement = 0;        }
+            this.episodeWithoutImprovement = 0;
+        }
     }
     recordDamage(dealt, received) {
         this.damageDealt += dealt;
@@ -362,11 +385,12 @@ class HCAgent {
     }
 }
 
+// ============================================================================
 // WORKER STATE
+// ============================================================================
 let hc1 = null, hc2 = null;
 let training = false, episode = 0, generation = 0;
-let blueWins = 0, redWins = 0;
-let prevDist1 = 500, prevDist2 = 500;
+let blueWins = 0, redWins = 0;let prevDist1 = 500, prevDist2 = 500;
 let workerStartTime = Date.now();
 
 function sendLog(msg, type = 'info') {
@@ -374,7 +398,7 @@ function sendLog(msg, type = 'info') {
 }
 
 // ============================================================================
-// MESSAGE HANDLER — dist1/dist2 DECLARED AT TOP OF STEP CASE
+// MESSAGE HANDLER — dist1/dist2 DECLARED BEFORE USE
 // ============================================================================
 self.onmessage = function(e) {
     const msgType = e.data ? e.data.type : null;
@@ -384,17 +408,18 @@ self.onmessage = function(e) {
         if (msgType === 'START') {
             training = (data && data.training) ? data.training : false;
             episode = (data && data.episode) ? data.episode : 0;
-            generation = 0; blueWins = 0; redWins = 0;
-            prevDist1 = 500; prevDist2 = 500;
+            generation = 0;
+            blueWins = 0;
+            redWins = 0;
+            prevDist1 = 500;
+            prevDist2 = 500;
             workerStartTime = Date.now();
             hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
             hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
             sendLog('HC v17.3 initialized', 'success');
-            self.postMessage({ type: 'INIT', data: { status: 'ready', dim: 338, blocks: 12, heads: 16, memory: 102, timestamp: Date.now() } });        }
+            self.postMessage({ type: 'INIT', data: { status: 'ready', dim: 338, blocks: 12, heads: 16, memory: 102, timestamp: Date.now() } });
+        }
 
-        // ================================================================
-        // STEP HANDLER — dist1/dist2 DECLARED FIRST
-        // ================================================================
         if (msgType === 'STEP') {
             if (!hc1 || !hc2) {
                 self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } });
@@ -405,23 +430,22 @@ self.onmessage = function(e) {
                 return;
             }
 
-            // ✅ DECLARED FIRST — BEFORE ANY USE
-            let dist1 = 500;
-            let dist2 = 500;
-            let damage1 = 0;
-            let damage2 = 0;
-            let pos1 = { x: 0, y: 0 };
-            let pos2 = { x: 0, y: 0 };
+            // DECLARED FIRST — BEFORE ANY USE
+            var dist1 = 500;
+            var dist2 = 500;
+            var damage1 = 0;
+            var damage2 = 0;
+            var pos1 = { x: 0, y: 0 };
+            var pos2 = { x: 0, y: 0 };
 
-            // ✅ THEN ASSIGNED
-            if (data.dist1 !== undefined && typeof data.dist1 === 'number') dist1 = data.dist1;
-            if (data.dist2 !== undefined && typeof data.dist2 === 'number') dist2 = data.dist2;
+            // THEN ASSIGNED
+            if (data.dist1 !== undefined && typeof data.dist1 === 'number') dist1 = data.dist1;            if (data.dist2 !== undefined && typeof data.dist2 === 'number') dist2 = data.dist2;
             if (data.damage1 !== undefined && typeof data.damage1 === 'number') damage1 = data.damage1;
             if (data.damage2 !== undefined && typeof data.damage2 === 'number') damage2 = data.damage2;
             if (data.pos1 && typeof data.pos1 === 'object') pos1 = data.pos1;
             if (data.pos2 && typeof data.pos2 === 'object') pos2 = data.pos2;
 
-            // ✅ THEN USED
+            // THEN USED
             const reward1 = (prevDist1 - dist1) * 0.01;
             const reward2 = (prevDist2 - dist2) * 0.01;
             prevDist1 = dist1;
@@ -439,7 +463,8 @@ self.onmessage = function(e) {
             hc2.recordDamage(damage2, damage1);
 
             self.postMessage({ type: 'ACTIONS', data: { blue: { fx: action1.fx, fy: action1.fy, aggression: action1.aggression, dodge: action1.dodge }, red: { fx: action2.fx, fy: action2.fy, aggression: action2.aggression, dodge: action2.dodge } } });
-            self.postMessage({ type: 'REWARD', data: { blue: reward1 + damageReward1, red: reward2 + damageReward2, timestamp: Date.now() } });        }
+            self.postMessage({ type: 'REWARD', data: { blue: reward1 + damageReward1, red: reward2 + damageReward2, timestamp: Date.now() } });
+        }
 
         if (msgType === 'TRAIN') {
             if (!training || !hc1 || !hc2) return;
@@ -458,10 +483,12 @@ self.onmessage = function(e) {
         }
 
         if (msgType === 'REVERSE') {
-            if (!hc1 || !hc2) { self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } }); return; }
+            if (!hc1 || !hc2) {
+                self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } });
+                return;
+            }
             const steps = (data && data.steps) ? data.steps : 5;
-            const r1 = hc1.reverse(steps);
-            const r2 = hc2.reverse(steps);
+            const r1 = hc1.reverse(steps);            const r2 = hc2.reverse(steps);
             sendLog('Reversed ' + steps + ' steps', 'train');
             self.postMessage({ type: 'REVERSE_RESULT', data: { steps: steps, trajectoryLength: r1 ? r1.trajectoryLength : 0, success: r1 !== null && r2 !== null, h1: hc1.hindsightCount, h2: hc2.hindsightCount, timestamp: Date.now() } });
         }
@@ -478,28 +505,39 @@ self.onmessage = function(e) {
         if (msgType === 'RESET') {
             if (hc1) hc1.reset();
             if (hc2) hc2.reset();
-            hc1 = null; hc2 = null;
-            training = false; episode = 0; generation = 0;
-            blueWins = 0; redWins = 0;
-            prevDist1 = 500; prevDist2 = 500;
+            hc1 = null;
+            hc2 = null;
+            training = false;
+            episode = 0;
+            generation = 0;
+            blueWins = 0;
+            redWins = 0;
+            prevDist1 = 500;
+            prevDist2 = 500;
             workerStartTime = Date.now();
             sendLog('Worker reset', 'info');
             self.postMessage({ type: 'INIT', data: { status: 'reset', timestamp: Date.now() } });
         }
 
         if (msgType === 'EXPORT_WEIGHTS') {
-            if (!hc1 || !hc2) { self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } }); return; }            self.postMessage({ type: 'WEIGHTS_EXPORT', data: { blue: hc1.getWeights(), red: hc2.getWeights(), timestamp: Date.now() } });
+            if (!hc1 || !hc2) {
+                self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized', timestamp: Date.now() } });
+                return;
+            }
+            self.postMessage({ type: 'WEIGHTS_EXPORT', data: { blue: hc1.getWeights(), red: hc2.getWeights(), timestamp: Date.now() } });
             sendLog('Weights exported', 'info');
         }
 
         if (msgType === 'IMPORT_WEIGHTS') {
-            if (!data || !data.blue || !data.red) { self.postMessage({ type: 'ERR', data: { msg: 'Invalid weights data', timestamp: Date.now() } }); return; }
+            if (!data || !data.blue || !data.red) {
+                self.postMessage({ type: 'ERR', data: { msg: 'Invalid weights data', timestamp: Date.now() } });
+                return;
+            }
             hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
             hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
             hc1.setWeights(data.blue);
             hc2.setWeights(data.red);
-            sendLog('Weights imported', 'success');
-            self.postMessage({ type: 'INIT', data: { status: 'loaded', timestamp: Date.now() } });
+            sendLog('Weights imported', 'success');            self.postMessage({ type: 'INIT', data: { status: 'loaded', timestamp: Date.now() } });
         }
 
     } catch (err) {
