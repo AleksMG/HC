@@ -3,613 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ HC Arena — Neural Network Battles</title>
+    <title>⚡ HC Arena v17.3 — Web Worker</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
-        body { 
-            background: #0a0a15; 
-            color: #e0e0e0; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 20px;
-            min-height: 100vh;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; }
+        body { background: #0a0a15; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         h1 { color: #00f2ff; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0,242,255,0.5); }
-        .subtitle { color: #666; margin-bottom: 20px; }
-
-        .container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-
-        .panel {
-            background: #121225;
-            border: 1px solid #2a2a40;
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        #arena { 
-            border: 2px solid #00f2ff; 
-            border-radius: 8px; 
-            background: #050510;
-        }
-
-        .stats { min-width: 300px; }
-        .stat-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 8px 0; 
-            border-bottom: 1px solid #2a2a40;
-        }
-        .stat-label { color: #888; }
-        .stat-value { color: #00f2ff; font-weight: bold; }
-        .stat-value.ok { color: #00ff9d; }
-        .stat-value.err { color: #ff0055; }
-
-        .controls { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 15px; 
-            flex-wrap: wrap;
-        }
-
-        button {
-            flex: 1;
-            min-width: 120px;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.3s;
-        }
-
+        .badge { background: linear-gradient(90deg, #00f2ff, #00ff9d); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
+        #arena { border: 2px solid #00f2ff; background: #050510; border-radius: 8px; }
+        .controls { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .btn-start { background: #00f2ff; color: #000; }
-        .btn-start:hover { background: #fff; }
+        .btn-stop { background: #ff6600; color: #fff; }
         .btn-train { background: #ff0055; color: #fff; }
-        .btn-train:hover { background: #ff5588; }
+        .btn-reverse { background: #00ff9d; color: #000; }
         .btn-reset { background: #333; color: #fff; }
-
-        .log {
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.75rem;
-        }
-
-        .log-entry { margin-bottom: 5px; }
-        .log-info { color: #00f2ff; }
-        .log-train { color: #00ff9d; }
-        .log-battle { color: #ffaa00; }
-
-        .agent-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(0,242,255,0.05);
-            border-radius: 6px;
-        }
-
-        .health-bar {
-            height: 8px;
-            background: #333;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-
-        .health-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff0055, #00ff9d);
-            transition: width 0.3s;
-        }
+        .stats { margin-top: 15px; color: #888; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .stat { background: #121225; padding: 8px 15px; border-radius: 6px; border: 1px solid #2a2a40; }
+        .stat-value { color: #00f2ff; font-weight: bold; }
+        .log { margin-top: 15px; background: #000; border: 1px solid #333; padding: 10px; max-height: 150px; overflow-y: auto; font-size: 0.75rem; width: 800px; border-radius: 6px; }
+        .health { margin-top: 10px; display: flex; gap: 40px; }
+        .hp-box { width: 200px; }
+        .bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+        .fill { height: 100%; transition: width 0.3s; }
+        .blue { background: linear-gradient(90deg, #0066ff, #00f2ff); }
+        .red { background: linear-gradient(90deg, #ff0055, #ff6688); }
+        .arch-info { margin-top: 15px; background: #121225; padding: 15px; border-radius: 8px; border: 1px solid #2a2a40; max-width: 800px; font-size: 0.8rem; }
+        .arch-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #2a2a40; }
+        .arch-row:last-child { border-bottom: none; }
+        .worker-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .worker-ok { background: #00ff9d; box-shadow: 0 0 10px #00ff9d; }
+        .worker-err { background: #ff0055; }
+        .disabled { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
 <body>
-    <h1>⚡ HC ARENA</h1>
-    <p class="subtitle">Neural Network vs Neural Network | Reversible AI Battles</p>
-
-    <div class="container">
-        <div class="panel">
-            <canvas id="arena" width="800" height="600"></canvas>
+    <h1>⚡ HC ARENA v17.3</h1>
+    <div class="badge">🔄 Web Worker | 338 dim | 16-Head | 12 Reversible Blocks</div>
+    
+    <canvas id="arena" width="800" height="600"></canvas>
+    
+    <div class="health">
+        <div class="hp-box">
+            <div style="color:#00f2ff">🟦 BLUE AGENT</div>
+            <div class="bar"><div class="fill blue" id="blueBar" style="width:100%"></div></div>
+            <div style="font-size:0.75rem;color:#666;margin-top:5px;">DMG: <span id="blueDmg">0</span></div>
         </div>
-
-        <div class="panel stats">
-            <h3 style="color: #00f2ff; margin-bottom: 15px;">📊 BATTLE STATS</h3>
-            
-            <div class="stat-row">
-                <span class="stat-label">Generation:</span>
-                <span class="stat-value" id="statGen">0</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Episode:</span>
-                <span class="stat-value" id="statEp">0</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Time:</span>
-                <span class="stat-value" id="statTime">0s</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">HC Blocks:</span>
-                <span class="stat-value">12</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Attention:</span>
-                <span class="stat-value">16 heads</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">State Dim:</span>
-                <span class="stat-value">338</span>
-            </div>
-
-            <div class="agent-info">
-                <div style="display:flex;justify-content:space-between;">
-                    <span style="color:#00f2ff;">🟦 BLUE AGENT</span>
-                    <span class="stat-value" id="blueHealth">100%</span>
-                </div>
-                <div class="health-bar">
-                    <div class="health-fill" id="blueHealthBar" style="width: 100%;"></div>
-                </div>
-            </div>
-
-            <div class="agent-info">
-                <div style="display:flex;justify-content:space-between;">
-                    <span style="color:#ff0055;">🟥 RED AGENT</span>
-                    <span class="stat-value" id="redHealth">100%</span>
-                </div>
-                <div class="health-bar">
-                    <div class="health-fill" id="redHealthBar" style="width: 100%;"></div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <button class="btn-start" onclick="togglePause()">⏯️ Pause</button>
-                <button class="btn-train" onclick="toggleTrain()">🧠 Train</button>
-                <button class="btn-reset" onclick="resetBattle()">↺ Reset</button>
-            </div>
-
-            <div class="log" id="log"></div>
+        <div class="hp-box">
+            <div style="color:#ff0055">🟥 RED AGENT</div>
+            <div class="bar"><div class="fill red" id="redBar" style="width:100%"></div></div>
+            <div style="font-size:0.75rem;color:#666;margin-top:5px;">DMG: <span id="redDmg">0</span></div>
         </div>
     </div>
+    
+    <div class="controls">
+        <button class="btn-start" id="btnStart" onclick="startGame()">▶️ START</button>
+        <button class="btn-stop" id="btnStop" onclick="stopGame()" disabled>⏹️ STOP</button>
+        <button class="btn-train" id="btnTrain" onclick="toggleTrain()">🧠 Train</button>
+        <button class="btn-reverse" id="btnReverse" onclick="doReverse()">🔄 Reverse</button>
+        <button class="btn-reset" id="btnReset" onclick="resetGame()">↺ Reset</button>
+    </div>
+    
+    <div class="stats">
+        <span class="stat"><span class="worker-status worker-ok" id="workerStatus"></span>Worker: <span class="stat-value" id="workerState">READY</span></span>
+        <span class="stat">Gen: <span class="stat-value" id="gen">0</span></span>
+        <span class="stat">Episode: <span class="stat-value" id="ep">0</span></span>
+        <span class="stat">Blue: <span class="stat-value" id="blueWins">0</span></span>
+        <span class="stat">Red: <span class="stat-value" id="redWins">0</span></span>
+        <span class="stat">Reversed: <span class="stat-value" id="reversed">0</span></span>
+        <span class="stat">FPS: <span class="stat-value" id="fps">0</span></span>
+    </div>
+    
+    <div class="arch-info">
+        <div style="color:#00f2ff;font-weight:bold;margin-bottom:10px;">🏗️ HC ARCHITECTURE (per agent)</div>
+        <div class="arch-row"><span>State Dimensions:</span><span style="color:#00ff9d">338</span></div>
+        <div class="arch-row"><span>Working State:</span><span style="color:#00ff9d">236 dim (70%)</span></div>
+        <div class="arch-row"><span>Memory Channel:</span><span style="color:#00ff9d">102 dim (30%)</span></div>
+        <div class="arch-row"><span>Attention Heads:</span><span style="color:#00ff9d">16</span></div>
+        <div class="arch-row"><span>Reversible Blocks:</span><span style="color:#00ff9d">12 (Coupling Layers)</span></div>
+        <div class="arch-row"><span>Processing:</span><span style="color:#00ff9d">Web Worker (separate thread)</span></div>
+    </div>
+    
+    <div class="log" id="log"></div>
 
 <script>
-/**
- * HC ARENA — NEURAL NETWORK BATTLES
- * 
- * Square agents controlled by HC Engine (v17.3)
- * Matter.js physics + Raycasting + Self-play learning
- */
-
-// ============ MATTER.JS SETUP ============
-const Matter = window.Matter;
-const Engine = Matter.Engine,
-      Render = Matter.Render,
-      Runner = Matter.Runner,
-      Bodies = Matter.Bodies,
-      Body = Matter.Body,
-      Composite = Matter.Composite,
-      Events = Matter.Events,
-      Vector = Matter.Vector;
-
-// ============ HC ENGINE (v17.3 simplified) ============
-const tanh = x => Math.tanh(x);
-const mod = (n, m) => ((n % m) + m) % m;
-
-class SeededRandom {
-    constructor(seedStr) {
-        let h = 0x811c9dc5;
-        for(let i=0; i<seedStr.length; i++) {
-            h ^= seedStr.charCodeAt(i);
-            h = Math.imul(h, 0x01000193);
-        }
-        this.seed = h >>> 0;
-    }
-    next() {
-        this.seed = (this.seed * 1664525 + 1013904223) >>> 0;
-        return this.seed / 0xFFFFFFFF;
-    }
-    nextInt(max) { return Math.floor(this.next() * max); }
-}
-
-class HCAgent {
-    constructor(password, id) {
-        this.id = id;
-        this.dim = 338;
-        this.blocks = 12;
-        this.password = password;
-        
-        // Initialize weights
-        const rng = new SeededRandom(password + id);
-        this.W_input = [];
-        for(let i=0; i<this.dim; i++) {
-            let row = [];
-            for(let j=0; j<20; j++) {
-                row.push((rng.next() * 2 - 1) * 0.3);
-            }
-            this.W_input.push(row);
-        }
-        
-        this.blocks_W = [];
-        for(let b=0; b<this.blocks; b++) {
-            let W_f = [], W_g = [];
-            const half = Math.floor(this.dim / 2);
-            for(let i=0; i<half; i++) {
-                let row_f = [], row_g = [];
-                for(let j=0; j<half; j++) {
-                    row_f.push((rng.next() * 2 - 1) * 0.1);
-                    row_g.push((rng.next() * 2 - 1) * 0.1);
-                }
-                W_f.push(row_f);
-                W_g.push(row_g);
-            }
-            this.blocks_W.push({ W_f, W_g });
-        }
-        
-        this.memory = new Array(102).fill(0);
-        this.step = 0;
-    }
-    
-    getState(input) {
-        let state = [];
-        for(let i=0; i<this.dim; i++) {
-            let sum = 0;
-            for(let j=0; j<input.length; j++) {
-                sum += input[j] * this.W_input[i][j];
-            }
-            state.push(tanh(sum));
-        }
-        return state;
-    }
-    
-    forward(state) {
-        let current = state.slice();
-        const half = Math.floor(this.dim / 2);
-        
-        for(let b=0; b<this.blocks; b++) {
-            const { W_f, W_g } = this.blocks_W[b];
-            const x1 = current.slice(0, half);
-            const x2 = current.slice(half);
-            
-            let f_out = [];
-            for(let i=0; i<half; i++) {
-                let sum = 0;
-                for(let j=0; j<half; j++) {
-                    sum += x2[j] * W_f[i][j];
-                }
-                f_out.push(tanh(sum));
-            }
-            
-            const y1 = x1.map((v, i) => v + f_out[i]);
-            
-            let g_out = [];
-            for(let i=0; i<half; i++) {
-                let sum = 0;
-                for(let j=0; j<half; j++) {
-                    sum += y1[j] * W_g[i][j];
-                }
-                g_out.push(tanh(sum));
-            }
-            
-            const y2 = x2.map((v, i) => v + g_out[i]);
-            current = y1.concat(y2);
-        }
-        
-        return current;
-    }
-    
-    decide(input) {
-        let state = this.getState(input);
-        state = this.forward(state);
-        
-        // Extract 4 forces from state
-        return {
-            fx: tanh(state[0]),
-            fy: tanh(state[1]),
-            health: state[2],
-            confidence: Math.abs(state[3])
-        };
-    }
-    
-    mutate(rate=0.1) {
-        const rng = new SeededRandom(this.password + this.id + Date.now());
-        for(let i=0; i<this.W_input.length; i++) {
-            for(let j=0; j<this.W_input[i].length; j++) {
-                if(rng.next() < rate) {
-                    this.W_input[i][j] += (rng.next() * 2 - 1) * 0.5;
-                }
-            }
-        }
-    }
-}
-
-// ============ ARENA SETUP ============
 const canvas = document.getElementById('arena');
 const ctx = canvas.getContext('2d');
 
-const engine = Engine.create();
-engine.world.gravity.y = 0; // Top-down, no gravity
+let blue, red, obstacles;
+let running = false, training = false, gameStarted = false;
+let generation = 0, episode = 0, blueWins = 0, redWins = 0, totalReverse = 0;
+let worker = null;
+let lastFrameTime = performance.now();
+let frameCount = 0;
+let fps = 0;
 
-let agent1, agent2, obstacles = [];
-let hc1, hc2;
-let running = true;
-let training = false;
-let generation = 0;
-let episode = 0;
-let startTime = Date.now();
-
-// ============ GAME OBJECTS ============
-function createAgent(x, y, color) {
-    return Bodies.rectangle(x, y, 40, 40, {
-        friction: 0.3,
-        restitution: 0.5,
-        frictionAir: 0.05,
-        render: { fillStyle: color }
-    });
+function initWorker() {
+    worker = new Worker('arena-worker.js');
+    
+    worker.onmessage = function(e) {
+        const { type, data } = e.data;
+        
+        if(type === 'AGENT_INIT') {
+            log('✅ Worker: Agents initialized', 'info');
+            document.getElementById('workerState').innerText = 'READY';
+            document.getElementById('workerStatus').className = 'worker-status worker-ok';
+        }
+        
+        if(type === 'ACTIONS') {
+            applyActions(data.actions);
+        }
+        
+        if(type === 'TRAIN_COMPLETE') {
+            generation++;
+            log('🧠 Generation ' + generation + ' complete', 'train');
+            document.getElementById('gen').innerText = generation;
+        }
+        
+        if(type === 'REVERSE_RESULT') {
+            totalReverse++;
+            document.getElementById('reversed').innerText = totalReverse;
+            log('🔄 Reversed ' + data.steps + ' steps | Trajectory: ' + data.trajectoryLength, 'train');
+        }
+        
+        if(type === 'ERROR') {
+            log('❌ Worker Error: ' + data.message, 'err');
+            document.getElementById('workerState').innerText = 'ERROR';
+            document.getElementById('workerStatus').className = 'worker-status worker-err';
+        }
+    };
+    
+    worker.onerror = function(e) {
+        log('❌ Worker Error: ' + e.message, 'err');
+        document.getElementById('workerState').innerText = 'ERROR';
+        document.getElementById('workerStatus').className = 'worker-status worker-err';
+    };
+    
+    log('🔧 Worker initialized', 'info');
 }
 
-function createObstacle(x, y, w, h) {
-    return Bodies.rectangle(x, y, w, h, {
-        isStatic: true,
-        render: { fillStyle: '#2a2a40' }
-    });
-}
-
-function initArena() {
-    Composite.clear(engine.world);
-    engine.events = {};
+function initGame() {
+    blue = { x: 200, y: 300, vx: 0, vy: 0, hp: 100, size: 40, damageDealt: 0 };
+    red = { x: 600, y: 300, vx: 0, vy: 0, hp: 100, size: 40, damageDealt: 0 };
     
-    // Agents
-    agent1 = createAgent(200, 300, '#00f2ff');
-    agent2 = createAgent(600, 300, '#ff0055');
-    
-    // Obstacles
     obstacles = [
-        createObstacle(400, 150, 200, 20),
-        createObstacle(400, 450, 200, 20),
-        createObstacle(250, 300, 20, 200),
-        createObstacle(550, 300, 20, 200)
+        { x: 400, y: 150, w: 200, h: 20 },
+        { x: 400, y: 450, w: 200, h: 20 },
+        { x: 250, y: 300, w: 20, h: 200 },
+        { x: 550, y: 300, w: 20, h: 200 }
     ];
     
-    Composite.add(engine.world, [agent1, agent2, ...obstacles]);
-    
-    // HC Agents
-    hc1 = new HCAgent('ARENA_V1', '_BLUE');
-    hc2 = new HCAgent('ARENA_V1', '_RED');
-    
-    // Health
-    agent1.health = 100;
-    agent2.health = 100;
-    
     episode++;
-    startTime = Date.now();
-    
-    log(`Episode ${episode} started`, 'info');
+    updateUI();
 }
 
-// ============ RAYCASTING ============
-function castRay(from, angle, maxLength) {
-    const step = 10;
-    const steps = maxLength / step;
-    
-    for(let i=0; i<steps; i++) {
-        const x = from.x + Math.cos(angle) * i * step;
-        const y = from.y + Math.sin(angle) * i * step;
-        
-        // Check obstacles
-        for(let obs of obstacles) {
-            const bounds = obs.bounds;
-            if(x >= bounds.min.x && x <= bounds.max.x &&
-               y >= bounds.min.y && y <= bounds.max.y) {
-                return i * step;
-            }
-        }
-        
-        // Check arena bounds
-        if(x < 0 || x > canvas.width || y < 0 || y > canvas.height) {
-            return i * step;
-        }
-    }
-    
-    return maxLength;
-}
-
-function getAgentInput(agent, enemy) {
-    const input = [];
-    
-    // Position (normalized)
-    input.push(agent.position.x / canvas.width);
-    input.push(agent.position.y / canvas.height);
-    
-    // Velocity
-    input.push(agent.velocity.x);
-    input.push(agent.velocity.y);
-    
-    // Enemy relative position
-    input.push((enemy.position.x - agent.position.x) / canvas.width);
-    input.push((enemy.position.y - agent.position.y) / canvas.height);
-    input.push(enemy.velocity.x);
-    input.push(enemy.velocity.y);
-    
-    // Raycasting (8 directions)
-    const angles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 
-                    5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4];
-    for(let angle of angles) {
-        input.push(castRay(agent.position, angle, 300) / 300);
-    }
-    
-    // Health
-    input.push(agent.health / 100);
-    input.push(enemy.health / 100);
-    
-    // Pad to 20 inputs
-    while(input.length < 20) input.push(0);
-    
-    return input;
-}
-
-// ============ GAME LOOP ============
-function update() {
+function applyActions(actions) {
     if(!running) return;
     
-    Engine.update(engine, 1000 / 60);
+    const { blue: a1, red: a2 } = actions;
     
-    // HC decisions
-    const input1 = getAgentInput(agent1, agent2);
-    const input2 = getAgentInput(agent2, agent1);
+    const sp1 = 0.4 + a1.aggression * 0.6;
+    const sp2 = 0.4 + a2.aggression * 0.6;
     
-    const action1 = hc1.decide(input1);
-    const action2 = hc2.decide(input2);
+    blue.vx += a1.fx * sp1;
+    blue.vy += a1.fy * sp1;
+    red.vx += a2.fx * sp2;
+    red.vy += a2.fy * sp2;
     
-    // Apply forces
-    Body.applyForce(agent1, agent1.position, { 
-        x: action1.fx * 0.002, 
-        y: action1.fy * 0.002 
-    });
-    Body.applyForce(agent2, agent2.position, { 
-        x: action2.fx * 0.002, 
-        y: action2.fy * 0.002 
-    });
+    blue.vx *= 0.90;
+    blue.vy *= 0.90;
+    red.vx *= 0.90;
+    red.vy *= 0.90;
     
-    // Collision damage
-    const dist = Vector.magnitude(Vector.sub(agent1.position, agent2.position));
+    blue.x += blue.vx;
+    blue.y += blue.vy;
+    red.x += red.vx;
+    red.y += red.vy;
+    
+    if(blue.x < 20 || blue.x > canvas.width-20) { blue.vx *= -1.5; blue.x = Math.max(20, Math.min(canvas.width-20, blue.x)); }
+    if(blue.y < 20 || blue.y > canvas.height-20) { blue.vy *= -1.5; blue.y = Math.max(20, Math.min(canvas.height-20, blue.y)); }
+    if(red.x < 20 || red.x > canvas.width-20) { red.vx *= -1.5; red.x = Math.max(20, Math.min(canvas.width-20, red.x)); }
+    if(red.y < 20 || red.y > canvas.height-20) { red.vy *= -1.5; red.y = Math.max(20, Math.min(canvas.height-20, red.y)); }
+    
+    for(let obs of obstacles) {
+        if(blue.x > obs.x - obs.w/2 - 20 && blue.x < obs.x + obs.w/2 + 20 &&
+           blue.y > obs.y - obs.h/2 - 20 && blue.y < obs.y + obs.h/2 + 20) {
+            blue.vx *= -1.5; blue.vy *= -1.5;
+        }
+        if(red.x > obs.x - obs.w/2 - 20 && red.x < obs.x + obs.w/2 + 20 &&
+           red.y > obs.y - obs.h/2 - 20 && red.y < obs.y + obs.h/2 + 20) {
+            red.vx *= -1.5; red.vy *= -1.5;
+        }
+    }
+    
+    const dist = Math.hypot(blue.x - red.x, blue.y - red.y);
     if(dist < 40) {
-        agent1.health -= 0.5;
-        agent2.health -= 0.5;
-        
-        if(training) {
-            // Reward for dealing damage
-            hc1.step += 0.1;
-            hc2.step += 0.1;
+        const bSp = Math.hypot(blue.vx, blue.vy);
+        const rSp = Math.hypot(red.vx, red.vy);
+        const tot = bSp + rSp;
+        if(tot > 0) {
+            const bDmg = (rSp / tot) * 10 + 3;
+            const rDmg = (bSp / tot) * 10 + 3;
+            blue.hp -= bDmg;
+            red.hp -= rDmg;
+            blue.damageDealt += rDmg;
+            red.damageDealt += bDmg;
+            document.getElementById('blueDmg').innerText = blue.damageDealt.toFixed(0);
+            document.getElementById('redDmg').innerText = red.damageDealt.toFixed(0);
         }
+        const ang = Math.atan2(blue.y - red.y, blue.x - red.x);
+        blue.vx += Math.cos(ang) * 4;
+        blue.vy += Math.sin(ang) * 4;
+        red.vx -= Math.cos(ang) * 4;
+        red.vy -= Math.sin(ang) * 4;
     }
     
-    // Check death
-    if(agent1.health <= 0 || agent2.health <= 0) {
-        const winner = agent1.health > 0 ? 'BLUE' : 'RED';
-        log(`🏆 ${winner} WINS!`, 'battle');
-        
+    if(blue.hp <= 0 || red.hp <= 0) {
+        const w = blue.hp > 0 ? 'BLUE' : 'RED';
+        if(w === 'BLUE') blueWins++; else redWins++;
+        log('🏆 ' + w + ' WINS! (DMG: B=' + blue.damageDealt.toFixed(0) + ' R=' + red.damageDealt.toFixed(0) + ')', 'battle');
         if(training) {
-            // Mutate winner
-            if(winner === 'BLUE') hc1.mutate(0.05);
-            else hc2.mutate(0.05);
-            
-            generation++;
+            worker.postMessage({ type: 'TRAIN_STEP', data: { winner: w } });
         }
-        
-        setTimeout(initArena, 2000);
+        setTimeout(initGame, 2000);
     }
     
-    // Update UI
-    updateStats();
+    updateUI();
 }
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Obstacles
     ctx.fillStyle = '#2a2a40';
     for(let obs of obstacles) {
-        ctx.fillRect(
-            obs.bounds.min.x, 
-            obs.bounds.min.y, 
-            obs.bounds.max.x - obs.bounds.min.x, 
-            obs.bounds.max.y - obs.bounds.min.y
-        );
+        ctx.fillRect(obs.x - obs.w/2, obs.y - obs.h/2, obs.w, obs.h);
     }
     
-    // Agents
-    ctx.save();
-    ctx.translate(agent1.position.x, agent1.position.y);
-    ctx.rotate(agent1.angle);
     ctx.fillStyle = '#00f2ff';
     ctx.shadowColor = '#00f2ff';
-    ctx.shadowBlur = 20;
-    ctx.fillRect(-20, -20, 40, 40);
-    ctx.restore();
+    ctx.shadowBlur = blue.hp < 30 ? 30 : 20;
+    ctx.fillRect(blue.x - 20, blue.y - 20, 40, 40);
     
-    ctx.save();
-    ctx.translate(agent2.position.x, agent2.position.y);
-    ctx.rotate(agent2.angle);
     ctx.fillStyle = '#ff0055';
     ctx.shadowColor = '#ff0055';
-    ctx.shadowBlur = 20;
-    ctx.fillRect(-20, -20, 40, 40);
-    ctx.restore();
+    ctx.shadowBlur = red.hp < 30 ? 30 : 20;
+    ctx.fillRect(red.x - 20, red.y - 20, 40, 40);
     
-    // Rays (visualization)
-    ctx.strokeStyle = 'rgba(0,242,255,0.3)';
-    ctx.lineWidth = 1;
-    const angles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 
-                    5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4];
-    for(let angle of angles) {
-        const dist = castRay(agent1.position, angle, 300);
-        ctx.beginPath();
-        ctx.moveTo(agent1.position.x, agent1.position.y);
-        ctx.lineTo(
-            agent1.position.x + Math.cos(angle) * dist,
-            agent1.position.y + Math.sin(angle) * dist
-        );
-        ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    frameCount++;
+    const now = performance.now();
+    if(now - lastFrameTime >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastFrameTime = now;
+        document.getElementById('fps').innerText = fps;
     }
     
     requestAnimationFrame(render);
 }
 
-function updateStats() {
-    document.getElementById('statGen').innerText = generation;
-    document.getElementById('statEp').innerText = episode;
-    document.getElementById('statTime').innerText = 
-        ((Date.now() - startTime) / 1000).toFixed(1) + 's';
-    
-    document.getElementById('blueHealth').innerText = 
-        Math.max(0, agent1.health).toFixed(0) + '%';
-    document.getElementById('blueHealthBar').style.width = 
-        Math.max(0, agent1.health) + '%';
-    
-    document.getElementById('redHealth').innerText = 
-        Math.max(0, agent2.health).toFixed(0) + '%';
-    document.getElementById('redHealthBar').style.width = 
-        Math.max(0, agent2.health) + '%';
+function updateUI() {
+    document.getElementById('blueBar').style.width = Math.max(0, blue.hp) + '%';
+    document.getElementById('redBar').style.width = Math.max(0, red.hp) + '%';
+    document.getElementById('ep').innerText = episode;
+    document.getElementById('blueWins').innerText = blueWins;
+    document.getElementById('redWins').innerText = redWins;
+    document.getElementById('btnStart').disabled = running;
+    document.getElementById('btnStop').disabled = !running;
+    document.getElementById('btnTrain').classList.toggle('disabled', !gameStarted);
+    document.getElementById('btnReverse').classList.toggle('disabled', !gameStarted);
 }
 
 function log(msg, type) {
-    const c = document.getElementById('log');
+    const l = document.getElementById('log');
     const d = document.createElement('div');
-    d.className = 'log-entry log-' + type;
     d.innerText = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-    c.insertBefore(d, c.firstChild);
-    if(c.children.length > 20) c.removeChild(c.lastChild);
+    d.style.color = type === 'train' ? '#00ff9d' : type === 'battle' ? '#ffaa00' : type === 'err' ? '#ff0055' : '#00f2ff';
+    l.insertBefore(d, l.firstChild);
+    if(l.children.length > 15) l.removeChild(l.lastChild);
 }
 
-// ============ CONTROLS ============
-function togglePause() {
-    running = !running;
-    log(running ? '▶️ Resumed' : '⏸️ Paused', 'info');
+function startGame() {
+    if(!worker) initWorker();
+    
+    gameStarted = true;
+    running = true;
+    initGame();
+    log('▶️ Game STARTED | Worker active', 'info');
+    updateUI();
+    
+    worker.postMessage({ type: 'START', data: { training: training, episode: episode } });
+    
+    requestActions();
+}
+
+function requestActions() {
+    if(!running || !worker) return;
+    
+    const input1 = getInput(blue, red);
+    const input2 = getInput(red, blue);
+    
+    worker.postMessage({
+        type: 'GET_ACTIONS',
+        data: { input1: input1, input2: input2, episode: episode, training: training }
+    });
+    
+    setTimeout(requestActions, 1000/60);
+}
+
+function stopGame() {
+    running = false;
+    log('⏹️ Game STOPPED', 'info');
+    updateUI();
 }
 
 function toggleTrain() {
     training = !training;
-    log(training ? '🧠 Training ON (mutation enabled)' : '🧠 Training OFF', 'train');
+    log(training ? '🧠 Training ON' : '🧠 Training OFF', 'train');
+    if(worker) {
+        worker.postMessage({ type: 'SET_TRAINING', data: { training: training } });
+    }
 }
 
-function resetBattle() {
+function doReverse() {
+    if(!worker || !gameStarted) { log('❌ Start game first!', 'err'); return; }
+    worker.postMessage({ type: 'REVERSE', data: { steps: 5 } });
+}
+
+function resetGame() {
+    running = false;
+    gameStarted = false;
     generation = 0;
     episode = 0;
-    hc1 = new HCAgent('ARENA_V1', '_BLUE');
-    hc2 = new HCAgent('ARENA_V1', '_RED');
-    initArena();
-    log('↺ Battle reset', 'info');
+    blueWins = 0;
+    redWins = 0;
+    totalReverse = 0;
+    
+    if(worker) {
+        worker.terminate();
+        worker = null;
+    }
+    
+    initWorker();
+    initGame();
+    log('↺ Reset complete', 'info');
+    updateUI();
 }
 
-// ============ START ============
-initArena();
-setInterval(update, 1000 / 60);
-render();
-log('⚡ HC Arena ready. Press Train to start learning!', 'info');
+function raycast(x, y, angle, maxDist) {
+    for(let i=0; i<maxDist; i+=15) {
+        const tx = x + Math.cos(angle) * i;
+        const ty = y + Math.sin(angle) * i;
+        for(let obs of obstacles) {
+            if(tx > obs.x - obs.w/2 && tx < obs.x + obs.w/2 &&
+               ty > obs.y - obs.h/2 && ty < obs.y + obs.h/2) {
+                return i / maxDist;
+            }
+        }
+        if(tx < 0 || tx > canvas.width || ty < 0 || ty > canvas.height) return i / maxDist;
+    }
+    return 1;
+}
+
+function getInput(me, enemy) {
+    const distToEnemy = Math.hypot(enemy.x - me.x, enemy.y - me.y);
+    const angleToEnemy = Math.atan2(enemy.y - me.y, enemy.x - me.x);
+    const cornerPenalty = ((me.x < 100 ? 1 : 0) + (me.x > canvas.width-100 ? 1 : 0) + (me.y < 100 ? 1 : 0) + (me.y > canvas.height-100 ? 1 : 0)) / 4;
+    
+    return [
+        me.x / canvas.width, me.y / canvas.height,
+        me.vx * 0.5, me.vy * 0.5,
+        (enemy.x - me.x) / canvas.width, (enemy.y - me.y) / canvas.height,
+        enemy.vx * 0.5, enemy.vy * 0.5,
+        distToEnemy / canvas.width,
+        Math.cos(angleToEnemy), Math.sin(angleToEnemy),
+        me.hp / 100, enemy.hp / 100,
+        cornerPenalty,
+        raycast(me.x, me.y, 0, 300),
+        raycast(me.x, me.y, Math.PI/4, 300),
+        raycast(me.x, me.y, Math.PI/2, 300),
+        raycast(me.x, me.y, 3*Math.PI/4, 300),
+        raycast(me.x, me.y, Math.PI, 300),
+        raycast(me.x, me.y, 5*Math.PI/4, 300),
+    ];
+}
+
+window.onload = function() {
+    initWorker();
+    initGame();
+    render();
+    log('⚡ HC v17.3 Ready | Press ▶️ START', 'info');
+    updateUI();
+};
 </script>
 </body>
 </html>
+
