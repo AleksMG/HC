@@ -1,12 +1,12 @@
 // ============================================================================
-// HC ARENA WORKER — v17.3 PRODUCTION READY (FULLY FIXED)
+// HC ARENA WORKER — v18.0 PRODUCTION READY (WITH COMPUTER VISION)
 // 338 dim State | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
-// Hindsight Learning Through Reversibility
-// ALL SYNTAX ERRORS FIXED — PROFESSIONAL GRADE
+// CNN Vision | Hindsight Learning | Full Reversibility
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
 const sigmoid = x => 1 / (1 + Math.exp(-x));
+const relu = x => Math.max(0, x);
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
 
@@ -37,6 +37,234 @@ class SeededRandom {
         while (u === 0) u = this.next();
         while (v === 0) v = this.next();
         return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+}
+
+// ============================================================================
+// CNN VISION PROCESSOR — Настоящее машинное зрение
+// ============================================================================
+class VisionCNN {
+    constructor(password) {
+        const rng = new SeededRandom(password + "_VISION_CNN");
+        
+        // Размеры входного изображения
+        this.inputWidth = 84;
+        this.inputHeight = 84;
+        
+        // Conv1: 3x3x32
+        this.conv1_weights = [];
+        for (let i = 0; i < 32; i++) {
+            let kernel = [];
+            for (let j = 0; j < 3; j++) {
+                let row = [];
+                for (let k = 0; k < 3; k++) {
+                    row.push((rng.next() * 2 - 1) * 0.1);
+                }
+                kernel.push(row);
+            }
+            this.conv1_weights.push(kernel);
+        }
+        this.conv1_bias = Array(32).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
+        
+        // Conv2: 32x3x3x64
+        this.conv2_weights = [];
+        for (let i = 0; i < 64; i++) {
+            let kernel = [];
+            for (let j = 0; j < 32; j++) {
+                let filter = [];
+                for (let k = 0; k < 3; k++) {
+                    let row = [];
+                    for (let l = 0; l < 3; l++) {
+                        row.push((rng.next() * 2 - 1) * 0.1);
+                    }
+                    filter.push(row);
+                }
+                kernel.push(filter);
+            }
+            this.conv2_weights.push(kernel);
+        }
+        this.conv2_bias = Array(64).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
+        
+        // После двух сверток и пулингов: 84 -> 42 -> 21
+        this.fc_input_size = 64 * 21 * 21; // 28224
+        this.fc_hidden = 512;
+        
+        // FC1: 28224 -> 512
+        this.fc1_weights = [];
+        for (let i = 0; i < this.fc_hidden; i++) {
+            let row = [];
+            for (let j = 0; j < this.fc_input_size; j++) {
+                row.push((rng.next() * 2 - 1) * 0.01);
+            }
+            this.fc1_weights.push(row);
+        }
+        this.fc1_bias = Array(this.fc_hidden).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
+        
+        // FC2: 512 -> 128 (выходные фичи)
+        this.fc2_weights = [];
+        for (let i = 0; i < 128; i++) {
+            let row = [];
+            for (let j = 0; j < this.fc_hidden; j++) {
+                row.push((rng.next() * 2 - 1) * 0.01);
+            }
+            this.fc2_weights.push(row);
+        }
+        this.fc2_bias = Array(128).fill(0).map(() => (rng.next() * 2 - 1) * 0.1);
+        
+        // Кэш для последнего обработанного изображения
+        this.lastFeatures = null;
+    }
+    
+    processImageData(imageData, width, height) {
+        // 1. Конвертируем в grayscale и ресайзим до 84x84
+        const gray = this.rgbToGrayscale(imageData, width, height);
+        const resized = this.resize(gray, width, height, this.inputWidth, this.inputHeight);
+        
+        // 2. Нормализуем
+        const normalized = this.normalize(resized);
+        
+        // 3. Conv1 + ReLU + MaxPool
+        let conv1_out = this.conv2d(normalized, this.inputWidth, this.inputHeight, 
+                                     this.conv1_weights, this.conv1_bias, 32, 3);
+        conv1_out = this.relu(conv1_out);
+        conv1_out = this.maxpool2d(conv1_out, 42, 42, 32, 2); // 84/2=42
+        
+        // 4. Conv2 + ReLU + MaxPool
+        let conv2_out = this.conv2d(conv1_out, 42, 42, 
+                                     this.conv2_weights, this.conv2_bias, 64, 3, 32);
+        conv2_out = this.relu(conv2_out);
+        conv2_out = this.maxpool2d(conv2_out, 21, 21, 64, 2); // 42/2=21
+        
+        // 5. Flatten
+        const flattened = this.flatten(conv2_out, 21, 21, 64);
+        
+        // 6. FC1 + ReLU
+        let fc1_out = this.linear(flattened, this.fc1_weights, this.fc1_bias);
+        fc1_out = fc1_out.map(v => relu(v));
+        
+        // 7. FC2 (выходные фичи)
+        const features = this.linear(fc1_out, this.fc2_weights, this.fc2_bias);
+        
+        this.lastFeatures = features;
+        return features;
+    }
+    
+    rgbToGrayscale(imageData, width, height) {
+        const data = imageData;
+        const gray = new Array(width * height);
+        
+        for (let i = 0; i < data.length; i += 4) {
+            // Y = 0.299R + 0.587G + 0.114B
+            gray[i/4] = (0.299 * data[i] + 
+                         0.587 * data[i+1] + 
+                         0.114 * data[i+2]) / 255;
+        }
+        
+        return gray;
+    }
+    
+    resize(src, srcWidth, srcHeight, dstWidth, dstHeight) {
+        const dst = new Array(dstWidth * dstHeight);
+        const xRatio = srcWidth / dstWidth;
+        const yRatio = srcHeight / dstHeight;
+        
+        for (let y = 0; y < dstHeight; y++) {
+            for (let x = 0; x < dstWidth; x++) {
+                const srcX = Math.floor(x * xRatio);
+                const srcY = Math.floor(y * yRatio);
+                dst[y * dstWidth + x] = src[srcY * srcWidth + srcX];
+            }
+        }
+        
+        return dst;
+    }
+    
+    normalize(image) {
+        // Z-score normalization
+        const mean = image.reduce((a, b) => a + b, 0) / image.length;
+        const std = Math.sqrt(image.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / image.length);
+        
+        return image.map(v => (v - mean) / (std + 1e-8));
+    }
+    
+    conv2d(input, inWidth, inHeight, kernels, bias, outChannels, kernelSize, inChannels = 1) {
+        const outWidth = inWidth - kernelSize + 1;
+        const outHeight = inHeight - kernelSize + 1;
+        const output = new Array(outChannels * outWidth * outHeight);
+        
+        for (let c = 0; c < outChannels; c++) {
+            for (let y = 0; y < outHeight; y++) {
+                for (let x = 0; x < outWidth; x++) {
+                    let sum = bias[c];
+                    
+                    for (let ic = 0; ic < inChannels; ic++) {
+                        for (let ky = 0; ky < kernelSize; ky++) {
+                            for (let kx = 0; kx < kernelSize; kx++) {
+                                const inY = y + ky;
+                                const inX = x + kx;
+                                const inIdx = ic * inWidth * inHeight + inY * inWidth + inX;
+                                sum += input[inIdx] * kernels[c][ic][ky][kx];
+                            }
+                        }
+                    }
+                    
+                    const outIdx = c * outWidth * outHeight + y * outWidth + x;
+                    output[outIdx] = sum;
+                }
+            }
+        }
+        
+        return output;
+    }
+    
+    maxpool2d(input, width, height, channels, poolSize) {
+        const outWidth = Math.floor(width / poolSize);
+        const outHeight = Math.floor(height / poolSize);
+        const output = new Array(channels * outWidth * outHeight);
+        
+        for (let c = 0; c < channels; c++) {
+            for (let y = 0; y < outHeight; y++) {
+                for (let x = 0; x < outWidth; x++) {
+                    let maxVal = -Infinity;
+                    
+                    for (let py = 0; py < poolSize; py++) {
+                        for (let px = 0; px < poolSize; px++) {
+                            const inY = y * poolSize + py;
+                            const inX = x * poolSize + px;
+                            const inIdx = c * width * height + inY * width + inX;
+                            maxVal = Math.max(maxVal, input[inIdx]);
+                        }
+                    }
+                    
+                    const outIdx = c * outWidth * outHeight + y * outWidth + x;
+                    output[outIdx] = maxVal;
+                }
+            }
+        }
+        
+        return output;
+    }
+    
+    relu(input) {
+        return input.map(v => Math.max(0, v));
+    }
+    
+    flatten(input, width, height, channels) {
+        return input; // Уже плоский массив
+    }
+    
+    linear(input, weights, bias) {
+        const output = new Array(bias.length);
+        
+        for (let i = 0; i < bias.length; i++) {
+            let sum = bias[i];
+            for (let j = 0; j < input.length; j++) {
+                sum += input[j] * weights[i][j];
+            }
+            output[i] = sum;
+        }
+        
+        return output;
     }
 }
 
@@ -237,7 +465,7 @@ class ReversibleBlock {
 }
 
 // ============================================================================
-// HC AGENT (Full v17.3 with Complete Hindsight Learning)
+// HC AGENT v18.0 — С ИНТЕГРИРОВАННЫМ КОМПЬЮТЕРНЫМ ЗРЕНИЕМ
 // ============================================================================
 class HCAgent {
     constructor(password, id) {
@@ -250,17 +478,22 @@ class HCAgent {
         this.maxTrajectory = 50;
         this.maxReverseSteps = 10;
 
-        // FIXED: Используем полную размерность dim=338 для блоков
+        // Инициализируем компьютерное зрение
+        this.vision = new VisionCNN(password + id);
+
         this.blocks_data = [];
         for (let b = 0; b < this.blocks; b++) {
             this.blocks_data.push(new ReversibleBlock(this.dim, this.password, b));
         }
 
         const rng = new SeededRandom(this.password + "_INPUT");
+        
+        // Увеличиваем входную размерность: 32 (позиция) + 128 (зрение) = 160
+        this.inputSize = 160;
         this.W_input = [];
         for (let i = 0; i < this.workingDim; i++) {
             let row = [];
-            for (let j = 0; j < 32; j++) {
+            for (let j = 0; j < this.inputSize; j++) {
                 row.push((rng.next() * 2 - 1) * 0.3);
             }
             this.W_input.push(row);
@@ -289,17 +522,24 @@ class HCAgent {
         this.episodeWithoutImprovement = 0;
     }
 
-    encodeInput(input) {
-        if (!input || !Array.isArray(input)) {
-            input = new Array(32).fill(0);
+    encodeInput(positionData, visionFeatures) {
+        if (!positionData || !Array.isArray(positionData)) {
+            positionData = new Array(32).fill(0);
+        }
+        
+        if (!visionFeatures || !Array.isArray(visionFeatures)) {
+            visionFeatures = new Array(128).fill(0);
         }
 
+        // Объединяем позиционные данные и визуальные фичи
+        const combinedInput = [...positionData, ...visionFeatures];
+        
         let state = [];
         for (let i = 0; i < this.workingDim; i++) {
             let sum = 0;
-            for (let j = 0; j < input.length && j < 32; j++) {
-                if (typeof input[j] === 'number' && isFinite(input[j])) {
-                    sum += input[j] * this.W_input[i][j];
+            for (let j = 0; j < combinedInput.length && j < this.inputSize; j++) {
+                if (typeof combinedInput[j] === 'number' && isFinite(combinedInput[j])) {
+                    sum += combinedInput[j] * this.W_input[i][j];
                 }
             }
             state.push(tanh(sum));
@@ -347,12 +587,20 @@ class HCAgent {
         return this.stuckCounter > 10 ? -0.5 : 0;
     }
 
-    decide(input, step, prevReward = 0, explorationNoise = null, position = null) {
-        if (!input || !Array.isArray(input)) {
-            input = new Array(32).fill(0);
+    decide(positionData, canvasData, step, prevReward = 0, explorationNoise = null, position = null) {
+        if (!positionData || !Array.isArray(positionData)) {
+            positionData = new Array(32).fill(0);
         }
 
-        let state = this.encodeInput(input);
+        // Обрабатываем изображение через CNN
+        let visionFeatures;
+        if (canvasData && canvasData.data) {
+            visionFeatures = this.vision.processImageData(canvasData.data, 800, 600);
+        } else {
+            visionFeatures = new Array(128).fill(0);
+        }
+
+        let state = this.encodeInput(positionData, visionFeatures);
 
         let stuckPenalty = 0;
         if (position) {
@@ -364,13 +612,14 @@ class HCAgent {
         if (this.trajectory.length > 0 && totalReward !== 0) {
             const prev = this.trajectory[this.trajectory.length - 1];
             if (totalReward < -0.3 && prev.action) {
-                this.hindsightAdjust(prev.input, prev.action, totalReward);
+                this.hindsightAdjust(prev.positionData, prev.visionFeatures, prev.action, totalReward);
             }
         }
 
         this.trajectory.push({
             state: state.slice(),
-            input: input.slice(),
+            positionData: positionData.slice(),
+            visionFeatures: visionFeatures.slice(),
             step: step,
             time: Date.now(),
             reward: 0,
@@ -409,12 +658,13 @@ class HCAgent {
         return action;
     }
 
-    hindsightAdjust(prevInput, prevAction, reward) {
+    hindsightAdjust(prevPositionData, prevVisionFeatures, prevAction, reward) {
         if (!prevAction) return;
 
         this.hindsightCount++;
         const lr = this.learningRate * Math.abs(reward);
 
+        // Корректируем веса на основе ошибки
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < this.workingDim && j < 50; j++) {
                 let adjustment = 0;
@@ -428,11 +678,18 @@ class HCAgent {
             }
         }
 
+        // Корректируем входные веса (и для позиции, и для зрения)
         for (let i = 0; i < this.workingDim && i < 50; i++) {
-            for (let j = 0; j < 32 && j < prevInput.length; j++) {
-                let adjustment = lr * prevInput[j] * Math.sign(reward) * 0.5;
+            for (let j = 0; j < 32 && j < prevPositionData.length; j++) {
+                let adjustment = lr * prevPositionData[j] * Math.sign(reward) * 0.5;
                 this.W_input[i][j] -= adjustment;
                 this.W_input[i][j] = clamp(this.W_input[i][j], -2, 2);
+            }
+            
+            for (let j = 0; j < 128 && j < prevVisionFeatures.length; j++) {
+                let adjustment = lr * prevVisionFeatures[j] * Math.sign(reward) * 0.5;
+                this.W_input[i][32 + j] -= adjustment;
+                this.W_input[i][32 + j] = clamp(this.W_input[i][32 + j], -2, 2);
             }
         }
     }
@@ -508,7 +765,7 @@ class HCAgent {
             this.explorationNoise = weights.metadata.explorationNoise || 0.15;
         }
         return true;
-    }  // <--- ЗАКРЫВАЮЩАЯ СКОБКА ДЛЯ setWeights
+    }
 
     copy() {
         const newAgent = new HCAgent(this.password, '_COPY_' + this.mutations);
@@ -622,12 +879,12 @@ function sendLog(msg, type = 'info') {
             }
         });
     } catch (e) {
-        // Silent fail — worker might be shutting down
+        // Silent fail
     }
 }
 
 // ============================================================================
-// MESSAGE HANDLER — PROFESSIONAL GRADE WITH PROPER ERROR HANDLING
+// MESSAGE HANDLER
 // ============================================================================
 self.onmessage = function(e) {
     resetWatchdog();
@@ -636,7 +893,6 @@ self.onmessage = function(e) {
     const data = e.data ? e.data.data : null;
 
     try {
-        // START — Initialize agents
         if (msgType === 'START') {
             training = (data && data.training) ? data.training : false;
             episode = (data && data.episode) ? data.episode : 0;
@@ -647,9 +903,9 @@ self.onmessage = function(e) {
             prevDist2 = 500;
             workerStartTime = Date.now();
 
-            hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
-            hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
-            sendLog('HC v17.3 initialized | 338 dim | 16-head | 12 blocks | 102 dim memory', 'success');
+            hc1 = new HCAgent('ARENA_V18', '_BLUE_' + generation);
+            hc2 = new HCAgent('ARENA_V18', '_RED_' + generation);
+            sendLog('HC v18.0 initialized | CNN Vision | 16-head | 12 blocks', 'success');
 
             self.postMessage({
                 type: 'INIT',
@@ -659,19 +915,19 @@ self.onmessage = function(e) {
                     blocks: 12,
                     heads: 16,
                     memory: 102,
+                    vision: 'CNN 84x84x128',
                     training: training,
                     timestamp: Date.now()
                 }
             });
         }
         
-        // STEP — Process game step
         else if (msgType === 'STEP') {
             if (!hc1 || !hc2) {
                 self.postMessage({
                     type: 'ERR',
                     data: {
-                        msg: 'Agents not initialized. Send START first.',
+                        msg: 'Agents not initialized',
                         step: episode,
                         timestamp: Date.now()
                     }
@@ -679,11 +935,11 @@ self.onmessage = function(e) {
                 return;
             }
 
-            if (!data || !data.input1 || !data.input2) {
+            if (!data || !data.input1 || !data.input2 || !data.canvas1 || !data.canvas2) {
                 self.postMessage({
                     type: 'ERR',
                     data: {
-                        msg: 'Missing input arrays',
+                        msg: 'Missing input data or canvas data',
                         step: episode,
                         timestamp: Date.now()
                     }
@@ -691,7 +947,6 @@ self.onmessage = function(e) {
                 return;
             }
 
-            // Safe extraction with defaults
             const dist1 = (data.dist1 !== undefined && typeof data.dist1 === 'number') ? data.dist1 : 500;
             const dist2 = (data.dist2 !== undefined && typeof data.dist2 === 'number') ? data.dist2 : 500;
             const damage1 = (data.damage1 !== undefined && typeof data.damage1 === 'number') ? data.damage1 : 0;
@@ -699,7 +954,6 @@ self.onmessage = function(e) {
             const pos1 = (data.pos1 && typeof data.pos1 === 'object') ? data.pos1 : { x: 0, y: 0 };
             const pos2 = (data.pos2 && typeof data.pos2 === 'object') ? data.pos2 : { x: 0, y: 0 };
 
-            // Calculate rewards
             const reward1 = (prevDist1 - dist1) * 0.01;
             const reward2 = (prevDist2 - dist2) * 0.01;
             prevDist1 = dist1;
@@ -710,17 +964,15 @@ self.onmessage = function(e) {
             const totalReward1 = reward1 + damageReward1;
             const totalReward2 = reward2 + damageReward2;
 
-            // Get actions from agents
-            const action1 = hc1.decide(data.input1, episode, totalReward1, null, pos1);
-            const action2 = hc2.decide(data.input2, episode, totalReward2, null, pos2);
+            // Агенты получают и позиционные данные, и изображение с canvas
+            const action1 = hc1.decide(data.input1, data.canvas1, episode, totalReward1, null, pos1);
+            const action2 = hc2.decide(data.input2, data.canvas2, episode, totalReward2, null, pos2);
 
-            // Record rewards and damage
             hc1.recordReward(totalReward1);
             hc2.recordReward(totalReward2);
             hc1.recordDamage(damage1, damage2);
             hc2.recordDamage(damage2, damage1);
 
-            // Send actions back to main thread
             self.postMessage({
                 type: 'ACTIONS',
                 data: {
@@ -739,7 +991,6 @@ self.onmessage = function(e) {
                 }
             });
 
-            // Send rewards for UI
             self.postMessage({
                 type: 'REWARD',
                 data: {
@@ -750,7 +1001,6 @@ self.onmessage = function(e) {
             });
         }
         
-        // TRAIN — Evolution step
         else if (msgType === 'TRAIN') {
             if (!training || !hc1 || !hc2) {
                 return;
@@ -772,16 +1022,13 @@ self.onmessage = function(e) {
                 hc2.wins++;
             }
 
-            // Win bonus
             winner.recordReward(10.0);
 
-            // Evolution: copy winner weights to loser, both mutate
             const weights = winner.getWeights();
             loser.setWeights(weights);
             winner.mutate(0.12);
             loser.mutate(0.12);
 
-            // Decay learning rates
             hc1.learningRate = Math.max(0.001, hc1.learningRate * 0.99);
             hc2.learningRate = Math.max(0.001, hc2.learningRate * 0.99);
 
@@ -801,7 +1048,6 @@ self.onmessage = function(e) {
             });
         }
         
-        // REVERSE — Hindsight reversal
         else if (msgType === 'REVERSE') {
             if (!hc1 || !hc2) {
                 self.postMessage({
@@ -833,13 +1079,11 @@ self.onmessage = function(e) {
             });
         }
         
-        // SET_TRAINING — Toggle training mode
         else if (msgType === 'SET_TRAINING') {
             training = (data && data.training) ? data.training : false;
             sendLog(`Training: ${training ? 'ON' : 'OFF'}`, 'info');
         }
         
-        // GET_STATS — Return full statistics
         else if (msgType === 'GET_STATS') {
             self.postMessage({
                 type: 'STATS',
@@ -861,7 +1105,6 @@ self.onmessage = function(e) {
             });
         }
         
-        // RESET — Full reset
         else if (msgType === 'RESET') {
             if (hc1) hc1.reset();
             if (hc2) hc2.reset();
@@ -889,7 +1132,6 @@ self.onmessage = function(e) {
             });
         }
         
-        // EXPORT_WEIGHTS — Export agent weights
         else if (msgType === 'EXPORT_WEIGHTS') {
             if (!hc1 || !hc2) {
                 self.postMessage({
@@ -913,7 +1155,6 @@ self.onmessage = function(e) {
             sendLog('Weights exported', 'info');
         }
         
-        // IMPORT_WEIGHTS — Import agent weights
         else if (msgType === 'IMPORT_WEIGHTS') {
             if (!data || !data.blue || !data.red) {
                 self.postMessage({
@@ -926,8 +1167,8 @@ self.onmessage = function(e) {
                 return;
             }
             
-            hc1 = new HCAgent('ARENA_V173', '_BLUE_' + generation);
-            hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
+            hc1 = new HCAgent('ARENA_V18', '_BLUE_' + generation);
+            hc2 = new HCAgent('ARENA_V18', '_RED_' + generation);
             hc1.setWeights(data.blue);
             hc2.setWeights(data.red);
             
@@ -942,9 +1183,7 @@ self.onmessage = function(e) {
             });
         }
         
-        // UNKNOWN MESSAGE TYPE — Safe handling
         else {
-            // Don't use sendLog here to avoid potential recursion
             console.log(`[Worker] Unknown message type: ${msgType}`);
         }
 
@@ -953,7 +1192,6 @@ self.onmessage = function(e) {
     } catch (err) {
         stopWatchdog();
         
-        // Safe error reporting
         try {
             self.postMessage({
                 type: 'ERR',
@@ -964,7 +1202,6 @@ self.onmessage = function(e) {
                 }
             });
         } catch (e) {
-            // Fatal error - can't even send error message
             console.error('[Worker] Fatal error:', err);
         }
     }
@@ -977,13 +1214,13 @@ try {
     self.postMessage({
         type: 'WORKER_READY',
         data: {
-            version: '17.3',
-            architecture: 'Full HC with Hindsight Learning',
+            version: '18.0',
+            architecture: 'Full HC with CNN Vision and Hindsight Learning',
             timestamp: Date.now()
         }
     });
 
-    sendLog('Worker loaded and ready', 'info');
+    sendLog('Worker v18.0 loaded with Computer Vision', 'info');
 } catch (e) {
     console.error('[Worker] Failed to send ready message:', e);
-            }
+                                }
