@@ -1,7 +1,6 @@
 // ============================================================================
 // HC ARENA WORKER — FULL v17.3 WITH HINDSIGHT LEARNING
 // 338 dim | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
-// Learning through reversibility (not backprop)
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
@@ -35,7 +34,7 @@ class SeededRandom {
 }
 
 // ============================================================================
-// 16-HEAD SELF-ATTENTION (FULL)
+// 16-HEAD SELF-ATTENTION
 // ============================================================================
 class SixteenHeadAttention {
     constructor(dim, password) {
@@ -47,8 +46,8 @@ class SixteenHeadAttention {
         for(let h = 0; h < this.numHeads; h++) {
             let Wq = [], Wk = [], Wv = [];
             for(let i = 0; i < this.headDim; i++) {
-                let row_q = [], row_k = [], row_v = [];                for(let j = 0; j < dim; j++) {
-                    row_q.push((rng.next() * 2 - 1) * 0.05);
+                let row_q = [], row_k = [], row_v = [];
+                for(let j = 0; j < dim; j++) {                    row_q.push((rng.next() * 2 - 1) * 0.05);
                     row_k.push((rng.next() * 2 - 1) * 0.05);
                     row_v.push((rng.next() * 2 - 1) * 0.05);
                 }
@@ -96,8 +95,8 @@ class ReversibleBlock {
         const half = Math.floor(this.workingDim / 2);
         for(let i = 0; i < half; i++) {
             let row_f = [], row_g = [];
-            for(let j = 0; j < half; j++) {                row_f.push((rng.next() * 2 - 1) * 0.1);
-                row_g.push((rng.next() * 2 - 1) * 0.1);
+            for(let j = 0; j < half; j++) {
+                row_f.push((rng.next() * 2 - 1) * 0.1);                row_g.push((rng.next() * 2 - 1) * 0.1);
             }
             this.W_f.push(row_f); this.W_g.push(row_g);
         }
@@ -145,8 +144,8 @@ class ReversibleBlock {
         const memory = state.slice(this.workingDim);
         const attn = this.attention.forward(working);
         const half = Math.floor(this.workingDim / 2);
-        const y1 = working.slice(0, half);        const y2 = working.slice(half);
-        let g_out = [];
+        const y1 = working.slice(0, half);
+        const y2 = working.slice(half);        let g_out = [];
         for(let i = 0; i < half; i++) {
             let sum = 0;
             for(let j = 0; j < half; j++) sum += y1[j] * this.W_g[i][j];
@@ -194,8 +193,8 @@ class HCAgent {
             let row = [];
             for(let j = 0; j < 32; j++) row.push((rng.next() * 2 - 1) * 0.3);
             this.W_input.push(row);
-        }        this.W_output = [];
-        for(let i = 0; i < 4; i++) {
+        }
+        this.W_output = [];        for(let i = 0; i < 4; i++) {
             let row = [];
             for(let j = 0; j < this.workingDim; j++) row.push((rng.next() * 2 - 1) * 0.1);
             this.W_output.push(row);
@@ -243,10 +242,8 @@ class HCAgent {
     decide(input, step, prevReward = 0) {
         let state = this.encodeInput(input);
         
-        // Hindsight: analyze previous step        if(this.trajectory.length > 0 && prevReward !== 0) {
-            const prev = this.trajectory[this.trajectory.length - 1];
-            if(prevReward < -0.5) {
-                // Bad outcome → slightly adjust weights
+        if(this.trajectory.length > 0 && prevReward !== 0) {
+            const prev = this.trajectory[this.trajectory.length - 1];            if(prevReward < -0.5) {
                 this.hindsightAdjust(prev.input, prev.action, prevReward);
             }
         }
@@ -277,7 +274,6 @@ class HCAgent {
             attention: result.attention
         };
         
-        // Update last trajectory entry with action
         if(this.trajectory.length > 0) {
             this.trajectory[this.trajectory.length - 1].action = action;
         }
@@ -285,23 +281,18 @@ class HCAgent {
         return action;
     }
 
-    // HINDSIGHT LEARNING: adjust weights based on reversed analysis
     hindsightAdjust(prevInput, prevAction, reward) {
         this.hindsightCount++;
         const lr = 0.01 * Math.abs(reward);
-        
-        // Adjust output weights based on what action led to bad reward
         for(let i = 0; i < 4; i++) {
-            for(let j = 0; j < this.workingDim && j < 50; j++) {                if(i === 0) this.W_output[i][j] -= lr * prevAction.fx * Math.sign(reward);
+            for(let j = 0; j < this.workingDim && j < 50; j++) {
+                if(i === 0) this.W_output[i][j] -= lr * prevAction.fx * Math.sign(reward);
                 if(i === 1) this.W_output[i][j] -= lr * prevAction.fy * Math.sign(reward);
             }
         }
-        
-        // Clamp weights
         for(let i = 0; i < 4; i++) {
             for(let j = 0; j < this.workingDim; j++) {
-                this.W_output[i][j] = clamp(this.W_output[i][j], -2, 2);
-            }
+                this.W_output[i][j] = clamp(this.W_output[i][j], -2, 2);            }
         }
     }
 
@@ -341,7 +332,8 @@ class HCAgent {
         return { input: JSON.parse(JSON.stringify(this.W_input)), output: JSON.parse(JSON.stringify(this.W_output)) };
     }
 
-    setWeights(weights) {        this.W_input = JSON.parse(JSON.stringify(weights.input));
+    setWeights(weights) {
+        this.W_input = JSON.parse(JSON.stringify(weights.input));
         this.W_output = JSON.parse(JSON.stringify(weights.output));
     }
 
@@ -349,8 +341,7 @@ class HCAgent {
         const newAgent = new HCAgent(this.password, '_COPY_' + this.mutations);
         newAgent.setWeights(this.getWeights());
         newAgent.mutations = this.mutations;
-        newAgent.wins = this.wins;
-        return newAgent;
+        newAgent.wins = this.wins;        return newAgent;
     }
 
     recordReward(reward) {
@@ -383,21 +374,23 @@ self.onmessage = function(e) {
             hc2 = new HCAgent('ARENA_V173', '_RED_' + generation);
             prevDist1 = 500; prevDist2 = 500;
             self.postMessage({ type: 'INIT', data: { status: 'ready', dim: 338, blocks: 12, heads: 16, memory: 102 } });
-            self.postMessage({ type: 'LOG', data: { msg: '✅ HC v17.3 initialized | 338 dim | 16-head | 12 blocks | 102 dim memory | Hindsight learning enabled' } });
+            self.postMessage({ type: 'LOG', data: { msg: 'HC v17.3 initialized | 338 dim | 16-head | 12 blocks | 102 dim memory' } });
         }
 
         if(type === 'STEP') {
             episode = data.episode || episode;
             training = data.training !== undefined ? data.training : training;
-            if(!hc1 || !hc2) { self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized' } }); return; }
-                        // Calculate reward based on distance change (encourage seeking enemy)
+            if(!hc1 || !hc2) { 
+                self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized' } }); 
+                return; 
+            }
+            
             const dist1 = data.dist1 || 500, dist2 = data.dist2 || 500;
             const reward1 = (prevDist1 - dist1) * 0.01;
             const reward2 = (prevDist2 - dist2) * 0.01;
             prevDist1 = dist1; prevDist2 = dist2;
             
-            const action1 = hc1.decide(data.input1, episode, reward1);
-            const action2 = hc2.decide(data.input2, episode, reward2);
+            const action1 = hc1.decide(data.input1, episode, reward1);            const action2 = hc2.decide(data.input2, episode, reward2);
             
             hc1.recordReward(reward1);
             hc2.recordReward(reward2);
@@ -417,7 +410,6 @@ self.onmessage = function(e) {
                 const loser = data.winner === 'BLUE' ? hc2 : hc1;
                 if(data.winner === 'BLUE') blueWins++; else redWins++;
                 
-                // Winner's weights copied to loser, both mutate
                 const weights = winner.getWeights();
                 loser.setWeights(weights);
                 winner.mutate(0.12);
@@ -425,25 +417,34 @@ self.onmessage = function(e) {
                 
                 generation++;
                 self.postMessage({ type: 'TRAIN_COMPLETE', data: { generation, blueWins, redWins, winner: data.winner } });
-                self.postMessage({ type: 'LOG', data: { msg: '🧠 Gen ' + generation + ' | ' + data.winner + ' wins (' + blueWins + '-' + redWins + ')' } });
+                self.postMessage({ type: 'LOG', data: { msg: 'Gen ' + generation + ' | ' + data.winner + ' wins (' + blueWins + '-' + redWins + ')' } });
             }
         }
 
         if(type === 'REVERSE') {
-            if(!hc1 || !hc2) { self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized' } }); return; }
+            if(!hc1 || !hc2) { 
+                self.postMessage({ type: 'ERR', data: { msg: 'Agents not initialized' } }); 
+                return; 
+            }
             const steps = data.steps || 5;
             const r1 = hc1.reverse(steps);
             const r2 = hc2.reverse(steps);
-            self.postMessage({ type: 'REVERSE_RESULT', data: { steps, trajectoryLength: r1 ? r1.trajectoryLength : 0, success: r1 && r2, h1: hc1.hindsightCount, h2: hc2.hindsightCount } });
-            self.postMessage({ type: 'LOG', data: { msg: '🔄 Reversed ' + steps + ' steps | Hindsight adjustments: B=' + hc1.hindsightCount + ' R=' + hc2.hindsightCount } });
+            self.postMessage({ 
+                type: 'REVERSE_RESULT', 
+                data: { steps, trajectoryLength: r1 ? r1.trajectoryLength : 0, success: r1 && r2, h1: hc1.hindsightCount, h2: hc2.hindsightCount } 
+            });
+            self.postMessage({ type: 'LOG', data: { msg: 'Reversed ' + steps + ' steps | Hindsight: B=' + hc1.hindsightCount + ' R=' + hc2.hindsightCount } });
         }
 
         if(type === 'SET_TRAINING') { training = data.training; }
-        if(type === 'RESET') {            hc1 = null; hc2 = null; training = false; episode = 0; generation = 0; blueWins = 0; redWins = 0;
-            self.postMessage({ type: 'INIT', data: { status: 'reset' } });
+        
+        if(type === 'RESET') {
+            hc1 = null; hc2 = null; training = false; episode = 0; generation = 0; blueWins = 0; redWins = 0;            self.postMessage({ type: 'INIT', data: { status: 'reset' } });
         }
 
-    } catch(err) { self.postMessage({ type: 'ERR', data: { msg: err.message + ' at ' + type } }); }
+    } catch(err) { 
+        self.postMessage({ type: 'ERR', data: { msg: err.message + ' at ' + type } }); 
+    }
 };
 
 self.postMessage({ type: 'WORKER_READY', data: { version: '17.3', architecture: 'Full HC with Hindsight Learning' } });
