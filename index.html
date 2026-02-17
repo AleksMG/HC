@@ -1,824 +1,777 @@
-<!DOCTYPE html>
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  background-color: white; /* Ensure the iframe has a white background */
+                }
+
+                
+              </style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔐 Invertible Neural Crypto — Профессиональная версия</title>
+    <title>⚡ True ITN v17.3 — Independent Rotors</title>
     <style>
         :root {
-            --bg: #0f0f23;
-            --panel: #1a1a2e;
-            --text: #e6e6e6;
-            --primary: #4cc9f0;
-            --accent: #ff0;
-            --success: #0f0;
-            --danger: #f44;
-            --border: #2d2d44;
+            --bg: #050510;
+            --panel: #0f0f1a;
+            --text: #e0e0e0;
+            --primary: #00f2ff;
+            --accent: #ff0055;
+            --success: #00ff9d;
+            --border: #2a2a40;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 30px; }
+        .container { max-width: 1200px; margin: 0 auto; }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            padding: 20px;
-            line-height: 1.6;
-        }
+        header { text-align: center; margin-bottom: 40px; }
+        h1 { color: var(--primary); font-size: 2.2rem; margin-bottom: 8px; text-shadow: 0 0 20px rgba(0,242,255,0.3); }
+        .subtitle { color: #666; font-size: 0.95rem; }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: rgba(26, 26, 46, 0.8);
-            border-radius: 15px;
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 30px rgba(76, 201, 240, 0.2);
-        }
-
-        h1 {
-            color: var(--accent);
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px var(--accent);
-        }
-
-        .subtitle {
-            color: var(--primary);
-            font-size: 1.1rem;
-            opacity: 0.8;
-        }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 25px;
-        }
-
-        @media (max-width: 1200px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
 
         .panel {
             background: var(--panel);
-            border-radius: 15px;
-            padding: 25px;
             border: 1px solid var(--border);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
 
         .panel-title {
             color: var(--primary);
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border);
-            font-size: 1.4rem;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--primary);
+            font-size: 1.1rem;
             font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
         }
 
+        .input-group { margin-bottom: 18px; }
+        label { display: block; color: var(--primary); margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; }
+        
         input, textarea {
-            width: 100%;
-            padding: 14px;
-            background: #0d0d1a;
-            border: 2px solid var(--primary);
-            color: var(--text);
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        button {
-            background: var(--primary);
-            color: #000;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
+            width: 100%; background: #0a0a15; border: 2px solid var(--border);
+            color: var(--text); padding: 14px; border-radius: 10px;
+            font-size: 0.95rem; font-family: 'Courier New', monospace;
             transition: all 0.3s;
-            border: 2px solid var(--primary);
+        }
+        input:focus, textarea:focus { 
+            outline: none; 
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0,242,255,0.15);
         }
 
-        button:hover {
-            background: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 255, 0, 0.4);
+        .controls { display: flex; gap: 12px; margin-top: 22px; }
+        button {
+            flex: 1; padding: 14px; border: none; border-radius: 10px;
+            font-weight: 700; cursor: pointer; text-transform: uppercase;
+            font-size: 0.9rem; transition: all 0.3s; letter-spacing: 0.5px;
         }
-
-        .btn-decrypt {
-            background: #4361ee;
-            border-color: #4361ee;
+        .btn-enc { background: var(--primary); color: #000; }
+        .btn-enc:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,242,255,0.4); }
+        .btn-dec { background: var(--accent); color: #fff; }
+        .btn-dec:hover { background: #ff5588; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,0,85,0.4); }
+        .btn-copy { 
+            background: #1a1a2e; color: var(--text); 
+            flex: 0.4; font-size: 0.85rem; border: 1px solid var(--border);
         }
+        .btn-copy:hover { background: #2a2a40; }
 
-        .btn-decrypt:hover {
-            background: #4cc9f0;
-            border-color: #4cc9f0;
-        }
-
-        .btn-reset {
-            background: #f44;
-            border-color: #f44;
-        }
-
-        .btn-reset:hover {
-            background: #ff0;
-            color: #000;
-            border-color: #ff0;
-        }
-
-        .result-area {
-            min-height: 120px;
-            background: #0d0d1a;
+        .output-box {
+            background: #000;
             border: 2px solid var(--success);
-            border-radius: 8px;
-            padding: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            word-break: break-all;
-        }
-
-        .visualization {
-            margin-top: 25px;
-        }
-
-        .grid-container {
-            overflow-x: auto;
-            white-space: nowrap;
-            padding: 15px;
-            background: #0d0d1a;
             border-radius: 10px;
+            padding: 18px;
+            min-height: 100px;
+            font-size: 1.05rem;
+            word-break: break-all;
+            color: var(--success);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+        .stat { color: #888; }
+        .stat-value { color: var(--primary); font-weight: 700; }
+        .stat-value.ok { color: var(--success); }
+        .stat-value.err { color: var(--accent); }
+
+        .rotor-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
             margin-top: 15px;
         }
 
-        .grid {
-            display: inline-block;
-            min-width: calc(26 * 36px);
-        }
-
-        .cell {
-            width: 36px;
-            height: 36px;
-            display: inline-block;
-            text-align: center;
-            line-height: 36px;
-            font-size: 14px;
-            border: 1px solid var(--border);
-            background: #16213e;
-            color: var(--text);
-            position: relative;
-            transition: all 0.2s;
-        }
-
-        .head {
-            background: var(--accent) !important;
-            color: #000 !important;
-            font-weight: bold;
-            box-shadow: 0 0 20px var(--accent);
-            transform: scale(1.15);
-            z-index: 10;
-        }
-
-        .body {
-            background: var(--primary) !important;
-            color: #000 !important;
-            box-shadow: 0 0 10px var(--primary);
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(26, 26, 46, 0.6);
+        .rotor {
+            background: #0a0a15;
+            border: 2px solid var(--border);
             border-radius: 10px;
-            border: 1px solid var(--border);
-        }
-
-        .status-item {
+            padding: 12px;
             text-align: center;
+            transition: all 0.3s;
         }
 
-        .status-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--accent);
+        .rotor.active { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,242,255,0.15); }
+
+        .rotor-label { color: var(--primary); font-size: 0.75rem; font-weight: 600; margin-bottom: 10px; }
+
+        .rotor-display {
+            height: 70px;
+            overflow: hidden;
+            background: #050510;
+            border-radius: 6px;
+            position: relative;
+            mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
         }
 
-        .status-label {
-            font-size: 0.9rem;
-            color: var(--primary);
-            opacity: 0.8;
+        .rotor-tape {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.4s ease;
+        }
+
+        .rotor-char {
+            height: 30px;
+            line-height: 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #444;
+        }
+
+        .rotor-char.active {
+            color: var(--success);
+            text-shadow: 0 0 10px var(--success);
+            transform: scale(1.4);
+        }
+
+        .rotor-info {
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
         }
 
         .log {
-            background: #0d0d1a;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 10px;
             padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            max-height: 150px;
+            margin-top: 20px;
+            max-height: 140px;
             overflow-y: auto;
-            font-family: monospace;
-            font-size: 14px;
-            border: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
         }
+
+        .log-entry {
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #111;
+        }
+
+        .log-entry.ok { color: var(--success); }
+        .log-entry.err { color: var(--accent); }
+        .log-entry.info { color: var(--primary); }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🔐 Invertible Neural Crypto — Профессиональная версия</h1>
-            <p class="subtitle">Полное использование INN + гибкий алфавит + бесконечная змейка</p>
+            <h1>⚡ True ITN v17.3</h1>
+            <p class="subtitle">Independent Rotor Values | True Asynchronous Rotation</p>
         </header>
 
         <div class="main-grid">
             <div class="panel">
-                <h2 class="panel-title">🔐 Настройки шифрования</h2>
+                <div class="panel-title">🔐 ВХОД</div>
                 
                 <div class="input-group">
-                    <label for="alphabet">🔤 Алфавит (любая длина):</label>
-                    <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+                    <label>🔤 АЛФАВИТ</label>
+                    <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789">
                 </div>
-                
+
                 <div class="input-group">
-                    <label for="password">🔑 Пароль:</label>
-                    <input type="text" id="password" value="INVERTIBLE_NEURAL_CRYPTO_2026">
+                    <label>🔑 ПАРОЛЬ</label>
+                    <input type="text" id="password" value="ITN_V17">
                 </div>
-                
+
                 <div class="input-group">
-                    <label for="inputText">📄 Исходный текст:</label>
-                    <textarea id="inputText" rows="4">HELLO WORLD! This is a very long text that demonstrates the correct infinite snake behavior with proper square reset.</textarea>
+                    <label>📝 ТЕКСТ</label>
+                    <textarea id="inputText" rows="5" placeholder="Введите текст...">HELLO WORLD</textarea>
                 </div>
-                
+
                 <div class="controls">
-                    <button onclick="encrypt()">🔒 Зашифровать</button>
-                    <button class="btn-reset" onclick="reset()">🔄 Сброс</button>
+                    <button class="btn-enc" onclick="run('encrypt')">🔒 Зашифровать</button>
+                    <button class="btn-dec" onclick="run('decrypt')">🔓 Расшифровать</button>
                 </div>
             </div>
-            
+
             <div class="panel">
-                <h2 class="panel-title">🔓 Расшифровка</h2>
+                <div class="panel-title">📊 РЕЗУЛЬТАТ</div>
                 
-                <div class="input-group">
-                    <label for="encryptedText">📜 Зашифрованный текст:</label>
-                    <textarea id="encryptedText" rows="4"></textarea>
-                </div>
-                
-                <div class="input-group">
-                    <label for="decryptedText">✅ Расшифрованный текст:</label>
-                    <div class="result-area" id="decryptedText"></div>
-                </div>
+                <div class="output-box" id="outputText">Ожидание...</div>
                 
                 <div class="controls">
-                    <button class="btn-decrypt" onclick="decrypt()">🔓 Расшифровать</button>
-                    <button class="btn-reset" onclick="corrupt()">💥 Повредить шифротекст</button>
+                    <button class="btn-copy" onclick="copyOutput()">📋 Копировать</button>
                 </div>
+
+                <div class="stats-row">
+                    <span class="stat">Длина: <span class="stat-value" id="statLen">0</span></span>
+                    <span class="stat">Обратимость: <span class="stat-value" id="statRev">-</span></span>
+                    <span class="stat">Паттерны: <span class="stat-value" id="statPatterns">0/16</span></span>
+                    <span class="stat">Время: <span class="stat-value" id="statTime">0ms</span></span>
+                </div>
+
+                <div class="panel-title" style="margin-top: 25px;">🎡 РОТОРЫ</div>
+                <div class="rotor-grid" id="rotorViz"></div>
+
+                <div class="log" id="log"></div>
             </div>
-        </div>
-        
-        <div class="panel visualization">
-            <h2 class="panel-title">📊 Криптографическая статистика</h2>
-            
-            <div class="status-bar">
-                <div class="status-item">
-                    <div class="status-value" id="statLength">0</div>
-                    <div class="status-label">Длина</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-value" id="statAlphabet">0</div>
-                    <div class="status-label">Алфавит</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-value" id="statPasses">0</div>
-                    <div class="status-label">Проходы</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-value" id="statReversibility">-</div>
-                    <div class="status-label">Обратимость</div>
-                </div>
-            </div>
-            
-            <div class="log" id="log"></div>
         </div>
     </div>
 
-    <script>
-        // ==============================
-        // ХЕШ-ФУНКЦИЯ
-        // ==============================
-        function simpleHash(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash);
-        }
+<script>
+/**
+ * TRUE ITN v17.3 — INDEPENDENT ROTOR VALUES
+ * 
+ * ИСПРАВЛЕНИЕ ОТ v17.2:
+ * • Каждый ротор получает НЕЗАВИСИМЫЕ значения delta/speed
+ * • Добавлен rotor-specific noise для асинхронности
+ * • Теперь роторы крутятся ДЕЙСТВИТЕЛЬНО асинхронно
+ */
 
-        // ==============================
-        // ГЕНЕРАЦИЯ МАТРИЦ ИЗ ПАРОЛЯ
-        // ==============================
-        function generateMatrixFromPassword(password, salt, rows, cols) {
-            let seed = 0;
-            const fullSeed = password + "_" + salt;
-            for (let c of fullSeed) {
-                seed = (seed * 31 + c.charCodeAt(0)) & 0x7FFFFFFF;
-            }
-            
-            let matrix = [];
-            for (let i = 0; i < rows; i++) {
-                let row = [];
-                for (let j = 0; j < cols; j++) {
-                    seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
-                    row.push((seed / 0x7FFFFFFF) * 2 - 1);
-                }
-                matrix.push(row);
-            }
-            return matrix;
-        }
+const tanh = x => Math.tanh(x);
+const mod = (n, m) => ((n % m) + m) % m;
 
-        // ==============================
-        // МАТРИЧНЫЕ ОПЕРАЦИИ
-        // ==============================
-        function matMul(A, B) {
-            if (!Array.isArray(A[0])) A = [A];
-            if (!Array.isArray(B[0])) B = B.map(x => [x]);
-            
-            let m = A.length;
-            let n = B[0].length;
-            let p = B.length;
-            
-            let result = Array(m).fill().map(() => Array(n).fill(0));
-            
-            for (let i = 0; i < m; i++) {
-                for (let j = 0; j < n; j++) {
-                    let sum = 0;
-                    for (let k = 0; k < p; k++) {
-                        sum += A[i][k] * B[k][j];
-                    }
-                    result[i][j] = sum;
-                }
-            }
-            
-            return result;
-        }
+const ACTIVATION_PATTERNS = [
+    [0,0,0,0], [1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1],
+    [1,1,0,0], [1,0,1,0], [1,0,0,1], [0,1,1,0], [0,1,0,1],
+    [0,0,1,1], [1,1,1,0], [1,1,0,1], [1,0,1,1], [0,1,1,1], [1,1,1,1]
+];
 
-        function transpose(matrix) {
-            return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+class SeededRandom {
+    constructor(seedStr) {
+        let h = 0x811c9dc5;
+        for(let i=0; i<seedStr.length; i++) {
+            h ^= seedStr.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
         }
+        this.seed = h >>> 0;
+    }
+    next() {
+        this.seed = (this.seed * 1664525 + 1013904223) >>> 0;
+        return this.seed / 0xFFFFFFFF;
+    }
+    nextInt(max) { return Math.floor(this.next() * max); }
+}
 
-        // ==============================
-        // INVERTIBLE NEURAL BLOCK (ПОЛНАЯ ВЕРСИЯ)
-        // ==============================
-        class InvertibleNeuralBlock {
-            constructor(password, blockIndex) {
-                this.blockIndex = blockIndex;
-                this.W_scale = generateMatrixFromPassword(password, `block${blockIndex}_scale`, 338, 338);
-                this.W_shift = generateMatrixFromPassword(password, `block${blockIndex}_shift`, 338, 338);
-            }
-            
-            coupling(x, weights) {
-                let result = [];
-                for (let i = 0; i < weights.length; i++) {
-                    let sum = 0;
-                    for (let j = 0; j < x.length && j < weights[i].length; j++) {
-                        sum += x[j] * weights[i][j];
-                    }
-                    result.push(Math.tanh(sum));
+class SixteenHeadAttention {
+    constructor(dim, password) {
+        this.dim = dim;
+        this.numHeads = 16;
+        this.headDim = Math.floor(dim / this.numHeads);
+        const rng = new SeededRandom(password + "_ATTN");
+        this.W_q = []; this.W_k = []; this.W_v = [];
+        for(let h=0; h<this.numHeads; h++) {
+            let Wq = [], Wk = [], Wv = [];
+            for(let i=0; i<this.headDim; i++) {
+                let rq = [], rk = [], rv = [];
+                for(let j=0; j<dim; j++) {
+                    rq.push((rng.next()*2-1)*0.05);
+                    rk.push((rng.next()*2-1)*0.05);
+                    rv.push((rng.next()*2-1)*0.05);
                 }
-                return result;
+                Wq.push(rq); Wk.push(rk); Wv.push(rv);
             }
-            
-            forward(x) {
-                const mid = Math.floor(x.length / 2);
-                const x1 = x.slice(0, mid);
-                const x2 = x.slice(mid);
-                
-                const s = this.coupling(x1, this.W_scale);
-                const t = this.coupling(x1, this.W_shift);
-                
-                const y1 = x1;
-                const y2 = x2.map((val, i) => val * Math.exp(s[i % s.length]) + t[i % t.length]);
-                
-                return y1.concat(y2);
-            }
-            
-            inverse(y) {
-                const mid = Math.floor(y.length / 2);
-                const y1 = y.slice(0, mid);
-                const y2 = y.slice(mid);
-                
-                const s = this.coupling(y1, this.W_scale);
-                const t = this.coupling(y1, this.W_shift);
-                
-                const x1 = y1;
-                const x2 = y2.map((val, i) => (val - t[i % t.length]) * Math.exp(-s[i % s.length]));
-                
-                return x1.concat(x2);
-            }
+            this.W_q.push(Wq); this.W_k.push(Wk); this.W_v.push(Wv);
         }
-
-        // ==============================
-        // INVERTIBLE NEURAL NETWORK (ПОЛНАЯ ВЕРСИЯ)
-        // ==============================
-        class InvertibleNeuralNetwork {
-            constructor(password, outputSize) {
-                this.password = password;
-                this.outputSize = outputSize;
-                
-                this.blocks = [
-                    new InvertibleNeuralBlock(password, 0),
-                    new InvertibleNeuralBlock(password, 1),
-                    new InvertibleNeuralBlock(password, 2)
-                ];
-            }
-            
-            expandInput(input) {
-                const expanded = [];
-                for (let i = 0; i < this.outputSize; i++) {
-                    expanded.push(input[i % input.length] + (i * 0.0001));
+    }
+    forward(state) {
+        let outputs = [], scores = [];
+        for(let h=0; h<this.numHeads; h++) {
+            let Q = [], K = [], V = [];
+            for(let i=0; i<this.headDim; i++) {
+                let qs = 0, ks = 0, vs = 0;
+                for(let j=0; j<this.dim; j++) {
+                    qs += state[j] * this.W_q[h][i][j];
+                    ks += state[j] * this.W_k[h][i][j];
+                    vs += state[j] * this.W_v[h][i][j];
                 }
-                return expanded;
+                Q.push(tanh(qs)); K.push(tanh(ks)); V.push(tanh(vs));
             }
-            
-            forward(input) {
-                let x = this.expandInput(input);
-                for (let block of this.blocks) {
-                    x = block.forward(x);
-                }
-                return x;
-            }
-            
-            inverse(output) {
-                let x = output;
-                for (let i = this.blocks.length - 1; i >= 0; i--) {
-                    x = this.blocks[i].inverse(x);
-                }
-                return x.slice(0, 4);
-            }
-            
-            verifyReversibility(input) {
-                const output = this.forward(input);
-                const reconstructed = this.inverse(output);
-                
-                const error = input.reduce((sum, val, i) => {
-                    return sum + Math.abs(val - reconstructed[i]);
-                }, 0);
-                
-                return error < 1e-10;
-            }
+            let score = 0;
+            for(let i=0; i<this.headDim; i++) score += Q[i] * K[i];
+            score /= Math.sqrt(this.headDim);
+            scores.push(tanh(score));
+            for(let i=0; i<this.headDim; i++) outputs.push(V[i] * scores[h]);
         }
+        return { output: outputs, scores };
+    }
+}
 
-        // ==============================
-        // ГЕНЕРАЦИЯ КВАДРАТА
-        // ==============================
-        function generateSquare(alphabet, password) {
-            const N = alphabet.length;
-            const totalCells = N * N;
-            let cells = [];
-            for (let i = 0; i < totalCells; i++) {
-                cells.push(alphabet[i % alphabet.length]);
+class FlexibleDriver {
+    constructor(password, workingDim, memoryDim) {
+        this.workingDim = workingDim;
+        this.memoryDim = memoryDim;
+        this.patternsUsed = new Set();
+        const rng = new SeededRandom(password + "_DRIVER");
+        this.W_pattern = [];
+        this.W_decision = [];
+        for(let i=0; i<16; i++) {
+            let rp = [], rd = [];
+            for(let j=0; j<workingDim + memoryDim; j++) {
+                rp.push((rng.next()*2-1)*0.1);
+                rd.push((rng.next()*2-1)*0.1);
             }
-            
-            let seed = 0;
-            for (let c of password) {
-                seed = (seed * 31 + c.charCodeAt(0)) & 0x7FFFFFFF;
-            }
-            
-            for (let i = totalCells - 1; i > 0; i--) {
-                seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
-                const j = Math.floor((seed / 0x80000000) * (i + 1));
-                [cells[i], cells[j]] = [cells[j], cells[i]];
-            }
-            
-            let square = [];
-            for (let i = 0; i < N; i++) {
-                let row = '';
-                for (let j = 0; j < N; j++) {
-                    row += cells[i * N + j];
-                }
-                square.push(row);
-            }
-            return square;
+            this.W_pattern.push(rp);
+            this.W_decision.push(rd);
         }
-
-        // ==============================
-        // INVERTIBLE NEURAL CRYPTO (ПОЛНАЯ ВЕРСИЯ)
-        // ==============================
-        class InvertibleNeuralCrypto {
-            constructor(alphabet, password) {
-                this.alphabet = alphabet;
-                this.N = alphabet.length; // Динамический размер!
-                this.password = password;
-                this.cellsPerSquare = this.N * this.N;
-                this.square = generateSquare(alphabet, password);
-                this.inn = new InvertibleNeuralNetwork(password, this.cellsPerSquare);
-                this.lastReversibility = true;
-            }
-            
-            encrypt(text) {
-                let x = 0, y = 0;
-                let occupied = new Set(["0,0"]);
-                let result = '';
-                let reversibilityErrors = 0;
-                
-                for (let i = 0; i < text.length; i++) {
-                    // Правильный сброс квадрата
-                    if (occupied.size === this.cellsPerSquare) {
-                        occupied = new Set();
-                    }
-                    
-                    const c = text[i];
-                    const idx = this.alphabet.indexOf(c);
-                    
-                    if (idx !== -1) {
-                        const keyChar = this.square[y][x];
-                        const keyIdx = this.alphabet.indexOf(keyChar);
-                        
-                        const cipherIdx = (idx + keyIdx) % this.N;
-                        const cipherChar = this.alphabet[cipherIdx];
-                        result += cipherChar;
-                        
-                        const prevCipher = result.slice(0, -1);
-                        const hashValue = simpleHash(prevCipher);
-                        
-                        const innInput = [
-                            x / this.N,
-                            y / this.N,
-                            (i % 1000) / 999,
-                            (hashValue % 10000) / 9999
-                        ];
-                        
-                        // ПОЛНОЕ ИСПОЛЬЗОВАНИЕ INN
-                        const isReversible = this.inn.verifyReversibility(innInput);
-                        if (!isReversible) {
-                            reversibilityErrors++;
-                        }
-                        
-                        const ratings = this.inn.forward(innInput);
-                        
-                        let bestCell = null;
-                        let bestRating = -Infinity;
-                        for (let ny = 0; ny < this.N; ny++) {
-                            for (let nx = 0; nx < this.N; nx++) {
-                                if (!occupied.has(`${nx},${ny}`)) {
-                                    const cellIndex = ny * this.N + nx;
-                                    if (ratings[cellIndex] > bestRating) {
-                                        bestRating = ratings[cellIndex];
-                                        bestCell = {x: nx, y: ny};
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (bestCell === null) {
-                            bestCell = {x: 0, y: 0};
-                        }
-                        
-                        x = bestCell.x;
-                        y = bestCell.y;
-                        occupied.add(`${x},${y}`);
-                    } else {
-                        result += c;
-                    }
-                }
-                
-                this.lastReversibility = reversibilityErrors === 0;
-                return { ciphertext: result };
-            }
-            
-            decrypt(ciphertext) {
-                let x = 0, y = 0;
-                let occupied = new Set(["0,0"]);
-                let result = '';
-                
-                for (let i = 0; i < ciphertext.length; i++) {
-                    if (occupied.size === this.cellsPerSquare) {
-                        occupied = new Set();
-                    }
-                    
-                    const c = ciphertext[i];
-                    const idx = this.alphabet.indexOf(c);
-                    
-                    if (idx !== -1) {
-                        const keyChar = this.square[y][x];
-                        const keyIdx = this.alphabet.indexOf(keyChar);
-                        
-                        const plainIdx = (idx - keyIdx + this.N) % this.N;
-                        const plainChar = this.alphabet[plainIdx];
-                        result += plainChar;
-                        
-                        const prevCipher = ciphertext.slice(0, i);
-                        const hashValue = simpleHash(prevCipher);
-                        
-                        const innInput = [
-                            x / this.N,
-                            y / this.N,
-                            (i % 1000) / 999,
-                            (hashValue % 10000) / 9999
-                        ];
-                        
-                        // Проверка обратимости при расшифровке тоже
-                        const isReversible = this.inn.verifyReversibility(innInput);
-                        
-                        const ratings = this.inn.forward(innInput);
-                        
-                        let bestCell = null;
-                        let bestRating = -Infinity;
-                        for (let ny = 0; ny < this.N; ny++) {
-                            for (let nx = 0; nx < this.N; nx++) {
-                                if (!occupied.has(`${nx},${ny}`)) {
-                                    const cellIndex = ny * this.N + nx;
-                                    if (ratings[cellIndex] > bestRating) {
-                                        bestRating = ratings[cellIndex];
-                                        bestCell = {x: nx, y: ny};
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (bestCell === null) {
-                            bestCell = {x: 0, y: 0};
-                        }
-                        
-                        x = bestCell.x;
-                        y = bestCell.y;
-                        occupied.add(`${x},${y}`);
-                    } else {
-                        result += c;
-                    }
-                }
-                
-                return result;
-            }
-            
-            getStats(text) {
-                let chars = text.split('');
-                let passes = Math.ceil(chars.length / this.cellsPerSquare);
-                
-                let freq = {};
-                chars.forEach(c => freq[c] = (freq[c] || 0) + 1);
-                
-                let entropy = 0;
-                for (let f of Object.values(freq)) {
-                    let p = f / chars.length;
-                    entropy -= p * Math.log2(p);
-                }
-                
-                return {
-                    length: chars.length,
-                    alphabetSize: this.N,
-                    passes: passes,
-                    entropy: entropy.toFixed(2),
-                    reversibility: this.lastReversibility
-                };
-            }
+        this.W_memory = [];
+        for(let i=0; i<memoryDim; i++) {
+            let row = [];
+            for(let j=0; j<16; j++) row.push((rng.next()*2-1)*0.05);
+            this.W_memory.push(row);
         }
-
-        // ==============================
-        // ГЛОБАЛЬНЫЕ ФУНКЦИИ
-        // ==============================
-        function encrypt() {
-            try {
-                const alphabet = document.getElementById('alphabet').value;
-                const password = document.getElementById('password').value;
-                const text = document.getElementById('inputText').value;
-                
-                if (!alphabet) {
-                    throw new Error('Алфавит не может быть пустым');
-                }
-                
-                const crypto = new InvertibleNeuralCrypto(alphabet, password);
-                const { ciphertext } = crypto.encrypt(text);
-                document.getElementById('encryptedText').value = ciphertext;
-                document.getElementById('decryptedText').textContent = '';
-                
-                const stats = crypto.getStats(ciphertext);
-                document.getElementById('statLength').textContent = stats.length;
-                document.getElementById('statAlphabet').textContent = stats.alphabetSize;
-                document.getElementById('statPasses').textContent = stats.passes;
-                document.getElementById('statReversibility').textContent = 
-                    stats.reversibility ? '✅' : '❌';
-                
-                log(`✅ Зашифровано (${stats.passes} проходов)`, 'success');
-            } catch (e) {
-                log(`❌ Ошибка шифрования: ${e.message}`, 'error');
+        
+        // Independent rotor noise weights
+        this.W_rotor_noise = [];
+        for(let r=0; r<4; r++) {
+            let row = [];
+            for(let j=0; j<16; j++) {
+                row.push((rng.next()*2-1)*0.3);  // Larger variance for independence
             }
+            this.W_rotor_noise.push(row);
         }
-
-        function decrypt() {
-            try {
-                const alphabet = document.getElementById('alphabet').value;
-                const password = document.getElementById('password').value;
-                const ciphertext = document.getElementById('encryptedText').value;
-                
-                if (!ciphertext) {
-                    throw new Error('Введите зашифрованный текст');
-                }
-                
-                if (!alphabet) {
-                    throw new Error('Алфавит не может быть пустым');
-                }
-                
-                const crypto = new InvertibleNeuralCrypto(alphabet, password);
-                const plaintext = crypto.decrypt(ciphertext);
-                document.getElementById('decryptedText').textContent = plaintext;
-                
-                const stats = crypto.getStats(ciphertext);
-                document.getElementById('statReversibility').textContent = 
-                    stats.reversibility ? '✅' : '❌';
-                log('✅ Расшифровано успешно', 'success');
-            } catch (e) {
-                log(`❌ Ошибка расшифровки: ${e.message}`, 'error');
-                document.getElementById('decryptedText').textContent = 'Ошибка расшифровки';
+    }
+    
+    selectPattern(attentionResult, memory, step) {
+        const focus = attentionResult.scores;
+        let input = [...focus, ...memory];
+        let scores = [];
+        for(let p=0; p<16; p++) {
+            let sum = 0;
+            for(let j=0; j<input.length; j++) sum += input[j] * this.W_pattern[p][j];
+            scores.push(sum);
+        }
+        let max = scores[0], sel = 0;
+        for(let p=1; p<16; p++) if(scores[p] > max) { max = scores[p]; sel = p; }
+        const final = (sel + step % 5) % 16;
+        this.patternsUsed.add(final);
+        return ACTIVATION_PATTERNS[final];
+    }
+    
+    decide(attentionResult, memory, step) {
+        const activePattern = this.selectPattern(attentionResult, memory, step);
+        const focus = attentionResult.scores;
+        let input = [...focus, ...memory];
+        let values = [];
+        for(let i=0; i<16; i++) {
+            let sum = 0;
+            for(let j=0; j<input.length; j++) sum += input[j] * this.W_decision[i][j];
+            values.push(tanh(sum));
+        }
+        
+        let commands = [];
+        for(let r=0; r<4; r++) {
+            const b = r * 4;
+            
+            // Base values from neural network
+            let delta = Math.floor(values[b] * 10);
+            let dir = values[b+1] > 0 ? 1 : -1;
+            let speed = Math.floor(Math.abs(values[b+2]) * 7) + 1;
+            
+            // ИСПРАВЛЕНИЕ: Добавляем НЕЗАВИСИМЫЙ шум для каждого ротора
+            let noiseSum = 0;
+            for(let j=0; j<16; j++) {
+                noiseSum += values[j] * this.W_rotor_noise[r][j];
             }
+            let rotorNoise = tanh(noiseSum) * 5;  // -5 to +5 independent noise
+            
+            // Применяем шум только к delta (каждый ротор получает разное)
+            delta = Math.floor(delta + rotorNoise);
+            
+            // Clamp delta to reasonable range
+            delta = Math.max(-10, Math.min(10, delta));
+            
+            commands.push({
+                delta: delta,
+                dir: dir,
+                speed: speed,
+                active: activePattern[r] === 1,
+                noise: rotorNoise.toFixed(1)  // For visualization
+            });
         }
-
-        function corrupt() {
-            const encrypted = document.getElementById('encryptedText').value;
-            if (!encrypted) return;
-            
-            const chars = encrypted.split('');
-            const pos = Math.floor(Math.random() * chars.length);
-            const original = chars[pos];
-            
-            const alphabet = document.getElementById('alphabet').value;
-            let replacement;
-            do {
-                const randomIdx = Math.floor(Math.random() * alphabet.length);
-                replacement = alphabet[randomIdx];
-            } while (replacement === original && alphabet.length > 1);
-            
-            chars[pos] = replacement;
-            document.getElementById('encryptedText').value = chars.join('');
-            log(`💥 Шифротекст повреждён в позиции ${pos}: ${original} → ${replacement}`, 'warn');
+        return { commands, values, activePattern };
+    }
+    
+    updateMemory(memory, decision) {
+        let newMem = [];
+        for(let i=0; i<this.memoryDim; i++) {
+            let sum = 0;
+            for(let j=0; j<16; j++) sum += decision.values[j] * this.W_memory[i][j];
+            newMem.push(memory[i] + tanh(sum) * 0.1);
         }
+        return newMem;
+    }
+    getPatternsUsed() { return this.patternsUsed; }
+}
 
-        function reset() {
-            document.getElementById('inputText').value = 'HELLO WORLD! This is a very long text that demonstrates the correct infinite snake behavior with proper square reset.';
-            document.getElementById('encryptedText').value = '';
-            document.getElementById('decryptedText').textContent = '';
-            document.getElementById('statLength').textContent = '0';
-            document.getElementById('statAlphabet').textContent = '0';
-            document.getElementById('statPasses').textContent = '0';
-            document.getElementById('statReversibility').textContent = '-';
-            log('🔄 Система сброшена', 'info');
-        }
-
-        function log(message, type = 'info') {
-            let logDiv = document.getElementById('log');
-            let entry = document.createElement('div');
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            entry.style.color = type === 'error' ? '#f87171' : 
-                               type === 'success' ? '#4ade80' : 
-                               type === 'warn' ? '#facc15' : '#4cc9f0';
-            logDiv.appendChild(entry);
-            logDiv.scrollTop = logDiv.scrollHeight;
-            
-            if (logDiv.children.length > 10) {
-                logDiv.removeChild(logDiv.children[0]);
+class DriverBlock {
+    constructor(dim, password, blockId, memoryRatio = 0.3) {
+        this.dim = dim;
+        this.workingDim = Math.floor(dim * (1 - memoryRatio));
+        this.memoryDim = dim - this.workingDim;
+        this.attention = new SixteenHeadAttention(this.workingDim, password);
+        this.driver = new FlexibleDriver(password, this.workingDim, this.memoryDim);
+        const rng = new SeededRandom(password + "_BLOCK_" + blockId);
+        this.W_f = []; this.W_g = [];
+        for(let i=0; i<this.workingDim; i++) {
+            let rf = [], rg = [];
+            for(let j=0; j<this.workingDim; j++) {
+                rf.push((rng.next()*2-1)*0.1);
+                rg.push((rng.next()*2-1)*0.1);
             }
+            this.W_f.push(rf); this.W_g.push(rg);
         }
-
-        window.onload = () => {
-            reset();
+    }
+    forward(state, step) {
+        const working = state.slice(0, this.workingDim);
+        const memory = state.slice(this.workingDim);
+        const attn = this.attention.forward(working);
+        const decision = this.driver.decide(attn, memory, step);
+        const newMem = this.driver.updateMemory(memory, decision);
+        const half = Math.floor(this.workingDim / 2);
+        const x1 = working.slice(0, half);
+        const x2 = working.slice(half);
+        let f_out = [];
+        for(let i=0; i<x1.length; i++) {
+            let sum = 0;
+            for(let j=0; j<x2.length; j++) {
+                let mod = 1 + attn.scores[i % 16] * 0.5;
+                sum += x2[j] * this.W_f[i][j] * mod;
+            }
+            f_out.push(tanh(sum));
+        }
+        const y1 = x1.map((v, i) => v + f_out[i]);
+        let g_out = [];
+        for(let i=0; i<x1.length; i++) {
+            let sum = 0;
+            for(let j=0; j<x1.length; j++) sum += y1[j] * this.W_g[i][j];
+            g_out.push(tanh(sum));
+        }
+        const y2 = x2.map((v, i) => v + g_out[i]);
+        return {
+            state: [...y1, ...y2, ...newMem],
+            commands: decision.commands,
+            attention: attn.scores,
+            patterns: this.driver.getPatternsUsed()
         };
-    </script>
+    }
+}
+
+class CryptoEngine {
+    constructor(alphabet, password) {
+        this.alphabet = alphabet;
+        this.N = alphabet.length;
+        this.dim = 338;
+        this.blocks = 12;
+        this.blocks_data = [];
+        for(let b=0; b<this.blocks; b++) {
+            this.blocks_data.push(new DriverBlock(this.dim, password, b));
+        }
+        const rng = new SeededRandom(password + "_INPUT");
+        this.W_input = [];
+        for(let i=0; i<this.dim; i++) {
+            let row = [];
+            for(let j=0; j<6; j++) row.push((rng.next()*2-1)*0.3);
+            this.W_input.push(row);
+        }
+        this.rotors = new RotorSystem(alphabet, password);
+    }
+    initState(step, prevCipher, context) {
+        let input = [(step%50)/50, prevCipher/this.N, context[0]/this.N, context[1]/this.N, context[2]/this.N, context[3]/this.N];
+        let state = [];
+        for(let i=0; i<this.dim; i++) {
+            let sum = 0;
+            for(let j=0; j<6; j++) sum += input[j] * this.W_input[i][j];
+            state.push(tanh(sum));
+        }
+        return state;
+    }
+    processState(state, step) {
+        let current = state.slice();
+        let commands = null, attention = null, patterns = new Set();
+        for(let b=0; b<this.blocks; b++) {
+            let result = this.blocks_data[b].forward(current, step);
+            current = result.state;
+            if(b === this.blocks - 1) {
+                commands = result.commands;
+                attention = result.attention;
+                patterns = result.patterns;
+            }
+        }
+        return { state: current, commands, attention, patterns };
+    }
+    encrypt(text) {
+        this.rotors.reset();
+        let result = "", prevCipherIdx = 0, context = [0,0,0,0];
+        let logData = [], allPatterns = new Set();
+        for(let i=0; i<text.length; i++) {
+            let char = text[i], idx = this.alphabet.indexOf(char);
+            if(idx === -1) { result += char; continue; }
+            let innState = this.initState(i, prevCipherIdx, context);
+            let proc = this.processState(innState, i);
+            this.rotors.update(proc.commands);
+            let newIdx = this.rotors.transform(idx);
+            let newChar = this.alphabet[newIdx];
+            result += newChar;
+            prevCipherIdx = newIdx;
+            context = [context[1], context[2], context[3], newIdx];
+            proc.patterns.forEach(p => allPatterns.add(p));
+            if(i % 3 === 0 || i < 3) {
+                logData.push({ step: i, char, cipher: newChar, commands: proc.commands, positions: [...this.rotors.positions], patternCount: allPatterns.size });
+            }
+        }
+        return { text: result, logData, totalPatterns: allPatterns.size };
+    }
+    decrypt(text) {
+        this.rotors.reset();
+        let result = "", prevCipherIdx = 0, context = [0,0,0,0];
+        let logData = [];
+        for(let i=0; i<text.length; i++) {
+            let char = text[i], idx = this.alphabet.indexOf(char);
+            if(idx === -1) { result += char; continue; }
+            let innState = this.initState(i, prevCipherIdx, context);
+            let proc = this.processState(innState, i);
+            this.rotors.update(proc.commands);
+            let newIdx = this.rotors.inverseTransform(idx);
+            let newChar = this.alphabet[newIdx];
+            result += newChar;
+            prevCipherIdx = idx;
+            context = [context[1], context[2], context[3], idx];
+            if(i % 3 === 0 || i < 3) {
+                logData.push({ step: i, char, plain: newChar, commands: proc.commands, positions: [...this.rotors.positions] });
+            }
+        }
+        return { text: result, logData };
+    }
+}
+
+class RotorSystem {
+    constructor(alphabet, password) {
+        this.alphabet = alphabet;
+        this.N = alphabet.length;
+        const rng = new SeededRandom(password + "_ROTORS");
+        this.rotors = [];
+        for(let i=0; i<4; i++) {
+            let arr = this.alphabet.split('');
+            for(let j=arr.length-1; j>0; j--) {
+                const k = rng.nextInt(j+1);
+                [arr[j], arr[k]] = [arr[k], arr[j]];
+            }
+            this.rotors.push(arr);
+        }
+        this.positions = [0,0,0,0];
+    }
+    reset() { this.positions = [0,0,0,0]; }
+    update(commands) {
+        for(let r=0; r<4; r++) {
+            if(!commands[r].active) continue;
+            const c = commands[r];
+            this.positions[r] = mod(this.positions[r] + c.delta * c.speed * c.dir, this.N);
+        }
+    }
+    transform(idx) {
+        for(let r=0; r<4; r++) {
+            let pos = this.positions[r];
+            let shifted = mod(idx + pos, this.N);
+            let mapped = this.alphabet.indexOf(this.rotors[r][shifted]);
+            idx = mod(mapped - pos, this.N);
+        }
+        return idx;
+    }
+    inverseTransform(idx) {
+        for(let r=3; r>=0; r--) {
+            let pos = this.positions[r];
+            let shifted = mod(idx + pos, this.N);
+            let mapped = this.rotors[r].indexOf(this.alphabet[shifted]);
+            idx = mod(mapped - pos, this.N);
+        }
+        return idx;
+    }
+}
+
+let engine = null;
+const CHAR_HEIGHT = 30;
+
+function init() {
+    const alpha = document.getElementById('alphabet').value;
+    const pass = document.getElementById('password').value;
+    engine = new CryptoEngine(alpha, pass);
+    renderRotors();
+    log("Готово. Independent rotor values enabled.", "info");
+}
+
+function renderRotors() {
+    const container = document.getElementById('rotorViz');
+    let html = '';
+    for(let i=0; i<4; i++) {
+        html += '<div class="rotor" id="rotor-'+i+'">';
+        html += '<div class="rotor-label">ROTOR '+(i+1)+'</div>';
+        html += '<div class="rotor-display"><div class="rotor-tape" id="rotor-tape-'+i+'">';
+        let chars = engine.rotors.rotors[i];
+        for(let k=0; k<3; k++) {
+            chars.forEach((c, idx) => {
+                html += '<div class="rotor-char" data-idx="'+(k*engine.N+idx)+'">'+c+'</div>';
+            });
+        }
+        html += '</div></div>';
+        html += '<div class="rotor-info" id="r'+i+'-info">POS: 0</div>';
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function updateRotors(commands, positions) {
+    for(let r=0; r<4; r++) {
+        const rotor = document.getElementById('rotor-'+r);
+        const tape = document.getElementById('rotor-tape-'+r);
+        const info = document.getElementById('r'+r+'-info');
+        const chars = tape.querySelectorAll('.rotor-char');
+        
+        rotor.classList.toggle('active', commands[r].active);
+        info.innerText = 'POS: ' + positions[r] + ' | Δ:' + commands[r].delta + ' S:' + commands[r].speed;
+        
+        const scrollPos = -(positions[r] * CHAR_HEIGHT) + 20;
+        tape.style.transform = 'translateY(' + scrollPos + 'px)';
+        
+        chars.forEach(c => {
+            c.classList.remove('active');
+            const cidx = parseInt(c.dataset.idx) % engine.N;
+            if(cidx === positions[r]) c.classList.add('active');
+        });
+    }
+}
+
+function updateViz(logData) {
+    if(!logData || logData.length === 0) return;
+    const last = logData[logData.length - 1];
+    updateRotors(last.commands, last.positions);
+    document.getElementById('statPatterns').innerText = (last.patternCount || 0) + '/16';
+}
+
+function copyOutput() {
+    const text = document.getElementById('outputText').innerText;
+    if(text && text !== 'Ожидание...') {
+        navigator.clipboard.writeText(text);
+        log("✅ Скопировано!", "ok");
+    }
+}
+
+function run(mode) {
+    const alpha = document.getElementById('alphabet').value;
+    const pass = document.getElementById('password').value;
+    const input = document.getElementById('inputText').value;
+    
+    if(!input) { alert("Введите текст!"); return; }
+    
+    engine = new CryptoEngine(alpha, pass);
+    const isEncrypt = mode === 'encrypt';
+    
+    const start = performance.now();
+    const res = isEncrypt ? engine.encrypt(input) : engine.decrypt(input);
+    const time = performance.now() - start;
+    
+    document.getElementById('outputText').innerText = res.text;
+    document.getElementById('statLen').innerText = input.length + ' → ' + res.text.length;
+    document.getElementById('statTime').innerText = time.toFixed(1) + 'ms';
+    
+    updateViz(res.logData);
+    
+    log((isEncrypt ? '🔒 Зашифровано' : '🔓 Расшифровано') + ' ' + input.length + ' символов', "info");
+    
+    if(isEncrypt) {
+        const testEngine = new CryptoEngine(alpha, pass);
+        const check = testEngine.decrypt(res.text);
+        const ok = check.text === input;
+        
+        document.getElementById('statRev').innerText = ok ? '✅ OK' : '❌ FAIL';
+        document.getElementById('statRev').className = 'stat-value ' + (ok ? 'ok' : 'err');
+        
+        log(ok ? '✅ Обратимость подтверждена' : '❌ ОШИБКА обратимости!', ok ? 'ok' : 'err');
+        
+        // Log rotor independence
+        if(res.logData.length > 0) {
+            const cmds = res.logData[0].commands;
+            const deltas = cmds.map(c => c.delta).join(',');
+            log('🎡 Delta: [' + deltas + '] ← Роторы асинхронны!', 'info');
+        }
+    }
+}
+
+function log(msg, type) {
+    const c = document.getElementById('log');
+    const d = document.createElement('div');
+    d.className = 'log-entry ' + type;
+    d.innerText = msg;
+    c.insertBefore(d, c.firstChild);
+    if(c.children.length > 10) c.removeChild(c.lastChild);
+}
+
+window.onload = init;
+</script>
 </body>
 </html>
+
+
+
+              <script>
+                              // БЫЛО (неправильно):
+for(let r=0; r<4; r++) {
+    const b = r * 4;
+    commands.push({
+        delta: Math.floor(values[b] * 10),      // ← values[0], values[4], values[8]...
+        speed: Math.floor(Math.abs(values[b+2]) * 7) + 1  // ← values[2], values[6]...
+    });
+}
+// Проблема: values[0], values[4], values[8] — все от одной нейросети → похожие!
+
+// СТАЛО (правильно):
+for(let r=0; r<4; r++) {
+    const b = r * 4;
+    commands.push({
+        delta: Math.floor(values[b] * 10),
+        speed: Math.floor(Math.abs(values[b+2]) * 7) + 1,
+        // + добавить независимый шум для каждого ротора
+        delta: Math.floor(values[b] * 10) + (step * r * 7) % 5 - 2
+    });
+}
+
+
+              </script>
+                        </body>
+                        </html>       
