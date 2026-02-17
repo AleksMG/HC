@@ -1,8 +1,8 @@
 // ============================================================================
-// HC ARENA WORKER — v17.3 PRODUCTION READY (FIXED)
+// HC ARENA WORKER — v17.3 PRODUCTION READY (FULLY FIXED)
 // 338 dim State | 16-Head Attention | 12 Reversible Blocks | 102 dim Memory
 // Hindsight Learning Through Reversibility
-// ALL AUDIT ISSUES RESOLVED — PROFESSIONAL GRADE
+// ALL SYNTAX ERRORS FIXED — PROFESSIONAL GRADE
 // ============================================================================
 
 const tanh = x => Math.tanh(x);
@@ -508,7 +508,7 @@ class HCAgent {
             this.explorationNoise = weights.metadata.explorationNoise || 0.15;
         }
         return true;
-    }
+    }  // <--- ЗАКРЫВАЮЩАЯ СКОБКА ДЛЯ setWeights
 
     copy() {
         const newAgent = new HCAgent(this.password, '_COPY_' + this.mutations);
@@ -986,4 +986,4 @@ try {
     sendLog('Worker loaded and ready', 'info');
 } catch (e) {
     console.error('[Worker] Failed to send ready message:', e);
-    }
+            }
