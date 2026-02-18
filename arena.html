@@ -303,7 +303,7 @@ function handleWeightsExport(data) {
 }
 
 // ============================================================================
-// GAME INITIALIZATION
+// GAME INITIALIZATION — ДОБАВЛЕНЫ knockback ПОЛЯ
 // ============================================================================
 function initGame() {
     blue = { 
@@ -311,14 +311,18 @@ function initGame() {
         hp: 100, maxHp: 100, 
         size: 40, 
         damageDealt: 0, damageTaken: 0,
-        wins: 0
+        wins: 0,
+        knockbackX: 0,
+        knockbackY: 0
     };
     red = { 
         x: 600, y: 300, vx: 0, vy: 0, 
         hp: 100, maxHp: 100, 
         size: 40, 
         damageDealt: 0, damageTaken: 0,
-        wins: 0
+        wins: 0,
+        knockbackX: 0,
+        knockbackY: 0
     };
 
     obstacles = [
@@ -386,7 +390,7 @@ function captureCanvasForAgent(agentX, agentY, targetX, targetY) {
 }
 
 // ============================================================================
-// ФИЗИКА — ПЛАВНОЕ ДВИЖЕНИЕ 40 ПИКС/СЕК (БЕЗ УСКОРЕНИЯ)
+// ФИЗИКА — ПЛАВНОЕ ДВИЖЕНИЕ 40 ПИКС/СЕК (ИСПРАВЛЕНО)
 // ============================================================================
 function applyActions(actions) {
     if (!running || !actions) return;
@@ -396,66 +400,83 @@ function applyActions(actions) {
     // ========================================================================
     // ПАРАМЕТРЫ ДВИЖЕНИЯ
     // ========================================================================
-    const TARGET_SPEED = 40;           // ← 40 пикселей в секунду
-    const PIXELS_PER_FRAME = TARGET_SPEED / 60;  // = 0.67 пикс/кадр
+    const TARGET_SPEED = 40;
+    const PIXELS_PER_FRAME = TARGET_SPEED / 60;
+    const BOUNCE_DAMPING = 0.8;
+    const KNOCKBACK_DECAY = 0.85;
+    const FRICTION = 0.90;
     
-    // Базовая агрессия (0.4-1.0)
     const sp1 = 0.4 + a1.aggression * 0.6;
     const sp2 = 0.4 + a2.aggression * 0.6;
     
     // ========================================================================
-    // УСТАНАВЛИВАЕМ СКОРОСТЬ (БЕЗ УСКОРЕНИЯ!)
+    // 1. ПРИМЕНЯЕМ НАКОПЛЕННЫЙ KNOCKBACK (с затуханием)
     // ========================================================================
-    blue.vx = a1.fx * sp1 * PIXELS_PER_FRAME;
-    blue.vy = a1.fy * sp1 * PIXELS_PER_FRAME;
-    red.vx = a2.fx * sp2 * PIXELS_PER_FRAME;
-    red.vy = a2.fy * sp2 * PIXELS_PER_FRAME;
+    blue.vx += blue.knockbackX;
+    blue.vy += blue.knockbackY;
+    red.vx += red.knockbackX;
+    red.vy += red.knockbackY;
+    blue.knockbackX *= KNOCKBACK_DECAY;
+    blue.knockbackY *= KNOCKBACK_DECAY;
+    red.knockbackX *= KNOCKBACK_DECAY;
+    red.knockbackY *= KNOCKBACK_DECAY;
 
     // ========================================================================
-    // ДВИЖЕНИЕ (с дробной позицией для плавности)
+    // 2. УСТАНАВЛИВАЕМ СКОРОСТЬ ОТ АГЕНТА
     // ========================================================================
-    blue.x += blue.vx;  // ← 200.67, 201.34, 202.01...
+    blue.vx += a1.fx * sp1 * PIXELS_PER_FRAME;
+    blue.vy += a1.fy * sp1 * PIXELS_PER_FRAME;
+    red.vx += a2.fx * sp2 * PIXELS_PER_FRAME;
+    red.vy += a2.fy * sp2 * PIXELS_PER_FRAME;
+
+    // ========================================================================
+    // 3. ТРЕНИЕ для плавной остановки
+    // ========================================================================
+    blue.vx *= FRICTION;
+    blue.vy *= FRICTION;
+    red.vx *= FRICTION;
+    red.vy *= FRICTION;
+
+    // ========================================================================
+    // 4. ДВИЖЕНИЕ (с дробной позицией для плавности)
+    // ========================================================================
+    blue.x += blue.vx;
     blue.y += blue.vy;
     red.x += red.vx;
     red.y += red.vy;
 
     // ========================================================================
-    // ФИЗИКА (стены, препятствия, бой)
+    // 5. СТЕНЫ — ОТБОЙ С ЗАТУХАНИЕМ
     // ========================================================================
+    if (blue.x < 20) { blue.vx = -blue.vx * BOUNCE_DAMPING; blue.x = 20; }
+    if (blue.x > canvas.width - 20) { blue.vx = -blue.vx * BOUNCE_DAMPING; blue.x = canvas.width - 20; }
+    if (blue.y < 20) { blue.vy = -blue.vy * BOUNCE_DAMPING; blue.y = 20; }
+    if (blue.y > canvas.height - 20) { blue.vy = -blue.vy * BOUNCE_DAMPING; blue.y = canvas.height - 20; }
     
-    // Стены
-    if (blue.x < 20 || blue.x > canvas.width - 20) {
-        blue.vx *= -1.5;
-        blue.x = Math.max(20, Math.min(canvas.width - 20, blue.x));
-    }
-    if (blue.y < 20 || blue.y > canvas.height - 20) {
-        blue.vy *= -1.5;
-        blue.y = Math.max(20, Math.min(canvas.height - 20, blue.y));
-    }
-    if (red.x < 20 || red.x > canvas.width - 20) {
-        red.vx *= -1.5;
-        red.x = Math.max(20, Math.min(canvas.width - 20, red.x));
-    }
-    if (red.y < 20 || red.y > canvas.height - 20) {
-        red.vy *= -1.5;
-        red.y = Math.max(20, Math.min(canvas.height - 20, red.y));
-    }
+    if (red.x < 20) { red.vx = -red.vx * BOUNCE_DAMPING; red.x = 20; }
+    if (red.x > canvas.width - 20) { red.vx = -red.vx * BOUNCE_DAMPING; red.x = canvas.width - 20; }
+    if (red.y < 20) { red.vy = -red.vy * BOUNCE_DAMPING; red.y = 20; }
+    if (red.y > canvas.height - 20) { red.vy = -red.vy * BOUNCE_DAMPING; red.y = canvas.height - 20; }
 
-    // Препятствия
+    // ========================================================================
+    // 6. ПРЕПЯТСТВИЯ — ОТБОЙ С ЗАТУХАНИЕМ
+    // ========================================================================
     for (let obs of obstacles) {
         if (blue.x > obs.x - obs.w/2 - 20 && blue.x < obs.x + obs.w/2 + 20 &&
             blue.y > obs.y - obs.h/2 - 20 && blue.y < obs.y + obs.h/2 + 20) {
-            blue.vx *= -1.5;
-            blue.vy *= -1.5;
+            blue.vx = -blue.vx * BOUNCE_DAMPING;
+            blue.vy = -blue.vy * BOUNCE_DAMPING;
         }
         if (red.x > obs.x - obs.w/2 - 20 && red.x < obs.x + obs.w/2 + 20 &&
             red.y > obs.y - obs.h/2 - 20 && red.y < obs.y + obs.h/2 + 20) {
-            red.vx *= -1.5;
-            red.vy *= -1.5;
+            red.vx = -red.vx * BOUNCE_DAMPING;
+            red.vy = -red.vy * BOUNCE_DAMPING;
         }
     }
 
-    // Бой
+    // ========================================================================
+    // 7. БОЙ — KNOCKBACK СОХРАНЯЕТСЯ
+    // ========================================================================
     const dist = Math.hypot(blue.x - red.x, blue.y - red.y);
     if (dist < 40) {
         const bSp = Math.hypot(blue.vx, blue.vy);
@@ -476,13 +497,15 @@ function applyActions(actions) {
         }
 
         const ang = Math.atan2(blue.y - red.y, blue.x - red.x);
-        blue.vx += Math.cos(ang) * 4;
-        blue.vy += Math.sin(ang) * 4;
-        red.vx -= Math.cos(ang) * 4;
-        red.vy -= Math.sin(ang) * 4;
+        blue.knockbackX = Math.cos(ang) * 4;
+        blue.knockbackY = Math.sin(ang) * 4;
+        red.knockbackX = -Math.cos(ang) * 4;
+        red.knockbackY = -Math.sin(ang) * 4;
     }
 
-    // Проверка смерти
+    // ========================================================================
+    // 8. ПРОВЕРКА СМЕРТИ
+    // ========================================================================
     if (blue.hp <= 0 || red.hp <= 0) {
         const winner = blue.hp > 0 ? 'BLUE' : 'RED';
         if (winner === 'BLUE') blueWins++; else redWins++;
@@ -506,7 +529,7 @@ function applyActions(actions) {
 }
 
 // ============================================================================
-// ОТРИСОВКА — с округлением до целых пикселей
+// ОТРИСОВКА
 // ============================================================================
 function render() {
     if (!running) {
@@ -516,19 +539,16 @@ function render() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Препятствия
     ctx.fillStyle = '#2a2a40';
     for (let obs of obstacles) {
         ctx.fillRect(obs.x - obs.w / 2, obs.y - obs.h / 2, obs.w, obs.h);
     }
 
-    // Синий агент (округляем позицию до целого пикселя)
     ctx.fillStyle = '#00f2ff';
     ctx.shadowColor = '#00f2ff';
     ctx.shadowBlur = blue.hp < 30 ? 30 : 20;
     ctx.fillRect(Math.round(blue.x) - 20, Math.round(blue.y) - 20, 40, 40);
 
-    // Красный агент
     ctx.fillStyle = '#ff0055';
     ctx.shadowColor = '#ff0055';
     ctx.shadowBlur = red.hp < 30 ? 30 : 20;
@@ -536,7 +556,6 @@ function render() {
 
     ctx.shadowBlur = 0;
 
-    // FPS счетчик
     frameCount++;
     const now = performance.now();
     if (now - lastFrameTime >= 1000) {
@@ -610,10 +629,8 @@ function startGame() {
         });
     }
 
-    // Запускаем цикл действий
     requestActions();
     
-    // Запускаем отрисовку
     if (!animFrame) {
         render();
     }
@@ -792,28 +809,22 @@ function raycast(x, y, angle, maxDist) {
 function getInput(me, enemy) {
     const input = [];
 
-    // Position
     input.push(me.x / canvas.width);
     input.push(me.y / canvas.height);
 
-    // Velocity
     input.push(me.vx * 0.5);
     input.push(me.vy * 0.5);
 
-    // Enemy relative
     input.push((enemy.x - me.x) / canvas.width);
     input.push((enemy.y - me.y) / canvas.height);
     input.push(enemy.vx * 0.5);
     input.push(enemy.vy * 0.5);
 
-    // Distance
     input.push(Math.hypot(enemy.x - me.x, enemy.y - me.y) / canvas.width);
 
-    // Health
     input.push(me.hp / me.maxHp);
     input.push(enemy.hp / enemy.maxHp);
 
-    // 32 rays
     for (let i = 0; i < 32; i++) {
         const angle = (i / 32) * Math.PI * 2;
         input.push(raycast(me.x, me.y, angle, 400));
@@ -837,7 +848,6 @@ window.onload = function() {
     initWorker();
     initGame();
     
-    // Запускаем отрисовку
     animFrame = requestAnimationFrame(render);
     
     requestStats();
@@ -856,3 +866,4 @@ window.onbeforeunload = function() {
 </script>
 </body>
 </html>
+
