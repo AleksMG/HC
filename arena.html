@@ -402,12 +402,12 @@ function applyActions(actions) {
     // ========================================================================
     const TARGET_SPEED = 40;
     const PIXELS_PER_FRAME = TARGET_SPEED / 60;
-    const BOUNCE_DAMPING = 0.8;
-    const KNOCKBACK_DECAY = 0.85;
+    const BOUNCE_DAMPING = 0.2;
+    const KNOCKBACK_DECAY = 0.95;
     const FRICTION = 0.90;
     
-    const sp1 = 2 + a1.aggression * 0.6;
-    const sp2 = 2 + a2.aggression * 0.6;
+    const sp1 = 4 + a1.aggression * 0.6;
+    const sp2 = 4 + a2.aggression * 0.6;
     
     // ========================================================================
     // 1. ПРИМЕНЯЕМ НАКОПЛЕННЫЙ KNOCKBACK (с затуханием)
