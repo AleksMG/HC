@@ -2,12 +2,13 @@
 
 ## 🚀 Запуск Arena прямо сейчас
 
-**[👉 Открыть AI Arena в браузере →](./arena.html)**
+**[👉 Открыть AI Arena в браузере (Live) →](https://htmlpreview.github.io/?https://github.com/AleksMG/HC/blob/codespace-solid-bassoon-7vw45496wrwq3p9qr/arena.html)**
 
-Или запустите сервер и откройте:
+**Или** запустить локально на вашем компьютере:
 ```bash
+cd /workspaces/HC
 python3 -m http.server 8000
-# Затем перейдите на http://localhost:8000/arena.html
+# Затем откройте: http://localhost:8000/arena.html
 ```
 
 ---
