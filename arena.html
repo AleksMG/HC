@@ -928,7 +928,7 @@ class BehaviorArbiter {
     }
     
     select(behaviors, context, skills = null) {
-        if (context.enemyDistance < 5 && context.health > 0.3) {
+        if (context.enemyDistance < 150 && context.health > 0.3) {
             behaviors.combat *= 1.5;
         } else {
             behaviors.combat *= 0.1;
