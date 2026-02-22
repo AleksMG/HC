@@ -2653,11 +2653,12 @@ for(const p of this.points) {
         }
         
         return { 
-            blue: this.enemies[0], 
-            red: this.enemies[1], 
-            pointsLeft: (this.points || []).filter(p => p && !p.collected).length, 
-            episode: this.episode 
-        };
+            return {
+    blue: (this.enemies && this.enemies[0]) ? this.enemies[0] : null,
+    red: (this.enemies && this.enemies[1]) ? this.enemies[1] : null,
+    pointsLeft: (this.points || []).filter(p => p && !p.collected).length,
+    episode: this.episode
+};
     }
     
     resetEpisode() {
