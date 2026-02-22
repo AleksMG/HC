@@ -2206,7 +2206,7 @@ class World {
             if (!p.alive) continue;
             for(const e of this.enemies) {
                 if (!e.alive || e.id === p.owner) continue;
-                if (Utils.dist(p, e) < 10) {
+                if (Utils.dist(p, e) < 15) {
                     // Dodge check for projectile
                     const dodgeRoll = Math.random();
                     if (dodgeRoll < e.stats.dodgeChance) {
