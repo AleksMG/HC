@@ -1318,6 +1318,14 @@
                     <input type="checkbox" id="enableHebbian" checked aria-describedby="enableHebbianDesc">
                     <span>Hebbian Learning (Fast Associations)</span>
                 </label>
+                <label class="toggle">
+                    <input type="checkbox" id="compactInputs" aria-describedby="compactInputsDesc">
+                    <span>Compact Inputs (25 vs 57)</span>
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" id="enableWeightInheritance" checked aria-describedby="enableWeightInheritanceDesc">
+                    <span>Weight Inheritance (70%)</span>
+                </label>
             </section>
 
             <!-- METRICS PANEL -->
@@ -1440,6 +1448,8 @@
                     <div class="debug-item"><span class="debug-label">Expert[1]</span><span class="debug-value" id="dbgExpert1">—</span></div>
                     <div class="debug-item"><span class="debug-label">LoadBal</span><span class="debug-value" id="dbgLoadBal">—</span></div>
                     <div class="debug-item"><span class="debug-label">Hebbian</span><span class="debug-value" id="dbgHebbian">—</span></div>
+                    <div class="debug-item"><span class="debug-label">SocialRep</span><span class="debug-value" id="dbgSocialRep">—</span></div>
+                    <div class="debug-item"><span class="debug-label">Archetype</span><span class="debug-value" id="dbgArchetype">—</span></div>
                 </div>
                 <div class="confidence-meter">
                     <span>Conf:</span>
@@ -1455,56 +1465,16 @@
 <script>
 /**
  * ============================================================================
- * AI ARENA v4.0.1 — PROFESSIONAL COMPLETE FIXED
- * ============================================================================
- * ✅ ВСЕ ВЫЯВЛЕННЫЕ ОШИБКИ ИСПРАВЛЕНЫ
- * ✅ ПОЛНАЯ СОХРАННОСТЬ АРХИТЕКТУРЫ: 57→24→48→36→16 + RNN(16)
- * ✅ ДЕТЕРМИНИРОВАННАЯ ИНИЦИАЛИЗАЦИЯ ОТ КЛЮЧА + TIMESTAMP
- * ✅ ОПТИМИЗАЦИИ: кэширование, spatial hashing, early-exit, Float32Array
- * ✅ ГАРМОНИЗАЦИЯ КООРДИНАТ: logical(820×600) ↔ physical(canvas)
- * ✅ ПОЛНАЯ NULL-SAFETY И ВАЛИДАЦИЯ ВХОДНЫХ ДАННЫХ
- * ✅ ДОСТУПНОСТЬ: keyboard navigation, ARIA, touch support, reduced motion
- * ✅ CSP-COMPLIANT: безопасная загрузка, HTML escaping
- * ✅ MoE: эксперты подключены, load balancing применяется
- * ✅ Attention: правильная Q·K^T матрица с multi-head
- * ✅ PolicySelector: context передаётся в update()
- * ✅ Entropy bonus: реально применяется к градиентам
- * ✅ Hebbian learning: восстановлен для быстрых ассоциаций
+ * AI ARENA v4.0.1 — PROFESSIONAL COMPLETE
  * ============================================================================
  */
 
 'use strict';
 
 // ============================================================================
-// GLOBAL CONFIGURATION — DETERMINISTIC INIT + ARCHITECTURE CONSTANTS
+// GLOBAL CONFIGURATION
 // ============================================================================
-/**
- * @typedef {Object} ArenaSettings
- * @property {boolean} enableTraining - TD(λ) обучение
- * @property {boolean} enableCritic - Actor-Critic оценка ценности
- * @property {boolean} enablePolicySelector - Обучаемая политика выбора поведения
- * @property {boolean} enableEvolution - Мутация весов
- * @property {boolean} enableSkillEvolution - Эволюция навыков
- * @property {boolean} enableMoE - Mixture-of-Experts с балансировкой
- * @property {boolean} enableConsolidation - Консолидация памяти
- * @property {boolean} enableFighting - Бои между агентами
- * @property {boolean} enableRanged - Дистанционное оружие
- * @property {boolean} enableVisualization - Визуализация нейронов
- * @property {boolean} enableHebbian - Hebbian learning для быстрых ассоциаций
- * @property {number} learningRate - α: скорость обучения
- * @property {number} lambda - λ: параметр затухания eligibility traces
- * @property {number} gamma - γ: дисконт будущего вознаграждения
- * @property {number} entropyCoeff - коэффициент энтропийной регуляризации
- * @property {number} mutationRate - вероятность мутации веса
- * @property {number} skillGrowthRate - скорость роста навыков
- * @property {string} seed - детерминированный seed для инициализации
- * @property {number} timestamp - время инициализации для вариативности
- * @property {string} version - версия приложения
- */
-
-/** @type {ArenaSettings} */
 window.arenaConfig = Object.freeze({
-    // Feature flags
     enableTraining: true,
     enableCritic: true,
     enablePolicySelector: true,
@@ -1516,24 +1486,22 @@ window.arenaConfig = Object.freeze({
     enableRanged: true,
     enableVisualization: false,
     enableHebbian: true,
-    
-    // Hyperparameters
+    compactInputs: false,
+    enableWeightInheritance: true,
     learningRate: 0.005,
     lambda: 0.95,
     gamma: 0.99,
     entropyCoeff: 0.01,
     mutationRate: 0.1,
     skillGrowthRate: 0.04,
-    
-    // Deterministic initialization
     seed: 'ARENA_V4_PROFESSIONAL_' + (typeof performance !== 'undefined' ? performance.now() : Date.now()).toFixed(0),
     timestamp: Date.now(),
     version: '4.0.1',
-    
-    // Architecture constants — НЕ МЕНЯТЬ для совместимости
     ARCH: Object.freeze({
         INPUT_DIM: 57,
+        INPUT_DIM_COMPACT: 25,
         EMBEDDING_DIM: 24,
+        EMBEDDING_DIM_COMPACT: 16,
         HIDDEN1: 48,
         HIDDEN2: 36,
         OUTPUT_DIM: 16,
@@ -1552,86 +1520,28 @@ window.arenaConfig = Object.freeze({
 });
 
 // ============================================================================
-// UTILITIES — NUMERICALLY STABLE, SAFE, OPTIMIZED
+// UTILITIES
 // ============================================================================
-/**
- * @namespace Utils
- * @description Математические утилиты с защитой от numerical instability
- */
 const Utils = Object.freeze({
-    /**
-     * Clamp value to [min, max]
-     * @param {number} v - значение
-     * @param {number} min - минимум
-     * @param {number} max - максимум
-     * @returns {number} ограниченное значение
-     */
     clamp: (v, min, max) => Math.max(min, Math.min(max, v)),
-    
-    /**
-     * Linear interpolation
-     * @param {number} a - начало
-     * @param {number} b - конец
-     * @param {number} t - коэффициент [0,1]
-     * @returns {number} интерполированное значение
-     */
     lerp: (a, b, t) => a + (b - a) * Utils.clamp(t, 0, 1),
-    
-    /**
-     * Euclidean distance
-     * @param {{x:number,y:number}} a - точка A
-     * @param {{x:number,y:number}} b - точка B
-     * @returns {number} расстояние
-     */
     dist: (a, b) => Math.hypot((a?.x ?? 0) - (b?.x ?? 0), (a?.y ?? 0) - (b?.y ?? 0)),
-    
-    /**
-     * Normalize vector to unit length
-     * @param {number} x - компонента X
-     * @param {number} y - компонента Y
-     * @returns {{x:number,y:number}} нормализованный вектор
-     */
     normalize: (x, y) => {
         const l = Math.hypot(x, y);
         return l > 1e-10 ? { x: x / l, y: y / l } : { x: 0, y: 0 };
     },
-    
-    /**
-     * Hyperbolic tangent — numerically stable
-     * @param {number} x - вход
-     * @returns {number} tanh(x)
-     */
     tanh: (x) => {
         if (x > 20) return 1;
         if (x < -20) return -1;
         const e = Math.exp(2 * x);
         return (e - 1) / (e + 1);
     },
-    
-    /**
-     * Sigmoid — numerically stable
-     * @param {number} x - вход
-     * @returns {number} σ(x)
-     */
     sigmoid: (x) => {
         if (x > 20) return 1;
         if (x < -20) return 0;
         return 1 / (1 + Math.exp(-x));
     },
-    
-    /**
-     * Leaky ReLU activation
-     * @param {number} x - вход
-     * @param {number} α - коэффициент утечки
-     * @returns {number} активация
-     */
     leakyRelu: (x, α = 0.01) => x > 0 ? x : α * x,
-    
-    /**
-     * Argmax — индекс максимального элемента
-     * @param {number[]} arr - массив
-     * @returns {number} индекс максимума
-     */
     argmax: (arr) => {
         if (!arr || arr.length === 0) return -1;
         let mi = 0;
@@ -1640,56 +1550,19 @@ const Utils = Object.freeze({
         }
         return mi;
     },
-    
-    /**
-     * Random float in [min, max)
-     * @param {number} min - минимум
-     * @param {number} max - максимум
-     * @returns {number} случайное значение
-     */
     rand: (min, max) => Math.random() * (max - min) + min,
-    
-    /**
-     * Random integer in [min, max]
-     * @param {number} min - минимум
-     * @param {number} max - максимум
-     * @returns {number} случайное целое
-     */
     randInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
-    
-    /**
-     * Safe number conversion with fallback
-     * @param {*} val - значение
-     * @param {number} fallback - значение по умолчанию
-     * @returns {number} валидное число
-     */
-    safeNumber: (val, fallback = 0) => 
-        (typeof val === 'number' && isFinite(val)) ? val : fallback,
-    
-    /**
-     * Numerically stable softmax with temperature
-     * @param {number[]} arr - входной вектор
-     * @param {number} temp - температура (>0)
-     * @returns {number[]} вероятности, сумма = 1
-     */
+    safeNumber: (val, fallback = 0) => (typeof val === 'number' && isFinite(val)) ? val : fallback,
     softmax: (arr, temp = 1) => {
         if (!arr || !Array.isArray(arr) || arr.length === 0) return [];
         const max = Math.max(...arr);
         const exps = arr.map(v => {
             const scaled = (v - max) / temp;
-            // Prevent overflow: exp(709) is near Number.MAX_VALUE
             return scaled > 700 ? 0 : Math.exp(Math.min(scaled, 700));
         });
         const sum = exps.reduce((s, x) => s + x, 0) || 1e-10;
         return exps.map(e => e / sum);
     },
-    
-    /**
-     * Numerically stable log-softmax
-     * @param {number[]} arr - входной вектор
-     * @param {number} temp - температура
-     * @returns {number[]} log-вероятности
-     */
     logSoftmax: (arr, temp = 1) => {
         if (!arr || !Array.isArray(arr) || arr.length === 0) return [];
         const max = Math.max(...arr);
@@ -1701,13 +1574,6 @@ const Utils = Object.freeze({
         );
         return arr.map(v => ((v - max) / temp - logSumExp));
     },
-    
-    /**
-     * Policy gradient loss with safety checks
-     * @param {number[]} logProbs - логарифмы вероятностей действий
-     * @param {number[]} advantages - преимущества
-     * @returns {number} loss value
-     */
     policyGradientLoss: (logProbs, advantages) => {
         if (!logProbs?.length || !advantages?.length) return 0;
         const len = Math.min(logProbs.length, advantages.length);
@@ -1720,12 +1586,6 @@ const Utils = Object.freeze({
         }
         return -sum / len;
     },
-    
-    /**
-     * Entropy bonus for exploration
-     * @param {number[]} probs - вероятности
-     * @returns {number} энтропия (положительная = больше exploration)
-     */
     entropyBonus: (probs) => {
         if (!probs?.length) return 0;
         let sum = 0;
@@ -1733,15 +1593,8 @@ const Utils = Object.freeze({
             const safeP = Math.max(Utils.safeNumber(p, 0), 1e-10);
             sum += safeP * Math.log(safeP);
         }
-        return -sum; // Negative entropy → positive bonus
+        return -sum;
     },
-    
-    /**
-     * MoE load balance loss — penalizes uneven expert usage
-     * @param {number[]} gateProbs - вероятности выбора экспертов
-     * @param {number[]} expertUsage - фактическое использование
-     * @returns {number} loss (меньше = лучше баланс)
-     */
     moeLoadBalanceLoss: (gateProbs, expertUsage) => {
         if (!gateProbs?.length) return 0;
         const numExperts = gateProbs.length;
@@ -1753,54 +1606,18 @@ const Utils = Object.freeze({
         }
         return sum / numExperts;
     },
-    
-    /**
-     * Generalized Advantage Estimation (GAE)
-     * @param {number[]} rewards - вознаграждения
-     * @param {number[]} values - оценки ценности состояний
-     * @param {number} nextValue - ценность следующего состояния
-     * @param {number} gamma - дисконт
-     * @param {number} lambda - параметр затухания
-     * @returns {number[]} преимущества для каждого шага
-     */
     computeGAE: (rewards, values, nextValue, gamma = 0.99, lambda = 0.95) => {
         const advantages = new Array(rewards.length);
         let advantage = 0;
         for (let t = rewards.length - 1; t >= 0; t--) {
             const nextVal = (t === rewards.length - 1) ? nextValue : values[t + 1];
-            const delta = Utils.safeNumber(rewards[t], 0) + 
-                         gamma * Utils.safeNumber(nextVal, 0) - 
-                         Utils.safeNumber(values[t], 0);
+            const delta = Utils.safeNumber(rewards[t], 0) + gamma * Utils.safeNumber(nextVal, 0) - Utils.safeNumber(values[t], 0);
             advantage = delta + gamma * lambda * advantage;
             advantages[t] = advantage;
         }
         return advantages;
     },
-    
-    /**
-     * TD error calculation
-     * @param {number} reward - немедленное вознаграждение
-     * @param {number} value - текущая оценка ценности
-     * @param {number} nextValue - оценка следующего состояния
-     * @param {number} gamma - дисконт
-     * @returns {number} TD error
-     */
-    tdError: (reward, value, nextValue, gamma = 0.99) => 
-        Utils.safeNumber(reward, 0) + 
-        gamma * Utils.safeNumber(nextValue, 0) - 
-        Utils.safeNumber(value, 0),
-    
-    /**
-     * Distance from point to line segment
-     * @param {number} ax - точка A X
-     * @param {number} ay - точка A Y
-     * @param {number} bx - точка B X
-     * @param {number} by - точка B Y
-     * @param {number} cx - точка P X
-     * @param {number} cy - точка P Y
-     * @returns {number} минимальное расстояние
-     * @private
-     */
+    tdError: (reward, value, nextValue, gamma = 0.99) => Utils.safeNumber(reward, 0) + gamma * Utils.safeNumber(nextValue, 0) - Utils.safeNumber(value, 0),
     _pointSegDist: (ax, ay, bx, by, cx, cy) => {
         const vx = bx - ax, vy = by - ay;
         const wx = cx - ax, wy = cy - ay;
@@ -1812,15 +1629,6 @@ const Utils = Object.freeze({
         const pbx = ax + b * vx, pby = ay + b * vy;
         return Math.hypot(cx - pbx, cy - pby);
     },
-    
-    /**
-     * Line-of-sight check with obstacle avoidance
-     * @param {{x:number,y:number}} a - начало луча
-     * @param {{x:number,y:number}} b - конец луча
-     * @param {Array<{x:number,y:number}>} walls - препятствия
-     * @param {number} wallRadius - радиус препятствий
-     * @returns {boolean} true если видимость есть
-     */
     hasLineOfSight: (a, b, walls, wallRadius = 14) => {
         if (!a || !b) return false;
         if (!walls?.length) return true;
@@ -1831,15 +1639,6 @@ const Utils = Object.freeze({
         }
         return true;
     },
-    
-    /**
-     * Project raw inputs through embedding layer
-     * @param {number[]} rawInputs - входной вектор
-     * @param {number[][]} embeddingWeights - матрица весов [input×embedding]
-     * @param {number[]} bias - bias вектор
-     * @param {number} outputDim - размерность выхода
-     * @returns {number[]} projected activations
-     */
     projectInput: (rawInputs, embeddingWeights, bias, outputDim) => {
         const projected = new Array(outputDim).fill(0);
         for (let o = 0; o < outputDim; o++) {
@@ -1852,29 +1651,14 @@ const Utils = Object.freeze({
         }
         return projected;
     },
-    
-    /**
-     * Deterministic hash from seed + coordinates
-     * @param {string} seed - базовый seed
-     * @param {number} i - координата row
-     * @param {number} j - координата col
-     * @returns {number} hash в [0, 1)
-     */
     hashSeed: (seed, i, j) => {
         if (!seed) seed = 'default';
         let h = String(seed).split('').reduce((a, c, idx) => {
             return ((a * 31 + c.charCodeAt(0)) ^ (idx * 17 + i * 7919 + j * 104729)) % 2147483647;
         }, String(seed).length) || 12345;
-        // Mix with avalanche effect
         h = (h * 2654435761) >>> 0;
         return h / 4294967296;
     },
-    
-    /**
-     * Deep clone for plain objects/arrays
-     * @param {*} obj - объект для клонирования
-     * @returns {*} клон
-     */
     deepClone: (obj) => {
         if (obj === null || typeof obj !== 'object') return obj;
         if (obj instanceof Float32Array) return new Float32Array(obj);
@@ -1885,12 +1669,6 @@ const Utils = Object.freeze({
         }
         return clone;
     },
-    
-    /**
-     * Verify attention matrix properties (for debugging)
-     * @param {number[][]} scores — attention scores matrix
-     * @returns {Object} validation results
-     */
     validateAttention: (scores) => {
         if (!scores?.length || !scores[0]?.length) return { valid: false, error: 'empty' };
         const n = scores.length;
@@ -1908,69 +1686,40 @@ const Utils = Object.freeze({
         }
         return { valid: rowSumValid && !hasInvalid, shape: [n, m], rowSumValid, hasInvalid };
     },
-    
-    /**
-     * Compute actual load balance metric (for monitoring)
-     * @param {number[]} usage — expert usage probabilities
-     * @returns {number} coefficient of variation (lower = better balance)
-     */
     computeLoadBalance: (usage) => {
         if (!usage?.length) return 1;
         const mean = usage.reduce((s, v) => s + v, 0) / usage.length;
         if (mean < 1e-10) return 1;
         const variance = usage.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / usage.length;
-        return Math.sqrt(variance) / mean; // CV: lower = more balanced
+        return Math.sqrt(variance) / mean;
     }
 });
 
 // ============================================================================
-// SEEDED RNG — DETERMINISTIC WEIGHT INITIALIZATION
+// SEEDED RNG
 // ============================================================================
-/**
- * @class SeededRNG
- * @description Детерминированный генератор для воспроизводимой инициализации весов
- * @param {string} seed - базовый seed (ключ + timestamp)
- */
 class SeededRNG {
-    /**
-     * @param {string} seed - seed строка
-     */
     constructor(seed) {
-        /** @private */
         this._baseSeed = String(seed || 'default').split('').reduce((a, c, i) => {
             return ((a * 31 + c.charCodeAt(0)) ^ (i * 17)) % 2147483647;
         }, String(seed || 'default').length) || 12345;
-        /** @private */
         this._state = this._baseSeed;
     }
     
-    /**
-     * Generate next random number in [0, 1)
-     * @returns {number} случайное число
-     */
     next() {
-        // Xorshift32 algorithm
         let x = this._state;
         x ^= x << 13;
         x ^= x >>> 17;
         x ^= x << 5;
-        this._state = x >>> 0; // Ensure unsigned
+        this._state = x >>> 0;
         return (x * 0x2545F4914F6CDD1D) >>> 0 / 4294967296;
     }
     
-    /**
-     * Derive weight matrix deterministically from seed
-     * @param {number} rows - количество строк
-     * @param {number} cols - количество колонок
-     * @param {number} scale - масштаб весов
-     * @returns {number[][]} матрица весов
-     */
     deriveWeights(rows, cols, scale) {
         const weights = [];
         for (let i = 0; i < rows; i++) {
             const row = [];
             for (let j = 0; j < cols; j++) {
-                // Deterministic hash — no state mutation
                 const hash = Utils.hashSeed(String(this._baseSeed), i, j);
                 row.push((hash * 2 - 1) * scale);
             }
@@ -1979,12 +1728,6 @@ class SeededRNG {
         return weights;
     }
     
-    /**
-     * Derive bias vector deterministically
-     * @param {number} length - длина вектора
-     * @param {number} scale - масштаб
-     * @returns {number[]} bias вектор
-     */
     deriveVector(length, scale) {
         const vec = [];
         for (let i = 0; i < length; i++) {
@@ -1994,52 +1737,26 @@ class SeededRNG {
         return vec;
     }
     
-    /**
-     * Reset RNG state (for reproducibility)
-     */
     reset() { this._state = this._baseSeed; }
-    
-    /**
-     * Get base seed (for serialization)
-     * @returns {string} базовый seed
-     */
     getSeed() { return String(this._baseSeed); }
 }
 
 // ============================================================================
-// NEURAL NETWORK — DUAL-MEMORY ARCHITECTURE 57→24→48→36→16 + RNN(16)
+// NEURAL NETWORK
 // ============================================================================
-/**
- * @class NeuralNetwork
- * @description Основная нейросеть с dual-memory, attention, MoE, Hebbian learning
- * 
- * Architecture:
- * - Input: 57 → Embedding: 24
- * - Memory: permanent(16) + predictive(16) → concatenated
- * - Hidden1: (24+32) → 48 with 4-head self-attention (Q·K^T matrix)
- * - MoE: 4 experts with load balancing (ACTUALLY CONNECTED)
- * - Hidden2: 48 → 36
- * - Output: 36 → 16
- * - Memory update: predictive ← h2[:16], permanent ← consolidation
- */
 class NeuralNetwork {
-    /**
-     * @param {Object} config - конфигурация
-     */
     constructor(config = {}) {
-        // Architecture — preserve exact dimensions
-        this.inputDim = config.inputDim ?? arenaConfig.ARCH.INPUT_DIM;
-        this.embeddingDim = config.embeddingDim ?? arenaConfig.ARCH.EMBEDDING_DIM;
+        this.compactMode = arenaConfig.compactInputs;
+        this.inputDim = config.inputDim ?? (this.compactMode ? arenaConfig.ARCH.INPUT_DIM_COMPACT : arenaConfig.ARCH.INPUT_DIM);
+        this.embeddingDim = config.embeddingDim ?? (this.compactMode ? arenaConfig.ARCH.EMBEDDING_DIM_COMPACT : arenaConfig.ARCH.EMBEDDING_DIM);
         this.hidden1 = config.hidden1 ?? arenaConfig.ARCH.HIDDEN1;
         this.hidden2 = config.hidden2 ?? arenaConfig.ARCH.HIDDEN2;
         this.outputDim = config.outputDim ?? arenaConfig.ARCH.OUTPUT_DIM;
         this.memoryDim = config.memoryDim ?? arenaConfig.ARCH.MEMORY_DIM;
         
-        // Deterministic initialization
         this.seed = config.seed ?? arenaConfig.seed;
         this._rng = new SeededRNG(this.seed);
         
-        // === WEIGHT MATRICES (seed-derived) ===
         this._inputEmbedding = this._rng.deriveWeights(this.inputDim, this.embeddingDim, 0.3);
         this._embeddingBias = this._rng.deriveVector(this.embeddingDim, 0.1);
         
@@ -2048,7 +1765,6 @@ class NeuralNetwork {
         this._W2 = this._rng.deriveWeights(this.hidden1, this.hidden2, 0.2);
         this._W3 = this._rng.deriveWeights(this.hidden2, this.outputDim, 0.1);
         
-        // === MULTI-HEAD ATTENTION (4 heads) — CORRECT Q·K^T ===
         this.numHeads = config.numHeads ?? arenaConfig.ARCH.NUM_HEADS;
         this.headDim = Math.floor(this.hidden1 / this.numHeads);
         this._Wq = this._rng.deriveWeights(this.hidden1, this.hidden1, 0.08);
@@ -2056,12 +1772,10 @@ class NeuralNetwork {
         this._Wv = this._rng.deriveWeights(this.hidden1, this.hidden1, 0.08);
         this._Wo = this._rng.deriveWeights(this.hidden1, this.hidden1, 0.08);
         
-        // === MIXTURE-OF-EXPERTS (4 experts) — CORRECTLY CONNECTED ===
         this.numExperts = config.numExperts ?? arenaConfig.ARCH.NUM_EXPERTS;
         this.expertDim = config.expertDim ?? arenaConfig.ARCH.EXPERT_DIM;
-        this._Wg = this._rng.deriveWeights(this.hidden1, this.numExperts, 0.12); // Gate: h1(48)→experts(4)
+        this._Wg = this._rng.deriveWeights(this.hidden1, this.numExperts, 0.12);
         
-        // ✅ CORRECTED DIMENSIONS: h1(48) → expertDim(36) → outputDim(16)
         this._expertW1 = [];
         this._expertW2 = [];
         for (let e = 0; e < this.numExperts; e++) {
@@ -2069,29 +1783,24 @@ class NeuralNetwork {
             this._expertW2.push(this._rng.deriveWeights(this.expertDim, this.outputDim, 0.1));
         }
         
-        // === ELIGIBILITY TRACES FOR TD(λ) ===
         this._eligibilityEmbedding = new Float32Array(this.inputDim * this.embeddingDim);
         this._eligibilityW1 = new Float32Array(combinedInputDim * this.hidden1);
         this._eligibilityW2 = new Float32Array(this.hidden1 * this.hidden2);
         this._eligibilityW3 = new Float32Array(this.hidden2 * this.outputDim);
         
-        // === DUAL MEMORY SYSTEM ===
         this._memoryPermanent = new Float32Array(this.memoryDim);
         this._memoryPredictive = new Float32Array(this.memoryDim);
         this._predictionErrors = new Float32Array(this.memoryDim);
         
-        // Memory consolidation buffer
         this._consolidationBuffer = [];
         this._maxBuffer = 32;
         
-        // === HYPERPARAMETERS ===
         this.lr = config.lr ?? arenaConfig.learningRate;
         this.hebbianRate = config.hebbianRate ?? 0.002;
         this.gamma = config.gamma ?? arenaConfig.gamma;
         this.lambda = config.lambda ?? arenaConfig.lambda;
         this.entropyCoeff = config.entropyCoeff ?? arenaConfig.entropyCoeff;
         
-        // === TRAINING METRICS ===
         this._trainingStats = {
             tdErrorHistory: [],
             predictionErrorHistory: [],
@@ -2104,7 +1813,6 @@ class NeuralNetwork {
             avgRewardPerStep: 0
         };
         
-        // === FORWARD PASS CACHE ===
         this._lastInputs = null;
         this._lastEmbedded = null;
         this._lastHidden1 = null;
@@ -2113,22 +1821,13 @@ class NeuralNetwork {
         this._lastGateProbs = null;
         this._lastAttentionWeights = null;
         this._activeNeurons = [];
+        this._lastActiveExperts = null;
     }
     
-    /**
-     * Embed raw inputs through learned projection
-     * @private
-     */
     _embedInputs(rawInputs) {
         return Utils.projectInput(rawInputs, this._inputEmbedding, this._embeddingBias, this.embeddingDim);
     }
     
-    /**
-     * Multi-head self-attention — CORRECTED Q·K^T MATRIX IMPLEMENTATION
-     * @param {number[]} h1 — входные активации [hidden1=48]
-     * @returns {number[]} attended output [hidden1]
-     * @private
-     */
     _selfAttention(h1) {
         if (!h1?.length) return h1 || [];
         
@@ -2140,7 +1839,6 @@ class NeuralNetwork {
         const numHeads = this.numHeads || 4;
         const headDim = Math.floor(this.hidden1 / numHeads);
         
-        // Split into heads
         const Q_heads = [], K_heads = [], V_heads = [];
         for (let h = 0; h < numHeads; h++) {
             const start = h * headDim;
@@ -2149,12 +1847,9 @@ class NeuralNetwork {
             V_heads.push(V.slice(start, start + headDim));
         }
         
-        // Compute attention for each head: scores = Q·K^T / sqrt(d_k)
         const headOutputs = [];
         for (let h = 0; h < numHeads; h++) {
             const Qh = Q_heads[h], Kh = K_heads[h], Vh = V_heads[h];
-            
-            // ✅ CORRECT: [headDim × headDim] attention matrix
             const scores = [];
             for (let i = 0; i < headDim; i++) {
                 const row = [];
@@ -2164,11 +1859,7 @@ class NeuralNetwork {
                 }
                 scores.push(row);
             }
-            
-            // Softmax per row
             const weights = scores.map(row => Utils.softmax(row, 1));
-            
-            // Weighted sum of values
             const attended = new Array(headDim).fill(0);
             for (let i = 0; i < headDim; i++) {
                 for (let j = 0; j < headDim; j++) {
@@ -2178,7 +1869,6 @@ class NeuralNetwork {
             headOutputs.push(attended);
         }
         
-        // Concatenate and project
         const concatenated = headOutputs.flat();
         const projected = this._linMatMul(concatenated, this._Wo);
         const output = h1.map((v, i) => Utils.lerp(v, v + projected[i], 0.6));
@@ -2187,10 +1877,6 @@ class NeuralNetwork {
         return output;
     }
     
-    /**
-     * Matrix-vector multiplication with tanh activation
-     * @private
-     */
     _matMul(vec, mat) {
         if (!vec?.length || !mat?.length) return [];
         const out = [];
@@ -2204,10 +1890,6 @@ class NeuralNetwork {
         return out;
     }
     
-    /**
-     * Linear matrix-vector multiplication (no activation)
-     * @private
-     */
     _linMatMul(vec, mat) {
         if (!vec?.length || !mat?.length) return [];
         const out = new Array(mat[0].length).fill(0);
@@ -2221,46 +1903,37 @@ class NeuralNetwork {
         return out;
     }
     
-    /**
-     * Forward pass — complete neural computation
-     * @param {number[]} inputs - входной вектор (57-dimensional)
-     * @returns {Object} результат forward pass
-     */
     forward(inputs) {
         if (!Array.isArray(inputs) || inputs.length !== this.inputDim) {
             inputs = new Array(this.inputDim).fill(0);
         }
         this._lastInputs = inputs.slice();
         
-        // 1. Input embedding
         const embedded = this._embedInputs(inputs);
         this._lastEmbedded = embedded.slice();
         
-        // 2. Concatenate with dual memory
         const combined = [...embedded, ...this._memoryPermanent, ...this._memoryPredictive];
         
-        // 3. First hidden layer with attention
         let h1 = this._matMul(combined, this._W1);
         this._lastHidden1 = h1.slice();
         h1 = this._selfAttention(h1);
         
-        // 4. MoE gate and expert selection
         const gateLogits = this._linMatMul(h1, this._Wg);
         const gateProbs = Utils.softmax(gateLogits, 0.7);
         this._lastGateProbs = gateProbs.slice();
         
-        const expertScores = gateProbs.map((p, i) => ({ idx: i, score: p }));
+        const expertNames = ['hunter', 'fleeer', 'fighter', 'explorer'];
+        const expertScores = gateProbs.map((p, i) => ({ idx: i, score: p, name: expertNames[i] }));
         expertScores.sort((a, b) => b.score - a.score);
         const activeExperts = expertScores.slice(0, Math.min(2, this.numExperts)).map(e => e.idx);
         
-        // ✅ EXPERT COMPUTATION — NOW ACTUALLY USED
+        this._lastActiveExperts = activeExperts.map(i => expertNames[i]);
+        
         let expertOutput = new Array(this.outputDim).fill(0);
         const expertUsage = new Array(this.numExperts).fill(0);
         
         for (const e of activeExperts) {
-            // ✅ CORRECT: h1(48) → expertW1[e](48×36) → h_expert(36)
             const h_expert = this._matMul(h1, this._expertW1[e]);
-            // ✅ CORRECT: h_expert(36) → expertW2[e](36×16) → out_expert(16)
             const out_expert = this._matMul(h_expert, this._expertW2[e]);
             
             for (let j = 0; j < this.outputDim; j++) {
@@ -2269,7 +1942,6 @@ class NeuralNetwork {
             expertUsage[e] = gateProbs[e];
         }
         
-        // ✅ LOAD BALANCING LOSS — NOW APPLIED
         const loadBalanceLoss = Utils.moeLoadBalanceLoss(gateProbs, expertUsage);
         
         if (arenaConfig.enableMoE && loadBalanceLoss > 0.01) {
@@ -2284,11 +1956,9 @@ class NeuralNetwork {
             }
         }
         
-        // 5. Second hidden layer
         let h2 = this._matMul(h1, this._W2);
         this._lastHidden2 = h2.slice();
         
-        // 6. Output layer with expert blending
         const standardOutput = this._matMul(h2, this._W3);
         const blendedOutput = new Array(this.outputDim).fill(0);
         for (let j = 0; j < this.outputDim; j++) {
@@ -2296,7 +1966,6 @@ class NeuralNetwork {
         }
         this._lastOutput = blendedOutput.slice();
         
-        // 7. Memory update
         const predictedMemory = h2.slice(0, this.memoryDim);
         for (let i = 0; i < this.memoryDim; i++) {
             const error = Math.abs(Utils.safeNumber(predictedMemory[i], 0) - this._memoryPredictive[i]);
@@ -2312,7 +1981,6 @@ class NeuralNetwork {
             }
         }
         
-        // 8. Track active neurons
         this._activeNeurons = [...h1, ...h2, ...blendedOutput]
             .map((v, i) => ({ i, v: Utils.safeNumber(v, 0) }))
             .sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
@@ -2332,14 +2000,11 @@ class NeuralNetwork {
             embedded,
             h1,
             h2,
-            attentionWeights: this._lastAttentionWeights
+            attentionWeights: this._lastAttentionWeights,
+            activeExperts: this._lastActiveExperts
         };
     }
     
-    /**
-     * Hebbian weight update: Δw = η * pre * post * sign(correlation)
-     * @private
-     */
     _hebbianUpdate(pre, post, correlation = 1, layer = 'W1') {
         if (!arenaConfig.enableHebbian || !pre?.length || !post?.length) return;
         const η = this.hebbianRate * correlation;
@@ -2372,9 +2037,6 @@ class NeuralNetwork {
         }
     }
     
-    /**
-     * TD(λ) learning update with eligibility traces
-     */
     tdLearn(inputs, outputs, reward, value, nextValue, actionLogProbs = null) {
         const tdErr = Utils.tdError(reward, value, nextValue, this.gamma);
         this._trainingStats.tdErrorHistory.push(Math.abs(tdErr));
@@ -2394,7 +2056,6 @@ class NeuralNetwork {
         
         this._consolidateMemories(reward);
         
-        // ✅ HEBBIAN LEARNING — RESTORED
         if (arenaConfig.enableHebbian && reward > 1) {
             const correlation = Math.sign(reward);
             if (this._lastEmbedded?.length && this._lastHidden1?.length) {
@@ -2593,7 +2254,7 @@ class NeuralNetwork {
     
     toJSON() {
         return {
-            config: { inputDim: this.inputDim, embeddingDim: this.embeddingDim, hidden1: this.hidden1, hidden2: this.hidden2, outputDim: this.outputDim, memoryDim: this.memoryDim, seed: this.seed, lr: this.lr, gamma: this.gamma, lambda: this.lambda, numHeads: this.numHeads, numExperts: this.numExperts },
+            config: { inputDim: this.inputDim, embeddingDim: this.embeddingDim, hidden1: this.hidden1, hidden2: this.hidden2, outputDim: this.outputDim, memoryDim: this.memoryDim, seed: this.seed, lr: this.lr, gamma: this.gamma, lambda: this.lambda, numHeads: this.numHeads, numExperts: this.numExperts, compactMode: this.compactMode },
             inputEmbedding: this._inputEmbedding.map(r => r?.slice() || []),
             embeddingBias: this._embeddingBias?.slice() || [],
             W1: this._W1.map(r => r?.slice() || []), W2: this._W2.map(r => r?.slice() || []), W3: this._W3.map(r => r?.slice() || []),
@@ -2638,11 +2299,11 @@ class NeuralNetwork {
 }
 
 // ============================================================================
-// CRITIC NETWORK — VALUE ESTIMATION FOR ACTOR-CRITIC
+// CRITIC NETWORK
 // ============================================================================
 class CriticNetwork {
     constructor(config = {}) {
-        this.inputDim = config.inputDim ?? arenaConfig.ARCH.INPUT_DIM;
+        this.inputDim = config.inputDim ?? (arenaConfig.compactInputs ? arenaConfig.ARCH.INPUT_DIM_COMPACT : arenaConfig.ARCH.INPUT_DIM);
         this.hidden = config.hidden ?? arenaConfig.ARCH.CRITIC_HIDDEN;
         this.seed = config.seed ?? (arenaConfig.seed + '_CRITIC');
         this._rng = new SeededRNG(this.seed);
@@ -2717,7 +2378,7 @@ class CriticNetwork {
 }
 
 // ============================================================================
-// POLICY SELECTOR — LEARNABLE BEHAVIOR MODE SELECTION
+// POLICY SELECTOR
 // ============================================================================
 class PolicySelector {
     constructor(config = {}) {
@@ -2803,7 +2464,7 @@ class PolicySelector {
 }
 
 // ============================================================================
-// BEHAVIOR ARBITER — MODE SELECTION & TARGET CALCULATION
+// BEHAVIOR ARBITER
 // ============================================================================
 class BehaviorArbiter {
     constructor() { this.modes = ['hunt', 'flee', 'explore', 'combat', 'avoid']; }
@@ -2896,7 +2557,7 @@ class BehaviorArbiter {
 }
 
 // ============================================================================
-// SMART POINT — DYNAMIC COLLECTIBLES
+// SMART POINT
 // ============================================================================
 class SmartPoint {
     constructor(x, y, type = 'normal') {
@@ -2923,7 +2584,7 @@ class SmartPoint {
 }
 
 // ============================================================================
-// PROJECTILE — RANGED COMBAT
+// PROJECTILE
 // ============================================================================
 class Projectile {
     constructor(x, y, vx, vy, owner, damage = 3, life = 80) {
@@ -2935,7 +2596,7 @@ class Projectile {
 }
 
 // ============================================================================
-// ENEMY PREDICTOR — ADVERSARY BEHAVIOR MODELING
+// ENEMY PREDICTOR
 // ============================================================================
 class EnemyPredictor {
     constructor() { this.history = []; this.maxHistory = 50; this.patterns = { movingRight: 0, movingLeft: 0, movingDown: 0, movingUp: 0, fleeing: 0, aggressive: 0, unpredictable: 0 }; }
@@ -2958,7 +2619,7 @@ class EnemyPredictor {
 }
 
 // ============================================================================
-// STRATEGY MEMORY — WINNING TACTICS STORAGE
+// STRATEGY MEMORY
 // ============================================================================
 class StrategyMemory {
     constructor() { this.winningStrategies = []; this.fightHistory = {}; this.maxStrategies = 20; }
@@ -2976,7 +2637,7 @@ class StrategyMemory {
 }
 
 // ============================================================================
-// AGENT — COMPLETE NEURAL ENTITY
+// AGENT
 // ============================================================================
 class Agent {
     constructor(id, x, y, color, seed) {
@@ -2985,18 +2646,25 @@ class Agent {
         this.health = this.stats.maxHealth; this.lastMutationType = null; this.seed = seed;
         this.numExperts = arenaConfig.ARCH.NUM_EXPERTS;
         
-        this.net = new NeuralNetwork({ inputDim: arenaConfig.ARCH.INPUT_DIM, embeddingDim: arenaConfig.ARCH.EMBEDDING_DIM, hidden1: arenaConfig.ARCH.HIDDEN1, hidden2: arenaConfig.ARCH.HIDDEN2, outputDim: arenaConfig.ARCH.OUTPUT_DIM, memoryDim: arenaConfig.ARCH.MEMORY_DIM, seed: seed + '_NET', lr: arenaConfig.learningRate, gamma: arenaConfig.gamma, lambda: arenaConfig.lambda, numHeads: arenaConfig.ARCH.NUM_HEADS, numExperts: this.numExperts });
-        this.critic = new CriticNetwork({ inputDim: arenaConfig.ARCH.INPUT_DIM, embeddingDim: arenaConfig.ARCH.EMBEDDING_DIM, hidden: arenaConfig.ARCH.CRITIC_HIDDEN, seed: seed + '_CRITIC', lr: arenaConfig.learningRate, gamma: arenaConfig.gamma });
+        this.net = new NeuralNetwork({ inputDim: arenaConfig.compactInputs ? arenaConfig.ARCH.INPUT_DIM_COMPACT : arenaConfig.ARCH.INPUT_DIM, embeddingDim: arenaConfig.compactInputs ? arenaConfig.ARCH.EMBEDDING_DIM_COMPACT : arenaConfig.ARCH.EMBEDDING_DIM, hidden1: arenaConfig.ARCH.HIDDEN1, hidden2: arenaConfig.ARCH.HIDDEN2, outputDim: arenaConfig.ARCH.OUTPUT_DIM, memoryDim: arenaConfig.ARCH.MEMORY_DIM, seed: seed + '_NET', lr: arenaConfig.learningRate, gamma: arenaConfig.gamma, lambda: arenaConfig.lambda, numHeads: arenaConfig.ARCH.NUM_HEADS, numExperts: this.numExperts });
+        this.critic = new CriticNetwork({ inputDim: arenaConfig.compactInputs ? arenaConfig.ARCH.INPUT_DIM_COMPACT : arenaConfig.ARCH.INPUT_DIM, hidden: arenaConfig.ARCH.CRITIC_HIDDEN, seed: seed + '_CRITIC', lr: arenaConfig.learningRate, gamma: arenaConfig.gamma });
         this.policySelector = new PolicySelector({ contextDim: arenaConfig.ARCH.POLICY_CONTEXT_DIM, skillEmbeddingDim: arenaConfig.ARCH.POLICY_SKILL_DIM, hidden: arenaConfig.ARCH.POLICY_HIDDEN, numModes: arenaConfig.ARCH.POLICY_MODES, seed: seed + '_POLICY', lr: arenaConfig.learningRate * 0.6 });
         
         this.experts = [];
         for (let i = 0; i < this.numExperts; i++) {
-            this.experts.push(new NeuralNetwork({ inputDim: arenaConfig.ARCH.INPUT_DIM, embeddingDim: arenaConfig.ARCH.EMBEDDING_DIM, hidden1: arenaConfig.ARCH.HIDDEN1, hidden2: arenaConfig.ARCH.HIDDEN2, outputDim: arenaConfig.ARCH.OUTPUT_DIM, memoryDim: arenaConfig.ARCH.MEMORY_DIM, seed: seed + '_EXP_' + i, lr: arenaConfig.learningRate, gamma: arenaConfig.gamma, lambda: arenaConfig.lambda, numHeads: arenaConfig.ARCH.NUM_HEADS }));
+            this.experts.push(new NeuralNetwork({ inputDim: arenaConfig.compactInputs ? arenaConfig.ARCH.INPUT_DIM_COMPACT : arenaConfig.ARCH.INPUT_DIM, embeddingDim: arenaConfig.compactInputs ? arenaConfig.ARCH.EMBEDDING_DIM_COMPACT : arenaConfig.ARCH.EMBEDDING_DIM, hidden1: arenaConfig.ARCH.HIDDEN1, hidden2: arenaConfig.ARCH.HIDDEN2, outputDim: arenaConfig.ARCH.OUTPUT_DIM, memoryDim: arenaConfig.ARCH.MEMORY_DIM, seed: seed + '_EXP_' + i, lr: arenaConfig.learningRate, gamma: arenaConfig.gamma, lambda: arenaConfig.lambda, numHeads: arenaConfig.ARCH.NUM_HEADS }));
         }
         
         this.arbiter = new BehaviorArbiter(); this.mode = 'explore'; this.target = { x, y }; this.speed = 1;
-        this.stuckCounter = 0; this.lastPos = { x, y }; this.cumulativeReward = 0; this.alive = true;
+        this.stuckCounter = 0; this.lastPos = { x, y }; this.cumulativeReward = 5; this.alive = true;
         this.skillEmbedding = [0.3, 0.4, 0.2, 0.5, 0.6];
+        
+        this.socialMemory = {
+            interactions: new Map(),
+            reputation: 0,
+            lastAggressor: null,
+            allies: []
+        };
         
         this.permanent = {
             skills: { hunting: 0.3 + Math.random() * 0.2, fleeing: 0.4 + Math.random() * 0.2, combat: 0.2 + Math.random() * 0.2, exploring: 0.5, avoiding: 0.6 },
@@ -3019,10 +2687,47 @@ class Agent {
         this.trail = []; this.lastDecision = null; this._lastWorld = null;
         
         this.learningBuffer = { states: [], actions: [], rewards: [], nextStates: [], dones: [], values: [], maxBuffer: 32 };
+        
+        // ✅ EVOLUTION POINTS SYSTEM
+        this.evolutionPoints = 0;
+        this.statChoices = ['maxHealth', 'damage', 'dodgeChance', 'fireRate'];
     }
     
     getInputs(world) {
         const inputs = [], maxDist = Math.sqrt(820 ** 2 + 600 ** 2);
+        
+        if (arenaConfig.compactInputs) {
+            const points = (world?.points || []).filter(p => p && !p.collected).map(p => ({ ...p, d: Utils.dist(this, p) })).sort((a, b) => a.d - b.d).slice(0, 5);
+            for (const p of points) {
+                inputs.push(Utils.clamp((p.x - this.x) / maxDist, -1, 1));
+                inputs.push(Utils.clamp((p.y - this.y) / maxDist, -1, 1));
+                inputs.push(Utils.clamp((100 - p.d) / 100, 0, 1));
+            }
+            
+            const enemies = (world?.enemies || []).filter(e => e && e.id !== this.id && e.alive).map(e => ({ ...e, d: Utils.dist(this, e) })).sort((a, b) => a.d - b.d)[0];
+            if (enemies) {
+                inputs.push(Utils.clamp((enemies.x - this.x) / maxDist, -1, 1));
+                inputs.push(Utils.clamp((enemies.y - this.y) / maxDist, -1, 1));
+                inputs.push(Utils.clamp((150 - enemies.d) / 150, 0, 1));
+                inputs.push(enemies.health / enemies.stats.maxHealth);
+            } else { inputs.push(0, 0, 0, 0); }
+            
+            const walls = (world?.walls || []).map(w => ({ ...w, d: Utils.dist(this, w) })).sort((a, b) => a.d - b.d)[0];
+            if (walls) {
+                inputs.push(Utils.clamp((walls.x - this.x) / maxDist, -1, 1));
+                inputs.push(Utils.clamp((walls.y - this.y) / maxDist, -1, 1));
+                inputs.push(Utils.clamp((60 - walls.d) / 60, 0, 1));
+            } else { inputs.push(0, 0, 0); }
+            
+            inputs.push(Utils.clamp((400 - this.x) / 400, -1, 1));
+            inputs.push(Utils.clamp((300 - this.y) / 300, -1, 1));
+            inputs.push(this.health / this.stats.maxHealth);
+            inputs.push(Utils.clamp(this.cumulativeReward / 20, -1, 1));
+            
+            while (inputs.length < arenaConfig.ARCH.INPUT_DIM_COMPACT) inputs.push(0);
+            return inputs.map(v => Utils.safeNumber(v, 0));
+        }
+        
         const points = (world?.points || []).filter(p => p && !p.collected).map(p => ({ ...p, d: Utils.dist(this, p) })).sort((a, b) => a.d - b.d).slice(0, 5);
         for (let i = 0; i < 5; i++) {
             const p = points[i];
@@ -3088,7 +2793,7 @@ class Agent {
         if (!target || typeof target.x !== 'number' || !isFinite(target.x) || typeof target.y !== 'number' || !isFinite(target.y)) { target = { x: Utils.clamp(this.x + Utils.rand(-50, 50), 30, 790), y: Utils.clamp(this.y + Utils.rand(-50, 50), 30, 570) }; }
         this.target = target;
         const confidenceMod = this.predictive.confidence > 0.7 ? 1.1 : (this.predictive.confidence < 0.4 ? 0.9 : 1);
-        this.speed = Utils.lerp(this.speed, behaviors.speed * 2.5 * confidenceMod + 0.5, 0.08);
+        this.speed = Utils.lerp(this.speed, behaviors.speed * 2.5 * confidenceMod + 1.0, 0.08);
         if (mode === 'hunt' && behaviors.memoryWeight > 0.5) {
             const nearby = (world?.points || []).filter(p => p && !p.collected && Utils.dist(this, p) < 20);
             if (nearby.length && !this.permanent.memory.lastFoodPos) { this.permanent.memory.lastFoodPos = { ...nearby[0] }; this.permanent.memory.lastFoodStep = world?.step || 0; }
@@ -3104,20 +2809,39 @@ class Agent {
     }
     
     move(target, speed, walls, dt, networkOutputs = null) {
-        const desired = Utils.normalize(target.x - this.x, target.y - this.y);
-        const wallRep = this.getWallRepulsion(walls);
-        let finalDir;
-        if (wallRep.strength > 0.8) { const tangent = { x: -wallRep.y, y: wallRep.x }; const noise = Utils.rand(-0.3, 0.3); finalDir = { x: tangent.x + noise, y: tangent.y + noise }; const mag = Math.hypot(finalDir.x, finalDir.y) || 1; finalDir.x /= mag; finalDir.y /= mag; }
-        else { finalDir = { x: Utils.lerp(desired.x, wallRep.x, wallRep.strength * 0.6), y: Utils.lerp(desired.y, wallRep.y, wallRep.strength * 0.6) }; const mag = Math.hypot(finalDir.x, finalDir.y); if (mag < 0.1) finalDir = desired; else { finalDir.x /= mag; finalDir.y /= mag; } }
-        if (this.currentTactic && this.currentTactic !== 'adaptive') finalDir = this.executeTactic(finalDir, target, walls);
-        if (networkOutputs?.length >= 14) { const neuralModX = Utils.tanh(networkOutputs[12] || 0) * 0.2, neuralModY = Utils.tanh(networkOutputs[13] || 0) * 0.2; finalDir.x = Utils.clamp(finalDir.x + neuralModX, -1, 1); finalDir.y = Utils.clamp(finalDir.y + neuralModY, -1, 1); const mag = Math.hypot(finalDir.x, finalDir.y) || 1; finalDir.x /= mag; finalDir.y /= mag; }
-        const minSpeed = 0.3, actualSpeed = Math.max(speed, minSpeed);
-        this.vx = Utils.lerp(this.vx, finalDir.x * actualSpeed, 0.15); this.vy = Utils.lerp(this.vy, finalDir.y * actualSpeed, 0.15);
-        if (Math.abs(this.vx) < 0.02) this.vx = finalDir.x * minSpeed; if (Math.abs(this.vy) < 0.02) this.vy = finalDir.y * minSpeed;
-        this.x += this.vx * dt; this.y += this.vy * dt;
-        if (this.x < 20) { this.x = 20; this.vx *= -0.4; } if (this.x > 800) { this.x = 800; this.vx *= -0.4; }
-        if (this.y < 20) { this.y = 20; this.vy *= -0.4; } if (this.y > 580) { this.y = 580; this.vy *= -0.4; }
-        for (const w of walls) { if (Utils.dist(this, w) < 15) { const push = Utils.normalize(this.x - w.x, this.y - w.y); this.x += push.x * 0.6; this.y += push.y * 0.6; this.vx *= -0.25; this.vy *= -0.25; } }
+        if (!target || typeof target.x !== 'number' || !isFinite(target.x)) {
+            target = { x: 400, y: 300 };
+        }
+        
+        const dx = target.x - this.x, dy = target.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist > 1) {
+            const dirX = dx / dist, dirY = dy / dist;
+            const minSpeed = 1.5;
+            const actualSpeed = Math.max(speed, minSpeed);
+            
+            this.vx = Utils.lerp(this.vx, dirX * actualSpeed, 0.2);
+            this.vy = Utils.lerp(this.vy, dirY * actualSpeed, 0.2);
+            
+            if (Math.abs(this.vx) < 0.1) this.vx = dirX * minSpeed;
+            if (Math.abs(this.vy) < 0.1) this.vy = dirY * minSpeed;
+        }
+        
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        
+        this.x = Utils.clamp(this.x, 20, 800);
+        this.y = Utils.clamp(this.y, 20, 580);
+        
+        for (const w of walls) {
+            const d = Utils.dist(this, w);
+            if (d < 18) {
+                const push = Utils.normalize(this.x - w.x, this.y - w.y);
+                this.x += push.x * 0.8;
+                this.y += push.y * 0.8;
+            }
+        }
     }
     
     executeTactic(direction, target, walls) {
@@ -3143,17 +2867,61 @@ class Agent {
     
     calculateReward(world, decision) {
         let reward = 0;
-        for (const p of (world?.points || [])) { if (p && !p.collected) { const d = Utils.dist(this, p); if (d < 18) { p.collected = true; reward += p.value; } } }
-        const veryNear = (world?.points || []).find(p => p && !p.collected && Utils.dist(this, p) < 10);
-        if (veryNear) { veryNear.collected = true; reward += veryNear.value; }
-        const newCell = `${Math.floor(this.x / 25)},${Math.floor(this.y / 25)}`;
-        if (!this.permanent.memory.visited.has(newCell)) reward += 0.06;
-        if (decision?.target) { const prevDist = Utils.dist(this.lastPos, decision.target), currDist = Utils.dist({ x: this.x, y: this.y }, decision.target); if (currDist < prevDist - 0.5) reward += 0.02; }
+        
+        // ✅ 1. НАГРАДА ЗА СБОР ТОЧЕК
+        for (const p of (world?.points || [])) {
+            if (p && !p.collected) {
+                const d = Utils.dist(this, p);
+                if (d < 18) {
+                    p.collected = true;
+                    reward += p.value;
+                }
+            }
+        }
+        
+        // ✅ 2. НАГРАДА ЗА ДВИЖЕНИЕ
         const moved = Math.hypot(this.x - this.lastPos.x, this.y - this.lastPos.y);
-        if (moved < 0.6) { this.stuckCounter++; if (this.stuckCounter > 15) reward -= 0.1; } else { this.stuckCounter = 0; }
-        if (Math.min(this.x, 820 - this.x, this.y, 600 - this.y) < 12) reward -= 0.03;
-        reward -= (1 - this.health / this.stats.maxHealth) * 0.12;
-        this.lastPos = { x: this.x, y: this.y }; this.cumulativeReward += reward;
+        if (moved > 0.5) {
+            reward += 0.05;
+            this.stuckCounter = 0;
+        } else {
+            this.stuckCounter++;
+            if (this.stuckCounter > 60) reward -= 0.1;
+        }
+        
+        // ✅ 3. НАГРАДА ЗА ПРИБЛИЖЕНИЕ К ЦЕЛИ
+        if (decision?.target && this.mode === 'hunt') {
+            const prevDist = Utils.dist(this.lastPos, decision.target);
+            const currDist = Utils.dist({ x: this.x, y: this.y }, decision.target);
+            if (currDist < prevDist && prevDist > 10) {
+                reward += 0.02;
+            }
+        }
+        
+        // ✅ 4. НАГРАДА ЗА ИССЛЕДОВАНИЕ
+        const newCell = `${Math.floor(this.x / 50)},${Math.floor(this.y / 50)}`;
+        if (!this.permanent.memory.visited.has(newCell)) {
+            this.permanent.memory.visited.add(newCell);
+            reward += 0.5;
+        }
+        
+        // ✅ 5. МИНИМАЛЬНЫЕ ШТРАФЫ
+        if (Math.min(this.x, 820 - this.x, this.y, 600 - this.y) < 8) {
+            reward -= 0.02;
+        }
+        
+        const healthRatio = this.health / this.stats.maxHealth;
+        if (healthRatio < 0.15) {
+            reward -= 0.05;
+        }
+        
+        if (healthRatio > 0.8) {
+            reward += 0.01;
+        }
+        
+        this.lastPos = { x: this.x, y: this.y };
+        this.cumulativeReward = Math.max(this.cumulativeReward + reward, -50);
+        
         return reward;
     }
     
@@ -3246,9 +3014,67 @@ class Agent {
     decideCombatAction(enemy, world) {
         const distance = Utils.dist(this, enemy);
         const prediction = this.enemyPredictor.predictNextAction();
-        this.currentTactic = this.selectCombatTactic(distance, enemy.health / enemy.stats.maxHealth, this.health / this.stats.maxHealth, prediction);
-        this.fightOpponent = enemy.id; this.fightStartTime = Date.now();
+        
+        if (!this.socialMemory.interactions.has(enemy.id)) {
+            this.socialMemory.interactions.set(enemy.id, { fights: 0, wins: 0, trust: 0 });
+        }
+        const record = this.socialMemory.interactions.get(enemy.id);
+        record.fights++;
+        
+        const enemyHealth = enemy.health / enemy.stats.maxHealth;
+        const myHealth = this.health / this.stats.maxHealth;
+        if (enemyHealth < 0.3 && myHealth > 0.7) {
+            this.currentTactic = record.trust > 0 ? 'merciful' : 'aggressive';
+        } else {
+            this.currentTactic = this.selectCombatTactic(distance, enemyHealth, myHealth, prediction);
+        }
+        
+        this.fightOpponent = enemy.id;
+        this.fightStartTime = Date.now();
         return this.currentTactic;
+    }
+    
+    // ✅ ЭВОЛЮЦИЯ СТАТОВ: 2 очка за победу
+    applyEvolutionPoints() {
+        if (this.evolutionPoints <= 0) return;
+        
+        const priorities = {
+            maxHealth: this.health < this.stats.maxHealth * 0.5 ? 2 : 1,
+            damage: this.permanent.skills.combat > 0.5 ? 1.5 : 1,
+            dodgeChance: this.permanent.skills.fleeing > 0.5 ? 1.3 : 1,
+            fireRate: this.permanent.skills.combat > 0.4 ? 1.2 : 1
+        };
+        
+        const sorted = this.statChoices.sort((a, b) => priorities[b] - priorities[a]);
+        const useDouble = Math.random() < 0.3;
+        
+        if (useDouble) {
+            this._applyStatBonus(sorted[0], 2);
+        } else {
+            this._applyStatBonus(sorted[0], 1);
+            this._applyStatBonus(sorted[1], 1);
+        }
+        this.evolutionPoints = 0;
+    }
+    
+    _applyStatBonus(stat, points) {
+        // ✅ СТРОГО ПО ТЗ:
+        switch(stat) {
+            case 'maxHealth':
+                this.stats.maxHealth += points * 10;
+                this.health = Math.min(this.stats.maxHealth, this.health + points * 10);
+                break;
+            case 'damage':
+                this.stats.damage += points * 1;
+                break;
+            case 'dodgeChance':
+                this.stats.dodgeChance = Utils.clamp(this.stats.dodgeChance + points * 0.1, 0, 0.5);
+                break;
+            case 'fireRate':
+                this.stats.fireRate += points * 3;
+                break;
+        }
+        this.lastMutationType = stat;
     }
     
     getLearningMetrics() {
@@ -3269,7 +3095,7 @@ class Agent {
     
     reset(x, y) {
         this.x = x; this.y = y; this.vx = 0; this.vy = 0; this.health = this.stats.maxHealth; this.stuckCounter = 0;
-        this.lastPos = { x, y }; this.cumulativeReward = 0; this.mode = 'explore'; this.target = { x, y }; this.trail = [];
+        this.lastPos = { x, y }; this.cumulativeReward = 5; this.mode = 'explore'; this.target = { x, y }; this.trail = [];
         this.predictive.confidence = 0.5; this.predictive.predictionError = 0; this.attackCooldown = 0;
         this._clearLearningBuffer();
         this.predictive.shortTerm = { positions: [], actions: [], results: [], enemyHistory: [], foodHistory: [] };
@@ -3309,9 +3135,11 @@ class Agent {
             tdError: metrics.avgTDError.toFixed(4), policyEntropy: metrics.avgPolicyEntropy.toFixed(3),
             winRate: metrics.winRate.toFixed(2), collectionRate: metrics.collectionRate.toFixed(2),
             gate0: this.net.getGateProbs()?.[0]?.toFixed(3) || '—', gate1: this.net.getGateProbs()?.[1]?.toFixed(3) || '—',
-            expert0: this.net._lastGateProbs?.[0]?.toFixed(3) || '—', expert1: this.net._lastGateProbs?.[1]?.toFixed(3) || '—',
+            expert0: this.net._lastActiveExperts?.[0] || '—', expert1: this.net._lastActiveExperts?.[1] || '—',
             loadBal: Utils.computeLoadBalance(this.net._lastGateProbs || []).toFixed(3),
-            hebbian: arenaConfig.enableHebbian ? 'ON' : 'OFF'
+            hebbian: arenaConfig.enableHebbian ? 'ON' : 'OFF',
+            socialRep: this.socialMemory.reputation.toFixed(2),
+            archetype: this.permanent.skills.hunting > 0.6 ? 'hunter' : this.permanent.skills.fleeing > 0.6 ? 'fleeer' : this.permanent.skills.combat > 0.6 ? 'fighter' : 'explorer'
         };
     }
     
@@ -3324,6 +3152,14 @@ class Agent {
         agent.permanent = { skills: { ...this.permanent.skills }, strategies: { ...this.permanent.strategies }, preferences: { ...this.permanent.preferences }, muscleMemory: new Float32Array(this.permanent.muscleMemory), memory: { lastFoodPos: this.permanent.memory.lastFoodPos ? { ...this.permanent.memory.lastFoodPos } : null, lastFoodStep: this.permanent.memory.lastFoodStep || 0, visited: new Set(this.permanent.memory.visited), unvisited: this.permanent.memory.unvisited.map(p => ({ ...p })) } };
         agent.predictive = { shortTerm: { positions: [], actions: [], results: [], enemyHistory: [], foodHistory: [] }, patterns: { enemyMovement: null, foodSpawn: null, dangerZones: new Map() }, predictions: { enemyPos: { x: 0, y: 0 }, foodPos: { x: 0, y: 0 }, collision: false, success: 0.5 }, confidence: this.predictive.confidence, predictionError: this.predictive.predictionError };
         agent.skillEmbedding = this.skillEmbedding.slice(); agent.attackCooldown = this.attackCooldown || 0;
+        agent.socialMemory = {
+            interactions: new Map(this.socialMemory.interactions),
+            reputation: this.socialMemory.reputation,
+            lastAggressor: this.socialMemory.lastAggressor,
+            allies: [...this.socialMemory.allies]
+        };
+        agent.evolutionPoints = this.evolutionPoints;
+        agent.statChoices = [...this.statChoices];
         return agent;
     }
     
@@ -3337,7 +3173,15 @@ class Agent {
             predictive: { confidence: this.predictive.confidence, predictionError: this.predictive.predictionError },
             skillEmbedding: this.skillEmbedding.slice(),
             strategyMemory: { winningStrategies: this.strategyMemory.winningStrategies.slice(0, 5), fightHistory: this.strategyMemory.fightHistory },
-            trainingStats: this.net._trainingStats
+            trainingStats: this.net._trainingStats,
+            socialMemory: {
+                interactions: Array.from(this.socialMemory.interactions.entries()).map(([k, v]) => [k, { ...v }]),
+                reputation: this.socialMemory.reputation,
+                lastAggressor: this.socialMemory.lastAggressor,
+                allies: [...this.socialMemory.allies]
+            },
+            evolutionPoints: this.evolutionPoints,
+            statChoices: [...this.statChoices]
         };
     }
     
@@ -3348,7 +3192,7 @@ class Agent {
         if (data.policySelector) agent.policySelector = PolicySelector.fromJSON(data.policySelector);
         if (data.experts?.length) agent.experts = data.experts.map(e => NeuralNetwork.fromJSON(e));
         agent.health = data.health ?? 100; agent.stats = data.stats || { maxHealth: 100, damage: 3, fireRate: 15, dodgeChance: 0.0 };
-        agent.lastMutationType = data.lastMutationType || null; agent.cumulativeReward = data.cumulativeReward ?? 0;
+        agent.lastMutationType = data.lastMutationType || null; agent.cumulativeReward = data.cumulativeReward ?? 5;
         agent.wins = data.wins ?? 0; agent.mutations = data.mutations ?? 0; agent.generation = data.generation ?? 1;
         if (data.permanent) {
             agent.permanent.skills = { ...(data.permanent.skills || agent.permanent.skills) };
@@ -3361,12 +3205,20 @@ class Agent {
         if (data.predictive) { agent.predictive.confidence = data.predictive.confidence ?? 0.5; agent.predictive.predictionError = data.predictive.predictionError ?? 0; }
         if (data.skillEmbedding) agent.skillEmbedding = data.skillEmbedding.slice();
         if (data.trainingStats) agent.net._trainingStats = { ...data.trainingStats };
+        if (data.socialMemory) {
+            agent.socialMemory.interactions = new Map(data.socialMemory.interactions || []);
+            agent.socialMemory.reputation = data.socialMemory.reputation ?? 0;
+            agent.socialMemory.lastAggressor = data.socialMemory.lastAggressor || null;
+            agent.socialMemory.allies = data.socialMemory.allies || [];
+        }
+        if (data.evolutionPoints !== undefined) agent.evolutionPoints = data.evolutionPoints;
+        if (data.statChoices) agent.statChoices = [...data.statChoices];
         return agent;
     }
 }
 
 // ============================================================================
-// WORLD — SIMULATION ENVIRONMENT
+// WORLD
 // ============================================================================
 class World {
     constructor(width, height) {
@@ -3383,9 +3235,22 @@ class World {
         this.projectiles = [];
     }
     
-    spawnAgents() {
-        try { this.enemies = [new Agent('blue', 120, 300, '#00d4ff', arenaConfig.seed + '_BLUE'), new Agent('red', 700, 300, '#ff5577', arenaConfig.seed + '_RED')]; }
-        catch (e) { console.error('Failed to spawn agents:', e); this.enemies = []; }
+    spawnAgents(count = 2) {
+        this.enemies = [];
+        for (let i = 0; i < count; i++) {
+            const uniqueSeed = `${arenaConfig.seed}_AGENT${i}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const agent = new Agent(i === 0 ? 'blue' : i === 1 ? 'red' : `agent_${i}`, 120 + (i % 10) * 70, 100 + Math.floor(i / 10) * 50, i === 0 ? '#00d4ff' : i === 1 ? '#ff5577' : `hsl(${i * 37 % 360}, 70%, 50%)`, uniqueSeed);
+            agent.stats.maxHealth = 80 + Utils.randInt(0, 40);
+            agent.stats.damage = 2 + Utils.randInt(0, 3);
+            agent.stats.fireRate = 10 + Utils.randInt(0, 10);
+            agent.stats.dodgeChance = Utils.rand(0, 0.15);
+            const archetype = Utils.randInt(0, 4);
+            if (archetype === 0) { agent.permanent.skills.hunting = 0.7; agent.permanent.skills.combat = 0.6; }
+            else if (archetype === 1) { agent.permanent.skills.fleeing = 0.7; agent.permanent.skills.avoiding = 0.6; }
+            else if (archetype === 2) { agent.permanent.skills.exploring = 0.7; agent.permanent.skills.hunting = 0.5; }
+            else { agent.permanent.skills.combat = 0.7; agent.permanent.skills.fleeing = 0.4; }
+            this.enemies.push(agent);
+        }
     }
     
     update(dt) {
@@ -3432,28 +3297,42 @@ class World {
         }
         this.projectiles = this.projectiles.filter(p => p?.alive);
         
+        // ✅ ЭВОЛЮЦИЯ: ПОБЕДИТЕЛЬ ПОЛУЧАЕТ 2 ОЧКА, ПРОИГРАВШИЙ ВОЗРОЖДАЕТСЯ С МУТАЦИЕЙ
         const deadAgents = this.enemies.filter(a => a && !a.alive);
         if (deadAgents.length > 0) {
-            this.episode++; Logger.log(`📊 Эпизод ${this.episode} завершен`, 'info');
-            for (const agent of deadAgents) {
-                const winner = this.enemies.find(e => e && e.id !== agent.id && e.alive);
+            this.episode++;
+            Logger.log(`📊 Эпизод ${this.episode} завершен`, 'info');
+            
+            for (const deadAgent of deadAgents) {
+                const winner = this.enemies.find(e => e && e.id !== deadAgent.id && e.alive);
+                
                 if (winner && arenaConfig.enableEvolution) {
-                    if (!winner.net || !winner.experts?.length) { Logger.log(`⚠️ Winner ${winner.id} has invalid neural components`, 'warn'); continue; }
-                    const accuracy = winner.wins / (winner.wins + 1);
-                    if (winner.net._W1 && winner.strategyMemory) winner.strategyMemory.saveWinningStrategy(winner.net._W1, agent.id, winner.currentTactic || 'aggressive', accuracy);
-                    winner.wins++; winner.net.updateDiagnostics({ win: true }); Logger.log(`🏆 ${winner.id.toUpperCase()} победил! Тактика: ${winner.currentTactic || 'aggressive'}`, 'success');
-                    try {
-                        const idx = this.enemies.findIndex(e => e?.id === agent.id);
-                        if (idx >= 0) {
-                            if (!winner.net || !winner.experts?.length) { Logger.log(`❌ Cannot clone ${winner.id}: invalid components`, 'error'); continue; }
-                            const child = winner.clone(); child.id = agent.id; child.seed = winner.seed + '_child_' + Date.now();
-                            if (typeof child.net?.mutate === 'function') { const muts = child.net.mutate(arenaConfig.mutationRate || 0.08, 0.12); child.mutations += muts; }
-                            const statKeys = ['maxHealth', 'damage', 'fireRate', 'dodgeChance'], randomStatIdx = Math.floor(Math.random() * 4), statToMutate = statKeys[randomStatIdx], mutationValue = Utils.randInt(1, 4);
-                            if (statToMutate === 'maxHealth') child.stats.maxHealth += mutationValue * 10; else if (statToMutate === 'damage') child.stats.damage += mutationValue; else if (statToMutate === 'fireRate') child.stats.fireRate = Math.max(5, child.stats.fireRate - mutationValue); else if (statToMutate === 'dodgeChance') child.stats.dodgeChance = Math.min(0.5, child.stats.dodgeChance + mutationValue * 0.05);
-                            child.lastMutationType = statToMutate; Logger.log(`🧬 МУТАЦИЯ: ${statToMutate} +${mutationValue} (Gen ${child.generation})`, 'success');
-                            child.reset(agent.id === 'blue' ? 120 : 700, 300); child.alive = true; this.enemies[idx] = child;
-                        }
-                    } catch (e) { Logger.log('❌ Ошибка при замене агента: ' + e.message, 'error'); console.error('Full error:', e); }
+                    // ✅ ПОБЕДИТЕЛЬ ЭВОЛЮЦИОНИРУЕТ
+                    winner.wins++;
+                    winner.generation++;
+                    winner.evolutionPoints = 2;
+                    winner.applyEvolutionPoints(); // ИИ выбирает статы
+                    
+                    Logger.log(`🏆 ${winner.id.toUpperCase()} Gen${winner.generation} wins! HP${winner.stats.maxHealth} DMG${winner.stats.damage} SPD${winner.stats.fireRate}`, 'success');
+                    
+                    // ✅ ПРОИГРАВШИЙ ВОЗРОЖДАЕТСЯ С НАСЛЕДОВАНИЕМ И МУТАЦИЕЙ
+                    deadAgent.generation++;
+                    deadAgent.wins = 0;
+                    deadAgent.cumulativeReward = 5;
+                    
+                    // Наследование весов (70%)
+                    if (arenaConfig.enableWeightInheritance) {
+                        this._inheritWeightsPartial(deadAgent.net, winner.net, 0.7);
+                    }
+                    
+                    // Мутация нейросети
+                    deadAgent.net.mutate(arenaConfig.mutationRate || 0.1, 0.15);
+                    
+                    // Сброс позиции
+                    deadAgent.reset(deadAgent.id === 'blue' ? 120 : 700, 300);
+                    deadAgent.alive = true;
+                    
+                    Logger.log(`🔄 ${deadAgent.id.toUpperCase()} Gen${deadAgent.generation} resurrected with mutation`, 'info');
                 }
             }
         }
@@ -3461,6 +3340,23 @@ class World {
         const active = (this.points || []).filter(p => p && !p.collected).length;
         if (active < 22 && this.step % 40 === 0) { const types = ['normal', 'normal', 'normal', 'scared', 'rare']; this.points.push(new SmartPoint(35 + Utils.rand(0, 750), 35 + Utils.rand(0, 530), types[Utils.randInt(0, types.length - 1)])); }
         return { blue: this.enemies[0] || null, red: this.enemies[1] || null, pointsLeft: (this.points || []).filter(p => p && !p.collected).length, episode: this.episode };
+    }
+    
+    _inheritWeightsPartial(childNet, parentNet, ratio) {
+        const inherit = (child, parent) => {
+            if (!child || !parent) return;
+            for (let i = 0; i < Math.min(child.length, parent.length); i++) {
+                if (Array.isArray(child[i]) && Array.isArray(parent[i])) {
+                    for (let j = 0; j < Math.min(child[i].length, parent[i].length); j++) {
+                        if (Math.random() < ratio) child[i][j] = parent[i][j];
+                    }
+                }
+            }
+        };
+        inherit(childNet._W1, parentNet._W1);
+        inherit(childNet._W2, parentNet._W2);
+        inherit(childNet._W3, parentNet._W3);
+        inherit(childNet._inputEmbedding, parentNet._inputEmbedding);
     }
     
     resetEpisode() { this.points.forEach(p => { if (p) p.collected = false; }); this.enemies.forEach(a => { if (a) { a.reset(a.id === 'blue' ? 120 : 700, 300); a.alive = true; } }); Logger.log(`🔄 Новый эпизод ${this.episode} начался`, 'info'); }
@@ -3480,7 +3376,7 @@ class World {
 }
 
 // ============================================================================
-// LOGGER — SAFE CONSOLE OUTPUT
+// LOGGER
 // ============================================================================
 const Logger = Object.freeze({
     _escape: (str) => String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])),
@@ -3495,7 +3391,7 @@ const Logger = Object.freeze({
 });
 
 // ============================================================================
-// GAME ENGINE — MAIN CONTROLLER
+// GAME ENGINE
 // ============================================================================
 class GameEngine {
     constructor() {
@@ -3535,13 +3431,15 @@ class GameEngine {
         bindToggle('enableEvolution', 'enableEvolution'); bindToggle('enableSkillEvolution', 'enableSkillEvolution'); bindToggle('enableMoE', 'enableMoE');
         bindToggle('enableConsolidation', 'enableConsolidation'); bindToggle('enableFighting', 'enableFighting'); bindToggle('enableRanged', 'enableRanged');
         bindToggle('enableVisualization', 'enableVisualization'); bindToggle('enableHebbian', 'enableHebbian');
+        bindToggle('compactInputs', 'compactInputs');
+        bindToggle('enableWeightInheritance', 'enableWeightInheritance');
     }
     
     _onKey(e) { if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault(); switch (e.key) { case ' ': e.preventDefault(); this.toggle(); break; case '1': this.selectedAgent = this.world?.enemies?.[0]; this.updateDebugPanel(); break; case '2': this.selectedAgent = this.world?.enemies?.[1]; this.updateDebugPanel(); break; case 'Tab': e.preventDefault(); const focusable = document.querySelectorAll('button, input, [tabindex="0"]'), idx = Array.from(focusable).indexOf(document.activeElement); focusable[(idx + 1) % focusable.length]?.focus(); break; case 'Escape': if (this.debug) { this.debug = false; this.updateDebugPanel(); } break; } }
     
     _onClick({ x, y }) { if (!this.debug) return; const lx = x / this.scaleX, ly = y / this.scaleY; let nearest = null, minD = 25; for (const a of this.world?.enemies || []) { if (!a) continue; const d = Math.hypot(a.x - lx, a.y - ly); if (d < minD) { minD = d; nearest = a; } } this.selectedAgent = nearest; if (nearest) Logger.log(`🔍 Выбран агент ${nearest.id}`, 'info'); this.updateDebugPanel(); }
     
-    init() { this.world.reset(); this.world.spawnAgents(); if (!this.world.enemies?.length || this.world.enemies.length < 2) { console.error('Failed to initialize agents'); alert('Ошибка: не удалось создать агентов!'); return; } this.world.enemies.forEach(a => { if (!a) return; a.net.lr = this.settings.learningRate; a.net.lambda = this.settings.lambda; a.net.gamma = this.settings.gamma; if (a.critic) a.critic.lr = this.settings.learningRate; if (a.policySelector) a.policySelector.lr = this.settings.learningRate * 0.6; }); this.updateStats(); this.updateMetrics(); if (this.world.enemies[0] && this.world.enemies[1]) this.world.draw(this.ctx, false, true); Logger.log('🚀 AI ARENA v4.0.1 PROFESSIONAL инициализирована', 'success'); Logger.log('🔧 Архитектура: 57→24→48→36→16 + RNN(16) память', 'success'); Logger.log('🧠 Обучение: TD(λ)+Actor-Critic+LearnablePolicy+MoE+Hebbian', 'success'); Logger.log('🔑 Детерминированная инициализация от ключа', 'success'); Logger.log('⚡ Оптимизации: кэширование, spatial hashing, early-exit', 'success'); }
+    init() { this.world.reset(); this.world.spawnAgents(); if (!this.world.enemies?.length || this.world.enemies.length < 2) { console.error('Failed to initialize agents'); alert('Ошибка: не удалось создать агентов!'); return; } this.world.enemies.forEach(a => { if (!a) return; a.net.lr = this.settings.learningRate; a.net.lambda = this.settings.lambda; a.net.gamma = this.settings.gamma; if (a.critic) a.critic.lr = this.settings.learningRate; if (a.policySelector) a.policySelector.lr = this.settings.learningRate * 0.6; }); this.updateStats(); this.updateMetrics(); if (this.world.enemies[0] && this.world.enemies[1]) this.world.draw(this.ctx, false, true); Logger.log('🚀 AI ARENA v4.0.1 PROFESSIONAL инициализирована', 'success'); Logger.log(`🔧 Архитектура: ${arenaConfig.compactInputs ? '25→16→48→36→16' : '57→24→48→36→16'} + RNN(16) память`, 'success'); Logger.log('🧠 Обучение: TD(λ)+Actor-Critic+LearnablePolicy+MoE+Hebbian+SocialMemory', 'success'); Logger.log('🔑 Детерминированная инициализация от ключа', 'success'); Logger.log('⚡ Оптимизации: кэширование, spatial hashing, early-exit', 'success'); }
     
     toggle() { this.running = !this.running; const btn = document.getElementById('btnStart'); if (btn) { btn.textContent = this.running ? '⏸ Пауза' : '▶ Старт'; btn.className = this.running ? 'btn-danger' : 'btn-primary'; btn.setAttribute('aria-pressed', String(this.running)); } Logger.log(this.running ? '▶ Симуляция запущена' : '⏸ Пауза', 'info'); if (this.running) { this.lastTime = performance.now(); this.loop(); } }
     
@@ -3549,11 +3447,36 @@ class GameEngine {
     
     loop() { if (!this.running) return; if (!this.ctx || !this.world) { console.error('Context or world lost'); this.running = false; return; } if (!this.world.enemies?.length || this.world.enemies.length < 2 || !this.world.enemies[0] || !this.world.enemies[1]) { console.error('Invalid agents in world'); this.running = false; Logger.log('❌ Ошибка: агенты отсутствуют или невалидны', 'error'); return; } const now = performance.now(), dt = Math.min((now - this.lastTime) / 16.67, 3), fps = Math.round(1000 / (now - this.lastTime + 0.001)); this.fps = fps; this.lastTime = now; const fpsEl = document.getElementById('fpsCounter'); if (fpsEl) fpsEl.textContent = `FPS: ${this.fps}`; try { const state = this.world.update(dt); this.world.draw(this.ctx, this.vision); this.updateStats(state); if (this.showMetrics) this.updateMetrics(); if (this.debug) this.updateDebugPanel(); } catch (e) { console.error('Loop error:', e); Logger.log(`❌ Ошибка в цикле: ${e.message}`, 'error'); this.running = false; return; } this.rafId = requestAnimationFrame(() => this.loop()); }
     
-    updateStats(state = null) { if (!state) { if (!this.world?.enemies?.length || this.world.enemies.length < 2 || !this.world.enemies[0] || !this.world.enemies[1]) return; state = { blue: this.world.enemies[0], red: this.world.enemies[1], pointsLeft: this.world.points?.filter(p => p && !p.collected).length || 0, episode: this.world.episode }; } const { blue, red, pointsLeft, episode } = state; if (!blue || !red) return; const blueHealthEl = document.getElementById('blue-health'), redHealthEl = document.getElementById('red-health'); if (blueHealthEl) { blueHealthEl.style.width = `${(blue.health / blue.stats.maxHealth) * 100}%`; blueHealthEl.setAttribute('aria-valuenow', String(Math.round(blue.health / blue.stats.maxHealth * 100))); } if (redHealthEl) { redHealthEl.style.width = `${(red.health / red.stats.maxHealth) * 100}%`; redHealthEl.setAttribute('aria-valuenow', String(Math.round(red.health / red.stats.maxHealth * 100))); } const blueRewardEl = document.getElementById('blue-reward'), redRewardEl = document.getElementById('red-reward'); if (blueRewardEl) blueRewardEl.textContent = blue.cumulativeReward.toFixed(2); if (redRewardEl) redRewardEl.textContent = red.cumulativeReward.toFixed(2); const updateMode = (el, mode) => { if (el) { el.className = `mode-badge mode-${mode}`; el.textContent = mode.toUpperCase(); } }; updateMode(document.getElementById('blue-mode'), blue.mode); updateMode(document.getElementById('red-mode'), red.mode); const blueWinsEl = document.getElementById('blue-wins'), redWinsEl = document.getElementById('red-wins'); if (blueWinsEl) blueWinsEl.textContent = blue.wins; if (redWinsEl) redWinsEl.textContent = red.wins; const blueGenEl = document.getElementById('blue-gen'), redGenEl = document.getElementById('red-gen'); if (blueGenEl) blueGenEl.textContent = blue.generation; if (redGenEl) redGenEl.textContent = red.generation; const episodeEl = document.getElementById('episodeStat'), stepEl = document.getElementById('stepStat'), dotsEl = document.getElementById('dotsStat'), obstaclesEl = document.getElementById('obstaclesStat'); if (episodeEl) episodeEl.textContent = episode; if (stepEl) stepEl.textContent = this.world.step; if (dotsEl) dotsEl.textContent = pointsLeft; if (obstaclesEl) obstaclesEl.textContent = this.world.walls.length; const avgFit = (blue.cumulativeReward + red.cumulativeReward) / 2, bestFit = Math.max(blue.cumulativeReward, red.cumulativeReward), fitnessEl = document.getElementById('fitnessStat'), bestFitnessEl = document.getElementById('bestFitnessStat'); if (fitnessEl) fitnessEl.textContent = avgFit.toFixed(1); if (bestFitnessEl) bestFitnessEl.textContent = bestFit.toFixed(1); const progressEl = document.getElementById('episodeProgress'); if (progressEl) { progressEl.style.width = `${(episode % 10) * 10}%`; progressEl.setAttribute('aria-valuenow', String((episode % 10) * 10)); } }
+    updateStats(state = null) { if (!state) { if (!this.world?.enemies?.length || this.world.enemies.length < 2 || !this.world.enemies[0] || !this.world.enemies[1]) return; state = { blue: this.world.enemies[0], red: this.world.enemies[1], pointsLeft: this.world.points?.filter(p => p && !p.collected).length || 0, episode: this.world.episode }; } const { blue, red, pointsLeft, episode } = state; if (!blue || !red) return; const blueHealthEl = document.getElementById('blue-health'), redHealthEl = document.getElementById('red-health'); if (blueHealthEl) { blueHealthEl.style.width = `${(blue.health / blue.stats.maxHealth) * 100}%`; blueHealthEl.setAttribute('aria-valuenow', String(Math.round(blue.health / blue.stats.maxHealth * 100))); } if (redHealthEl) { redHealthEl.style.width = `${(red.health / red.stats.maxHealth) * 100}%`; redHealthEl.setAttribute('aria-valuenow', String(Math.round(red.health / red.stats.maxHealth * 100))); } const blueRewardEl = document.getElementById('blue-reward'), redRewardEl = document.getElementById('red-reward'); if (blueRewardEl) blueRewardEl.textContent = blue.cumulativeReward.toFixed(2); if (redRewardEl) redRewardEl.textContent = red.cumulativeReward.toFixed(2); const updateMode = (el, mode) => { if (el) { el.className = `mode-badge mode-${mode}`; el.textContent = mode.toUpperCase(); } }; updateMode(document.getElementById('blue-mode'), blue.mode); updateMode(document.getElementById('red-mode'), red.mode); const blueWinsEl = document.getElementById('blue-wins'), redWinsEl = document.getElementById('red-wins'); if (blueWinsEl) blueWinsEl.textContent = blue.wins; if (redWinsEl) redWinsEl.textContent = red.wins; const blueGenEl = document.getElementById('blue-gen'), redGenEl = document.getElementById('red-gen'); if (blueGenEl) blueGenEl.textContent = blue.generation; if (redGenEl) redGenEl.textContent = red.generation; const episodeEl = document.getElementById('episodeStat'), stepEl = document.getElementById('stepStat'), dotsEl = document.getElementById('dotsStat'), obstaclesEl = document.getElementById('obstaclesStat'); if (episodeEl) episodeEl.textContent = episode; if (stepEl) stepEl.textContent = this.world.step; if (dotsEl) dotsEl.textContent = pointsLeft; if (obstaclesEl) obstaclesEl.textContent = this.world.walls.length; const avgFit = (blue.cumulativeReward + red.cumulativeReward) / 2, bestFit = Math.max(blue.cumulativeReward, red.cumulativeReward), fitnessEl = document.getElementById('fitnessStat'), bestFitnessEl = document.getElementById('bestFitnessStat'); if (fitnessEl) fitnessEl.textContent = avgFit.toFixed(1); if (bestFitnessEl) bestFitnessEl.textContent = bestFit.toFixed(1); const progressEl = document.getElementById('episodeProgress'); if (progressEl) { progressEl.style.width = `${(episode % 10) * 10}%`; progressEl.setAttribute('aria-valuenow', String((episode % 10) * 10)); }
+    
+    // ✅ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ СТАТОВ ИЗ РЕАЛЬНЫХ ОБЪЕКТОВ
+    const updateAgentStats = (agent, prefix) => {
+        const hp = document.getElementById(`${prefix}-stat-hp`);
+        const dmg = document.getElementById(`${prefix}-stat-dmg`);
+        const spd = document.getElementById(`${prefix}-stat-spd`);
+        const dod = document.getElementById(`${prefix}-stat-dod`);
+        if (hp) hp.textContent = `HP:${agent.stats.maxHealth}`;
+        if (dmg) dmg.textContent = `DMG:${agent.stats.damage}`;
+        if (spd) spd.textContent = `SPD:${agent.stats.fireRate}`;
+        if (dod) dod.textContent = `DOD:${Math.round(agent.stats.dodgeChance * 100)}%`;
+        
+        // Обновление полосок навыков
+        const skills = ['hunting', 'fleeing', 'combat', 'exploring', 'avoiding'];
+        const container = document.getElementById(`${prefix}-skills`);
+        if (container) {
+            skills.forEach((skill, i) => {
+                const bar = container.children[i]?.querySelector('.skill-fill');
+                if (bar) bar.style.width = `${(agent.permanent.skills[skill] || 0) * 100}%`;
+            });
+        }
+    };
+    updateAgentStats(blue, 'blue');
+    updateAgentStats(red, 'red');
+    }
     
     updateMetrics() { if (!this.showMetrics || !this.world?.enemies?.length || this.world.enemies.length < 2 || !this.world.enemies[0] || !this.world.enemies[1]) return; const blue = this.world.enemies[0], red = this.world.enemies[1], blueMetrics = blue.getLearningMetrics(), redMetrics = red.getLearningMetrics(), avgTD = (blueMetrics.avgTDError + redMetrics.avgTDError) / 2, avgPred = (blueMetrics.avgPredictionError + redMetrics.avgPredictionError) / 2, avgEnt = (blueMetrics.avgPolicyEntropy + redMetrics.avgPolicyEntropy) / 2, avgWin = (blueMetrics.winRate + redMetrics.winRate) / 2, avgColl = (blueMetrics.collectionRate + redMetrics.collectionRate) / 2, avgSurv = (blueMetrics.survivalTime + redMetrics.survivalTime) / 2; const tdEl = document.getElementById('metricTDError'), predEl = document.getElementById('metricPredError'), entEl = document.getElementById('metricEntropy'), winEl = document.getElementById('metricWinRate'), collEl = document.getElementById('metricCollection'), survEl = document.getElementById('metricSurvival'); if (tdEl) { tdEl.textContent = avgTD.toFixed(4); tdEl.className = `metric-value${avgTD < 0.5 ? ' good' : avgTD > 2 ? ' degrading' : ''}`; } if (predEl) { predEl.textContent = avgPred.toFixed(3); predEl.className = `metric-value${avgPred < 0.3 ? ' good' : avgPred > 0.7 ? ' degrading' : ''}`; } if (entEl) { entEl.textContent = avgEnt.toFixed(3); entEl.className = `metric-value${avgEnt > 0.1 && avgEnt < 0.8 ? ' good' : ''}`; } if (winEl) winEl.textContent = avgWin.toFixed(2); if (collEl) collEl.textContent = avgColl.toFixed(2); if (survEl) survEl.textContent = avgSurv.toFixed(2); const progressTDEl = document.getElementById('progressTD'), progressEntropyEl = document.getElementById('progressEntropy'), progressPredEl = document.getElementById('progressPred'); if (progressTDEl) { const w = Utils.clamp(100 - avgTD * 20, 0, 100); progressTDEl.style.width = `${w}%`; progressTDEl.setAttribute('aria-valuenow', String(Math.round(w))); } if (progressEntropyEl) { const w = Utils.clamp(avgEnt * 100, 0, 100); progressEntropyEl.style.width = `${w}%`; progressEntropyEl.setAttribute('aria-valuenow', String(Math.round(w))); } if (progressPredEl) { const w = Utils.clamp(100 - avgPred * 100, 0, 100); progressPredEl.style.width = `${w}%`; progressPredEl.setAttribute('aria-valuenow', String(Math.round(w))); } }
     
-    updateDebugPanel() { const panel = document.getElementById('debugPanel'), isActive = this.debug && this.selectedAgent; panel.classList.toggle('active', isActive); panel.hidden = !isActive; if (!isActive || !this.selectedAgent) return; const info = this.selectedAgent.getDebugInfo(), setDebugValue = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; }; setDebugValue('dbgMode', info.mode); setDebugValue('dbgTarget', info.target); setDebugValue('dbgSpeed', info.speed); setDebugValue('dbgAggro', info.aggro); setDebugValue('dbgMemory', info.memory); setDebugValue('dbgNeurons', info.neurons); setDebugValue('dbgReward', info.reward); setDebugValue('dbgStuck', info.stuck); setDebugValue('dbgConf', info.confidence); setDebugValue('dbgTDErr', info.tdError); setDebugValue('dbgEntropy', info.policyEntropy); setDebugValue('dbgPredErr', info.predError); setDebugValue('dbgWinRate', info.winRate); setDebugValue('dbgCollection', info.collectionRate); setDebugValue('dbgGate0', info.gate0); setDebugValue('dbgGate1', info.gate1); setDebugValue('dbgExpert0', info.expert0); setDebugValue('dbgExpert1', info.expert1); setDebugValue('dbgLoadBal', info.loadBal); setDebugValue('dbgHebbian', info.hebbian); const confBar = document.getElementById('dbgConfBar'), confVal = document.getElementById('dbgConfVal'); if (confBar) { const w = (this.selectedAgent.predictive.confidence || 0.5) * 100; confBar.style.width = `${w}%`; confBar.setAttribute('aria-valuenow', String(Math.round(w))); } if (confVal) confVal.textContent = info.confidence; }
+    updateDebugPanel() { const panel = document.getElementById('debugPanel'), isActive = this.debug && this.selectedAgent; panel.classList.toggle('active', isActive); panel.hidden = !isActive; if (!isActive || !this.selectedAgent) return; const info = this.selectedAgent.getDebugInfo(), setDebugValue = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; }; setDebugValue('dbgMode', info.mode); setDebugValue('dbgTarget', info.target); setDebugValue('dbgSpeed', info.speed); setDebugValue('dbgAggro', info.aggro); setDebugValue('dbgMemory', info.memory); setDebugValue('dbgNeurons', info.neurons); setDebugValue('dbgReward', info.reward); setDebugValue('dbgStuck', info.stuck); setDebugValue('dbgConf', info.confidence); setDebugValue('dbgTDErr', info.tdError); setDebugValue('dbgEntropy', info.policyEntropy); setDebugValue('dbgPredErr', info.predError); setDebugValue('dbgWinRate', info.winRate); setDebugValue('dbgCollection', info.collectionRate); setDebugValue('dbgGate0', info.gate0); setDebugValue('dbgGate1', info.gate1); setDebugValue('dbgExpert0', info.expert0); setDebugValue('dbgExpert1', info.expert1); setDebugValue('dbgLoadBal', info.loadBal); setDebugValue('dbgHebbian', info.hebbian); setDebugValue('dbgSocialRep', info.socialRep); setDebugValue('dbgArchetype', info.archetype); const confBar = document.getElementById('dbgConfBar'), confVal = document.getElementById('dbgConfVal'); if (confBar) { const w = (this.selectedAgent.predictive.confidence || 0.5) * 100; confBar.style.width = `${w}%`; confBar.setAttribute('aria-valuenow', String(Math.round(w))); } if (confVal) confVal.textContent = info.confidence; }
     
     toggleDebug() { this.debug = !this.debug; const btn = document.getElementById('btnDebug'); if (btn) { btn.classList.toggle('active', this.debug); btn.setAttribute('aria-pressed', String(this.debug)); } this.updateDebugPanel(); Logger.log(`🔍 Debug ${this.debug ? 'включён' : 'выключен'}`, this.debug ? 'success' : 'info'); }
     updateBtns() { const visionBtn = document.getElementById('btnVision'), metricsBtn = document.getElementById('btnMetrics'); if (visionBtn) { visionBtn.classList.toggle('active', this.vision); visionBtn.setAttribute('aria-pressed', String(this.vision)); } if (metricsBtn) { metricsBtn.classList.toggle('active', this.showMetrics); metricsBtn.setAttribute('aria-pressed', String(this.showMetrics)); } }
@@ -3574,48 +3497,9 @@ class GameEngine {
 // ============================================================================
 // GLOBAL INITIALIZATION
 // ============================================================================
-/** @type {GameEngine|null} */
 window.arenaGame = null;
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initArena); else initArena();
 function initArena() { try { window.arenaGame = new GameEngine(); if (window.arenaGame) console.log('✅ AI Arena v4.0.1 initialized'); } catch (e) { console.error('❌ Failed to initialize AI Arena:', e); console.error('Stack:', e.stack); alert('Ошибка инициализации: ' + e.message); } }
 window.addEventListener('beforeunload', () => { if (window.arenaGame) { window.arenaGame.destroy(); window.arenaGame = null; } });
-
-// ============================================================================
-// AUDIT VERIFICATION — RUN ON LOAD
-// ============================================================================
-if (typeof window !== 'undefined') {
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            try {
-                // Verify attention matrix
-                const nn = new NeuralNetwork({ seed: 'audit_test' });
-                const h1 = new Array(48).fill(0).map((_, i) => Math.sin(i * 0.1));
-                const attnResult = nn._selfAttention(h1);
-                console.assert(attnResult.length === 48, 'Attention output dimension mismatch');
-                console.assert(attnResult.every(v => isFinite(v)), 'Attention produced invalid values');
-                
-                // Verify expert connection
-                const inputs = new Array(57).fill(0).map((_, i) => i * 0.01);
-                const forwardResult = nn.forward(inputs);
-                console.assert(forwardResult.gateProbs?.length === 4, 'Gate probs missing');
-                console.assert(forwardResult.loadBalanceLoss !== undefined, 'Load balance loss missing');
-                
-                // Verify policy selector context
-                const ps = new PolicySelector({ seed: 'audit_test' });
-                const context = [0.5, 0.3, 0.8, 0.2, 0.6, 0.4, 0.7, 0.1];
-                const skills = [0.3, 0.4, 0.2, 0.5, 0.6];
-                const { probs } = ps.forward(context, skills);
-                const policyResult = ps.update(context, skills, 2, 0.5);
-                console.assert(policyResult.entropy !== undefined, 'Entropy not computed');
-                console.assert(policyResult.loss !== undefined, 'Loss not returned');
-                
-                Logger.log('✅ All audit fixes verified: attention, MoE, policy, Hebbian', 'success');
-            } catch (e) {
-                Logger.log(`❌ Audit verification failed: ${e.message}`, 'error');
-            }
-        }, 1000);
-    });
-}
 </script>
 </body>
-</html>
